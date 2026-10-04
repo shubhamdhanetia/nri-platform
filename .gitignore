@@ -1,0 +1,42 @@
+# Dependencies and generated frontend output
+**/node_modules/
+**/.next/
+**/out/
+**/coverage/
+**/build/
+**/.vercel/
+**/*.tsbuildinfo
+
+# Python environments and generated files
+**/.venv/
+**/venv/
+**/env/
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/.tox/
+**/.nox/
+**/__pypackages__/
+**/htmlcov/
+**/.coverage*
+**/*.egg-info/
+**/dist/
+
+# Local environment variables and secrets
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.*.example
+
+# Local databases and logs
+**/pgdata/
+*.log
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
