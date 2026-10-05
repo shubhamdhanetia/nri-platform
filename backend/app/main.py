@@ -1,7 +1,15 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.db.base import Base
+from app.db.session import engine
+
 from app.api.auth import router as auth_router
+from app.api.users import router as users_router
+
+import app.models.user
+
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="NRI Platform")
 
@@ -19,4 +27,10 @@ app.include_router(
     auth_router,
     prefix="/auth",
     tags=["Auth"]
+)
+
+app.include_router(
+    users_router,
+    prefix="/users",
+    tags=["Users"]
 )

@@ -178,3 +178,15 @@ Session management
 
 
 Collaborate with tech influences in California for marketing
+
+
+
+
+
+
+
+Docker commmands
+
+
+docker compose up -d
+docker exec -it nri-postgres psql -U postgres -d nri_platform

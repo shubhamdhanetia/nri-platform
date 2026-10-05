@@ -22,6 +22,18 @@ export default function LoginButton() {
 
           const data = await response.json();
 
+          localStorage.setItem(
+            "access_token",
+            data.access_token
+          );
+
+          localStorage.setItem(
+              "user",
+              JSON.stringify(data.user)
+          );
+
+          localStorage.getItem("access_token")
+
           console.log("Backend response:", data);
         } catch (error) {
           console.error(error);
