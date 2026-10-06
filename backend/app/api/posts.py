@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 from fastapi import Depends
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.db.dependencies import get_db
@@ -14,6 +15,7 @@ from app.schemas.post import (
 
 from app.repositories.post_repository import (
     create_post,
+    delete_post,
     get_posts,
     get_posts_by_user
 )
@@ -59,3 +61,24 @@ def get_my_posts(
         db,
         user.id
     )
+
+
+@router.delete(
+    "/{post_id}"
+)
+def delete(
+    post_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user)
+):
+    if not delete_post(
+        db=db,
+        post_id=post_id,
+        user_id=user.id
+    ):
+        raise HTTPException(
+            status_code=404,
+            detail="Post not found"
+        )
+
+    return {"detail": "Post deleted"}

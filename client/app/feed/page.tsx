@@ -3,20 +3,31 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import ProtectedPage from "../../components/ProtectedPage";
-import { apiRequest, type Post } from "../../lib/api";
+import DeletePostButton from "../../components/DeletePostButton";
+import { apiRequest, type Post, type User } from "../../lib/api";
 
 export default function FeedPage() {
   const [posts, setPosts] = useState<Post[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const fetchPosts = useCallback(() => apiRequest<Post[]>("/posts"), []);
+  const fetchFeed = useCallback(
+    () => Promise.all([
+      apiRequest<Post[]>("/posts"),
+      apiRequest<User>("/users/me"),
+    ]),
+    [],
+  );
 
   useEffect(() => {
     let active = true;
-    fetchPosts()
-      .then((data) => {
-        if (active) setPosts(data);
+    fetchFeed()
+      .then(([data, user]) => {
+        if (active) {
+          setPosts(data);
+          setCurrentUserId(user.id);
+        }
       })
       .catch((requestError: unknown) => {
         if (active) {
@@ -29,18 +40,24 @@ export default function FeedPage() {
     return () => {
       active = false;
     };
-  }, [fetchPosts]);
+  }, [fetchFeed]);
 
   async function retryLoadPosts() {
     setLoading(true);
     setError("");
     try {
-      setPosts(await fetchPosts());
+      const [data, user] = await fetchFeed();
+      setPosts(data);
+      setCurrentUserId(user.id);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Unable to load posts.");
     } finally {
       setLoading(false);
     }
+  }
+
+  function removePost(postId: number) {
+    setPosts((currentPosts) => currentPosts.filter((post) => post.id !== postId));
   }
 
   return (
@@ -85,6 +102,9 @@ export default function FeedPage() {
               <div className="post-author">
                 <span className="author-avatar">N</span>
                 <span>Community member</span>
+                {post.user_id === currentUserId && (
+                  <DeletePostButton onDeleted={removePost} postId={post.id} />
+                )}
               </div>
             </article>
           ))}

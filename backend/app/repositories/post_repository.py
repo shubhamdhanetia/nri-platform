@@ -43,3 +43,24 @@ def get_posts_by_user(
         .filter(Post.user_id == user_id)
         .all()
     )
+
+
+def delete_post(
+    db: Session,
+    post_id: int,
+    user_id: int
+) -> bool:
+    post = (
+        db.query(Post)
+        .filter(
+            Post.id == post_id,
+            Post.user_id == user_id
+        )
+        .first()
+    )
+    if post is None:
+        return False
+
+    db.delete(post)
+    db.commit()
+    return True

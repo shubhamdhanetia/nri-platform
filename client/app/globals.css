@@ -474,6 +474,48 @@ a {
   padding-top: 14px;
 }
 
+.post-delete-control {
+  align-items: flex-end;
+  display: flex;
+  flex-direction: column;
+  margin-left: auto;
+}
+
+.delete-post-button {
+  background: transparent;
+  border: 1px solid #ecd7d4;
+  border-radius: 7px;
+  color: #a1443a;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  min-height: 30px;
+  padding: 0 10px;
+}
+
+.delete-post-button:hover:not(:disabled) {
+  background: #fcf1ef;
+}
+
+.delete-post-button:disabled {
+  cursor: wait;
+  opacity: .65;
+}
+
+.post-delete-control .form-error {
+  margin: 5px 0 0;
+  max-width: 200px;
+  text-align: right;
+}
+
+.profile-post-actions {
+  border-top: 1px solid #f0f2ef;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: auto;
+  padding-top: 12px;
+}
+
 .author-avatar {
   align-items: center;
   background: #e9eee8;

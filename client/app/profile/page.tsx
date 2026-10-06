@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import ProtectedPage from "../../components/ProtectedPage";
+import DeletePostButton from "../../components/DeletePostButton";
 import { apiRequest, type Post, type User } from "../../lib/api";
 
 export default function ProfilePage() {
@@ -53,6 +54,10 @@ export default function ProfilePage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function removePost(postId: number) {
+    setPosts((currentPosts) => currentPosts.filter((post) => post.id !== postId));
   }
 
   return (
@@ -111,6 +116,9 @@ export default function ProfilePage() {
                     </div>
                     <h3>{post.title}</h3>
                     <p className="post-description">{post.description}</p>
+                    <div className="profile-post-actions">
+                      <DeletePostButton onDeleted={removePost} postId={post.id} />
+                    </div>
                   </article>
                 ))}
               </div>
