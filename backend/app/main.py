@@ -6,8 +6,12 @@ from app.db.session import engine
 
 from app.api.auth import router as auth_router
 from app.api.users import router as users_router
+from app.api.posts import (
+    router as posts_router
+)
 
 import app.models.user
+import app.models.post
 
 Base.metadata.create_all(bind=engine)
 
@@ -33,4 +37,10 @@ app.include_router(
     users_router,
     prefix="/users",
     tags=["Users"]
+)
+
+app.include_router(
+    posts_router,
+    prefix="/posts",
+    tags=["Posts"]
 )
