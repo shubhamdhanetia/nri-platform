@@ -4,7 +4,14 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import ProtectedPage from "../../components/ProtectedPage";
 import DeletePostButton from "../../components/DeletePostButton";
-import { apiRequest, type Post, type User } from "../../lib/api";
+import EditPostButton from "../../components/EditPostButton";
+import {
+  apiRequest,
+  POST_CATEGORY_LABELS,
+  POST_TYPE_LABELS,
+  type Post,
+  type User,
+} from "../../lib/api";
 
 export default function ProfilePage() {
   const [user, setUser] = useState<User | null>(null);
@@ -60,6 +67,12 @@ export default function ProfilePage() {
     setPosts((currentPosts) => currentPosts.filter((post) => post.id !== postId));
   }
 
+  function updatePost(updatedPost: Post) {
+    setPosts((currentPosts) => currentPosts.map(
+      (post) => post.id === updatedPost.id ? updatedPost : post,
+    ));
+  }
+
   return (
     <ProtectedPage>
       <section className="page-heading">
@@ -111,12 +124,16 @@ export default function ProfilePage() {
                 {posts.map((post) => (
                   <article className="post-card" key={post.id}>
                     <div className="post-meta">
-                      <span className="category-pill">{post.category}</span>
+                      <div className="post-badges">
+                        <span className="category-pill">{POST_CATEGORY_LABELS[post.category]}</span>
+                        <span className="post-type-pill">{POST_TYPE_LABELS[post.post_type]}</span>
+                      </div>
                       <span className="post-location"><span aria-hidden="true">⌖</span> {post.city}</span>
                     </div>
                     <h3>{post.title}</h3>
                     <p className="post-description">{post.description}</p>
                     <div className="profile-post-actions">
+                      <EditPostButton onUpdated={updatePost} post={post} />
                       <DeletePostButton onDeleted={removePost} postId={post.id} />
                     </div>
                   </article>

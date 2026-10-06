@@ -10,14 +10,16 @@ from app.models.user import User
 
 from app.schemas.post import (
     CreatePostRequest,
-    PostResponse
+    PostResponse,
+    UpdatePostRequest
 )
 
 from app.repositories.post_repository import (
     create_post,
     delete_post,
     get_posts,
-    get_posts_by_user
+    get_posts_by_user,
+    update_post
 )
 
 router = APIRouter()
@@ -36,6 +38,7 @@ def create(
         title=request.title,
         description=request.description,
         category=request.category,
+        post_type=request.post_type,
         city=request.city,
         user_id=user.id
     )
@@ -61,6 +64,34 @@ def get_my_posts(
         db,
         user.id
     )
+
+
+@router.put(
+    "/{post_id}",
+    response_model=PostResponse
+)
+def update(
+    post_id: int,
+    request: UpdatePostRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user)
+):
+    post = update_post(
+        db=db,
+        post_id=post_id,
+        user_id=user.id,
+        title=request.title,
+        description=request.description,
+        category=request.category,
+        post_type=request.post_type,
+        city=request.city
+    )
+    if post is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Post not found"
+        )
+    return post
 
 
 @router.delete(

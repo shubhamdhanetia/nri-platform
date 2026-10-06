@@ -3,13 +3,31 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import ProtectedPage from "../../components/ProtectedPage";
-import { apiRequest, type Post } from "../../lib/api";
+import {
+  apiRequest,
+  POST_CATEGORIES,
+  POST_CATEGORY_LABELS,
+  POST_TYPES,
+  POST_TYPE_LABELS,
+  type Post,
+  type PostCategory,
+  type PostType,
+} from "../../lib/api";
+
+function isPostCategory(value: string): value is PostCategory {
+  return POST_CATEGORIES.some((category) => category === value);
+}
+
+function isPostType(value: string): value is PostType {
+  return POST_TYPES.some((postType) => postType === value);
+}
 
 export default function CreatePostPage() {
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("");
+  const [category, setCategory] = useState<PostCategory | "">("");
+  const [postType, setPostType] = useState<PostType | "">("");
   const [city, setCity] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -21,7 +39,13 @@ export default function CreatePostPage() {
     try {
       await apiRequest<Post>("/posts", {
         method: "POST",
-        body: JSON.stringify({ title, description, category, city }),
+        body: JSON.stringify({
+          title,
+          description,
+          category,
+          post_type: postType,
+          city,
+        }),
       });
       router.push("/feed");
     } catch (requestError) {
@@ -67,13 +91,38 @@ export default function CreatePostPage() {
         <div className="form-row">
           <label className="form-field">
             <span>Category</span>
-            <input
-              onChange={(event) => setCategory(event.target.value)}
-              placeholder="e.g. Recommendations"
+            <select
+              onChange={(event) => {
+                const value = event.target.value;
+                setCategory(isPostCategory(value) ? value : "");
+              }}
               required
               value={category}
-            />
+            >
+              <option disabled value="">Choose a category</option>
+              {POST_CATEGORIES.map((value) => (
+                <option key={value} value={value}>{POST_CATEGORY_LABELS[value]}</option>
+              ))}
+            </select>
           </label>
+          <label className="form-field">
+            <span>Post type</span>
+            <select
+              onChange={(event) => {
+                const value = event.target.value;
+                setPostType(isPostType(value) ? value : "");
+              }}
+              required
+              value={postType}
+            >
+              <option disabled value="">Choose a post type</option>
+              {POST_TYPES.map((value) => (
+                <option key={value} value={value}>{POST_TYPE_LABELS[value]}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <div className="form-row">
           <label className="form-field">
             <span>City</span>
             <input

@@ -6,11 +6,45 @@ export interface User {
   provider?: string;
 }
 
+export const POST_CATEGORIES = [
+  "HOUSING",
+  "RIDES",
+  "JOBS",
+  "FOOD",
+  "EVENTS",
+  "IMMIGRATION",
+  "MARKETPLACE",
+  "GENERAL",
+] as const;
+
+export const POST_TYPES = ["OFFER", "REQUEST", "DISCUSSION"] as const;
+
+export type PostCategory = (typeof POST_CATEGORIES)[number];
+export type PostType = (typeof POST_TYPES)[number];
+
+export const POST_CATEGORY_LABELS: Record<PostCategory, string> = {
+  HOUSING: "Housing",
+  RIDES: "Rides",
+  JOBS: "Jobs",
+  FOOD: "Food",
+  EVENTS: "Events",
+  IMMIGRATION: "Immigration & visa",
+  MARKETPLACE: "Marketplace",
+  GENERAL: "General",
+};
+
+export const POST_TYPE_LABELS: Record<PostType, string> = {
+  OFFER: "Offering",
+  REQUEST: "Looking for",
+  DISCUSSION: "Discussion",
+};
+
 export interface Post {
   id: number;
   title: string;
   description: string;
-  category: string;
+  category: PostCategory;
+  post_type: PostType;
   city: string;
   user_id: number;
 }

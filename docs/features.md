@@ -67,16 +67,26 @@ Travel with strangers
 
 
 
-Categories for post feature
+Post categories
 
-ROOMMATE
 HOUSING
-RIDE
+RIDES
+JOBS
 FOOD
-EVENT
-JOB
-VISA
+EVENTS
+IMMIGRATION
+MARKETPLACE
 GENERAL
+
+Post types
+
+OFFER
+REQUEST
+DISCUSSION
+
+Every post has one category and one type. For example, a room available is
+HOUSING + OFFER, while looking for a roommate is HOUSING + REQUEST.
+Use DISCUSSION for open-ended posts that are neither an offer nor a request.
 
 
 Version 1
@@ -106,11 +116,9 @@ GET /users/me
 PATCH /users/me
 
 POST /posts
-
 GET /posts
-
 GET /posts/{id}
-
+PUT /posts/{id}
 DELETE /posts/{id}
 
 
