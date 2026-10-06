@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.models.post import Post, PostCategory, PostType
 
@@ -64,6 +64,15 @@ def get_posts(db: Session):
         db.query(Post)
         .order_by(Post.created_at.desc())
         .all()
+    )
+
+
+def get_post_by_id(db: Session, post_id: int) -> Post | None:
+    return (
+        db.query(Post)
+        .options(joinedload(Post.author))
+        .filter(Post.id == post_id)
+        .first()
     )
 
 

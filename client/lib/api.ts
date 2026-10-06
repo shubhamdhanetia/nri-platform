@@ -47,6 +47,27 @@ export interface Post {
   post_type: PostType;
   city: string;
   user_id: number;
+  comment_count: number;
+}
+
+export interface PostAuthor {
+  id: number;
+  name: string;
+  picture: string | null;
+}
+
+export interface PostDetail extends Post {
+  created_at: string;
+  author: PostAuthor;
+}
+
+export interface Comment {
+  id: number;
+  content: string;
+  user_id: number;
+  post_id: number;
+  created_at: string;
+  author: PostAuthor;
 }
 
 export interface LoginResponse {

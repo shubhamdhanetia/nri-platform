@@ -120,6 +120,8 @@ GET /posts
 GET /posts/{id}
 PUT /posts/{id}
 DELETE /posts/{id}
+GET /posts/{id}/comments
+POST /posts/{id}/comments
 
 
 POST /conversations
@@ -131,6 +133,7 @@ POST /messages
 /feed
 /profile
 /create-post
+/posts/[id]
 
 
 

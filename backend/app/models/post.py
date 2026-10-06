@@ -1,10 +1,15 @@
 from datetime import datetime
 from enum import Enum
+from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, Enum as SQLAlchemyEnum, ForeignKey, String, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import DateTime, Enum as SQLAlchemyEnum, ForeignKey, String, Text, func, select
+from sqlalchemy.orm import Mapped, column_property, mapped_column, relationship
 
 from app.db.base import Base
+from app.models.comment import Comment
+
+if TYPE_CHECKING:
+    from app.models.user import User
 
 
 class PostCategory(str, Enum):
@@ -74,4 +79,20 @@ class Post(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
         default=datetime.utcnow
+    )
+
+    author: Mapped["User"] = relationship(
+        back_populates="posts"
+    )
+
+    comments: Mapped[list[Comment]] = relationship(
+        back_populates="post",
+        cascade="all, delete-orphan"
+    )
+
+    comment_count: Mapped[int] = column_property(
+        select(func.count(Comment.id))
+        .where(Comment.post_id == id)
+        .correlate_except(Comment)
+        .scalar_subquery()
     )

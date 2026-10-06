@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel
 
 from app.models.post import PostCategory, PostType
@@ -23,6 +25,21 @@ class PostResponse(BaseModel):
     post_type: PostType
     city: str
     user_id: int
+    comment_count: int = 0
 
     class Config:
         from_attributes = True
+
+
+class PostAuthorResponse(BaseModel):
+    id: int
+    name: str
+    picture: str | None = None
+
+    class Config:
+        from_attributes = True
+
+
+class PostDetailResponse(PostResponse):
+    created_at: datetime
+    author: PostAuthorResponse

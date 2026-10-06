@@ -10,16 +10,23 @@ from app.models.user import User
 
 from app.schemas.post import (
     CreatePostRequest,
+    PostDetailResponse,
     PostResponse,
     UpdatePostRequest
 )
+from app.schemas.comment import CreateCommentRequest, CommentResponse
 
 from app.repositories.post_repository import (
     create_post,
     delete_post,
     get_posts,
     get_posts_by_user,
+    get_post_by_id,
     update_post
+)
+from app.repositories.comment_repository import (
+    create_comment,
+    get_comments_by_post
 )
 
 router = APIRouter()
@@ -63,6 +70,63 @@ def get_my_posts(
     return get_posts_by_user(
         db,
         user.id
+    )
+
+
+@router.get(
+    "/{post_id}",
+    response_model=PostDetailResponse
+)
+def get_detail(
+    post_id: int,
+    db: Session = Depends(get_db)
+):
+    post = get_post_by_id(db, post_id)
+    if post is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Post not found"
+        )
+    return post
+
+
+@router.get(
+    "/{post_id}/comments",
+    response_model=list[CommentResponse]
+)
+def get_comments(
+    post_id: int,
+    db: Session = Depends(get_db)
+):
+    if get_post_by_id(db, post_id) is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Post not found"
+        )
+    return get_comments_by_post(db, post_id)
+
+
+@router.post(
+    "/{post_id}/comments",
+    response_model=CommentResponse,
+    status_code=201
+)
+def create_post_comment(
+    post_id: int,
+    request: CreateCommentRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user)
+):
+    if get_post_by_id(db, post_id) is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Post not found"
+        )
+    return create_comment(
+        db=db,
+        content=request.content,
+        user_id=user.id,
+        post_id=post_id
     )
 
 

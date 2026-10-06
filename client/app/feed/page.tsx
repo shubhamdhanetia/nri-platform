@@ -109,15 +109,20 @@ export default function FeedPage() {
               <div className="post-meta">
                 <div className="post-badges">
                   <span className="category-pill">{POST_CATEGORY_LABELS[post.category]}</span>
-                  <span className="post-type-pill">{POST_TYPE_LABELS[post.post_type]}</span>
+                  <span className={`post-type-pill post-type-${post.post_type.toLowerCase()}`}>
+                    {POST_TYPE_LABELS[post.post_type]}
+                  </span>
                 </div>
                 <span className="post-location"><span aria-hidden="true">⌖</span> {post.city}</span>
               </div>
-              <h2>{post.title}</h2>
+              <h2><Link href={`/posts/${post.id}`}>{post.title}</Link></h2>
               <p className="post-description">{post.description}</p>
               <div className="post-author">
                 <span className="author-avatar">N</span>
                 <span>Community member</span>
+                <Link className="comment-count-link" href={`/posts/${post.id}`}>
+                  {post.comment_count} {post.comment_count === 1 ? "comment" : "comments"}
+                </Link>
                 {post.user_id === currentUserId && (
                   <div className="post-owner-actions">
                     <EditPostButton onUpdated={updatePost} post={post} />
