@@ -41,6 +41,8 @@ export const POST_TYPE_LABELS: Record<PostType, string> = {
 
 export interface Post {
   id: number;
+  created_at: string;
+  updated_at: string | null;
   title: string;
   description: string;
   category: PostCategory;
@@ -67,6 +69,7 @@ export interface Comment {
   user_id: number;
   post_id: number;
   created_at: string;
+  updated_at: string | null;
   author: PostAuthor;
 }
 

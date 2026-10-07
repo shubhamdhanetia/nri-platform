@@ -1,5 +1,8 @@
+from datetime import datetime, timezone
+
 from sqlalchemy.orm import Session, joinedload
 
+from app.core.edit_window import EditWindowExpiredError, is_within_edit_window
 from app.models.comment import Comment
 
 
@@ -49,8 +52,11 @@ def update_comment(
     )
     if comment is None:
         return None
+    if not is_within_edit_window(comment.created_at):
+        raise EditWindowExpiredError
 
     comment.content = content
+    comment.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
     db.commit()
     db.refresh(comment)
     return comment

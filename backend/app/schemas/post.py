@@ -19,6 +19,8 @@ class UpdatePostRequest(CreatePostRequest):
 
 class PostResponse(BaseModel):
     id: int
+    created_at: datetime
+    updated_at: datetime | None = None
     title: str
     description: str
     category: PostCategory

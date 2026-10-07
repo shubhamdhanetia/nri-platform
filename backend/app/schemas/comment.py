@@ -27,6 +27,7 @@ class CommentResponse(BaseModel):
     user_id: int
     post_id: int
     created_at: datetime
+    updated_at: datetime | None = None
     author: PostAuthorResponse
 
     class Config:

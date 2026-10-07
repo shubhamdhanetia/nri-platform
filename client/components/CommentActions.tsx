@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { apiRequest, type Comment } from "../lib/api";
+import { getEditWindowRemainingMs, isWithinEditWindow } from "../lib/edit-window";
 
 export default function CommentActions({
   comment,
@@ -17,6 +18,15 @@ export default function CommentActions({
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
+  const [canEdit, setCanEdit] = useState(() => isWithinEditWindow(comment.created_at));
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setCanEdit(false);
+      setEditing(false);
+    }, getEditWindowRemainingMs(comment.created_at));
+    return () => window.clearTimeout(timer);
+  }, [comment.created_at]);
 
   async function saveEdit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -95,18 +105,20 @@ export default function CommentActions({
   return (
     <div className="comment-owner-actions">
       {error && <p className="form-error" role="alert">{error}</p>}
-      <button
-        className="comment-action-button"
-        disabled={deleting}
-        onClick={() => {
-          setContent(comment.content);
-          setEditing(true);
-          setError("");
-        }}
-        type="button"
-      >
-        Edit
-      </button>
+      {canEdit && (
+        <button
+          className="comment-action-button"
+          disabled={deleting}
+          onClick={() => {
+            setContent(comment.content);
+            setEditing(true);
+            setError("");
+          }}
+          type="button"
+        >
+          Edit
+        </button>
+      )}
       <button
         className="comment-action-button comment-delete-action"
         disabled={deleting}

@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.db.dependencies import get_db
 from app.api.dependencies import get_current_user
+from app.core.edit_window import EditWindowExpiredError
 
 from app.models.user import User
 
@@ -152,13 +153,19 @@ def update_post_comment(
             status_code=404,
             detail="Post not found"
         )
-    comment = update_comment(
-        db=db,
-        comment_id=comment_id,
-        post_id=post_id,
-        user_id=user.id,
-        content=request.content
-    )
+    try:
+        comment = update_comment(
+            db=db,
+            comment_id=comment_id,
+            post_id=post_id,
+            user_id=user.id,
+            content=request.content
+        )
+    except EditWindowExpiredError as error:
+        raise HTTPException(
+            status_code=403,
+            detail="Comments can only be edited within 30 minutes of creation"
+        ) from error
     if comment is None:
         raise HTTPException(
             status_code=404,
@@ -204,16 +211,22 @@ def update(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user)
 ):
-    post = update_post(
-        db=db,
-        post_id=post_id,
-        user_id=user.id,
-        title=request.title,
-        description=request.description,
-        category=request.category,
-        post_type=request.post_type,
-        city=request.city
-    )
+    try:
+        post = update_post(
+            db=db,
+            post_id=post_id,
+            user_id=user.id,
+            title=request.title,
+            description=request.description,
+            category=request.category,
+            post_type=request.post_type,
+            city=request.city
+        )
+    except EditWindowExpiredError as error:
+        raise HTTPException(
+            status_code=403,
+            detail="Posts can only be edited within 30 minutes of creation"
+        ) from error
     if post is None:
         raise HTTPException(
             status_code=404,

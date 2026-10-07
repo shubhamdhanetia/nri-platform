@@ -112,6 +112,7 @@ export default function FeedPage() {
                   <span className={`post-type-pill post-type-${post.post_type.toLowerCase()}`}>
                     {POST_TYPE_LABELS[post.post_type]}
                   </span>
+                  {post.updated_at && <span className="edited-indicator">Edited</span>}
                 </div>
                 <span className="post-location"><span aria-hidden="true">⌖</span> {post.city}</span>
               </div>

@@ -1,5 +1,8 @@
+from datetime import datetime, timezone
+
 from sqlalchemy.orm import Session, joinedload
 
+from app.core.edit_window import EditWindowExpiredError, is_within_edit_window
 from app.models.post import Post, PostCategory, PostType
 
 
@@ -48,12 +51,15 @@ def update_post(
     )
     if post is None:
         return None
+    if not is_within_edit_window(post.created_at):
+        raise EditWindowExpiredError
 
     post.title = title
     post.description = description
     post.category = category
     post.post_type = post_type
     post.city = city
+    post.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
     db.commit()
     db.refresh(post)
     return post

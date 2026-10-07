@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import EditPostForm from "./EditPostForm";
 import type { Post } from "../lib/api";
+
+import { getEditWindowRemainingMs, isWithinEditWindow } from "../lib/edit-window";
 
 export default function EditPostButton({
   post,
@@ -12,6 +14,19 @@ export default function EditPostButton({
   onUpdated: (post: Post) => void;
 }) {
   const [editing, setEditing] = useState(false);
+  const [canEdit, setCanEdit] = useState(() => isWithinEditWindow(post.created_at));
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setCanEdit(false);
+      setEditing(false);
+    }, getEditWindowRemainingMs(post.created_at));
+    return () => window.clearTimeout(timer);
+  }, [post.created_at]);
+
+  if (!canEdit) {
+    return null;
+  }
 
   return (
     <>
