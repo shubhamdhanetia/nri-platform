@@ -661,6 +661,72 @@ a {
   white-space: pre-wrap;
 }
 
+.comment-owner-actions {
+  align-items: center;
+  display: flex;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.comment-owner-actions .form-error {
+  margin: 0 auto 0 0;
+}
+
+.comment-action-button {
+  background: transparent;
+  border: 1px solid #dce6df;
+  border-radius: 7px;
+  color: var(--green);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  min-height: 29px;
+  padding: 0 10px;
+}
+
+.comment-action-button:hover:not(:disabled) {
+  background: #eff5f0;
+}
+
+.comment-delete-action {
+  border-color: #ecd7d4;
+  color: #a1443a;
+}
+
+.comment-delete-action:hover:not(:disabled) {
+  background: #fcf1ef;
+}
+
+.comment-action-button:disabled {
+  cursor: wait;
+  opacity: .65;
+}
+
+.comment-edit-form {
+  background: #f8faf7;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  margin-top: 12px;
+  padding: 13px;
+}
+
+.comment-edit-form .form-field {
+  margin-bottom: 10px;
+}
+
+.comment-edit-form textarea {
+  min-height: 75px;
+}
+
+.comment-action-buttons {
+  display: flex;
+  gap: 7px;
+}
+
+.comment-action-buttons .button {
+  min-height: 34px;
+}
+
 .comments-empty {
   min-height: 220px;
 }

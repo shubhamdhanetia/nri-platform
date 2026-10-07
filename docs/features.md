@@ -122,6 +122,8 @@ PUT /posts/{id}
 DELETE /posts/{id}
 GET /posts/{id}/comments
 POST /posts/{id}/comments
+PUT /posts/{id}/comments/{comment_id}
+DELETE /posts/{id}/comments/{comment_id}
 
 
 POST /conversations

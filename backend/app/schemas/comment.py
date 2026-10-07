@@ -17,6 +17,10 @@ class CreateCommentRequest(BaseModel):
         return content
 
 
+class UpdateCommentRequest(CreateCommentRequest):
+    pass
+
+
 class CommentResponse(BaseModel):
     id: int
     content: str

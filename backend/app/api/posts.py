@@ -14,7 +14,11 @@ from app.schemas.post import (
     PostResponse,
     UpdatePostRequest
 )
-from app.schemas.comment import CreateCommentRequest, CommentResponse
+from app.schemas.comment import (
+    CommentResponse,
+    CreateCommentRequest,
+    UpdateCommentRequest
+)
 
 from app.repositories.post_repository import (
     create_post,
@@ -26,7 +30,9 @@ from app.repositories.post_repository import (
 )
 from app.repositories.comment_repository import (
     create_comment,
-    get_comments_by_post
+    delete_comment,
+    get_comments_by_post,
+    update_comment
 )
 
 router = APIRouter()
@@ -128,6 +134,64 @@ def create_post_comment(
         user_id=user.id,
         post_id=post_id
     )
+
+
+@router.put(
+    "/{post_id}/comments/{comment_id}",
+    response_model=CommentResponse
+)
+def update_post_comment(
+    post_id: int,
+    comment_id: int,
+    request: UpdateCommentRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user)
+):
+    if get_post_by_id(db, post_id) is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Post not found"
+        )
+    comment = update_comment(
+        db=db,
+        comment_id=comment_id,
+        post_id=post_id,
+        user_id=user.id,
+        content=request.content
+    )
+    if comment is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Comment not found"
+        )
+    return comment
+
+
+@router.delete(
+    "/{post_id}/comments/{comment_id}"
+)
+def delete_post_comment(
+    post_id: int,
+    comment_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user)
+):
+    if get_post_by_id(db, post_id) is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Post not found"
+        )
+    if not delete_comment(
+        db=db,
+        comment_id=comment_id,
+        post_id=post_id,
+        user_id=user.id
+    ):
+        raise HTTPException(
+            status_code=404,
+            detail="Comment not found"
+        )
+    return {"detail": "Comment deleted"}
 
 
 @router.put(

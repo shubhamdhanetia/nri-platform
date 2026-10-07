@@ -4,12 +4,14 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import ProtectedPage from "../../../components/ProtectedPage";
+import CommentActions from "../../../components/CommentActions";
 import {
   apiRequest,
   POST_CATEGORY_LABELS,
   POST_TYPE_LABELS,
   type Comment,
   type PostDetail,
+  type User,
 } from "../../../lib/api";
 
 function formatDate(value: string) {
@@ -40,6 +42,7 @@ export default function PostDetailsPage() {
 function PostDetailsContent({ postId }: { postId: number }) {
   const [post, setPost] = useState<PostDetail | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [pageError, setPageError] = useState("");
   const [commentsError, setCommentsError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -53,7 +56,11 @@ function PostDetailsContent({ postId }: { postId: number }) {
     if (!Number.isInteger(postId) || postId < 1) {
       throw new Error("Post not found.");
     }
-    return apiRequest<PostDetail>(`/posts/${postId}`);
+    const [postResult, userResult] = await Promise.all([
+      apiRequest<PostDetail>(`/posts/${postId}`),
+      apiRequest<User>("/users/me"),
+    ]);
+    return { post: postResult, user: userResult };
   }, [postId]);
 
   const loadComments = useCallback(async () => {
@@ -67,8 +74,11 @@ function PostDetailsContent({ postId }: { postId: number }) {
     let active = true;
 
     loadPost()
-      .then((result) => {
-        if (active) setPost(result);
+      .then(({ post: postResult, user }) => {
+        if (active) {
+          setPost(postResult);
+          setCurrentUserId(user.id);
+        }
       })
       .catch((requestError: unknown) => {
         if (active) {
@@ -143,6 +153,21 @@ function PostDetailsContent({ postId }: { postId: number }) {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function updateComment(updatedComment: Comment) {
+    setComments((currentComments) => currentComments.map(
+      (comment) => comment.id === updatedComment.id ? updatedComment : comment,
+    ));
+  }
+
+  function removeComment(commentId: number) {
+    setComments((currentComments) => currentComments.filter(
+      (comment) => comment.id !== commentId,
+    ));
+    setPost((currentPost) => currentPost
+      ? { ...currentPost, comment_count: Math.max(0, currentPost.comment_count - 1) }
+      : currentPost);
   }
 
   return (
@@ -255,6 +280,13 @@ function PostDetailsContent({ postId }: { postId: number }) {
                         <time dateTime={comment.created_at}>{formatDate(comment.created_at)}</time>
                       </div>
                       <p>{comment.content}</p>
+                      {comment.user_id === currentUserId && (
+                        <CommentActions
+                          comment={comment}
+                          onDeleted={removeComment}
+                          onUpdated={updateComment}
+                        />
+                      )}
                     </div>
                   </article>
                 ))}
