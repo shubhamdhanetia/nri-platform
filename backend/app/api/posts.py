@@ -59,7 +59,8 @@ def create(
 
 @router.get(
     "",
-    response_model=list[PostResponse]
+    response_model=list[PostResponse],
+    dependencies=[Depends(get_current_user)]
 )
 def get_all(
     db: Session = Depends(get_db)
@@ -82,7 +83,8 @@ def get_my_posts(
 
 @router.get(
     "/{post_id}",
-    response_model=PostDetailResponse
+    response_model=PostDetailResponse,
+    dependencies=[Depends(get_current_user)]
 )
 def get_detail(
     post_id: int,
@@ -99,7 +101,8 @@ def get_detail(
 
 @router.get(
     "/{post_id}/comments",
-    response_model=list[CommentResponse]
+    response_model=list[CommentResponse],
+    dependencies=[Depends(get_current_user)]
 )
 def get_comments(
     post_id: int,

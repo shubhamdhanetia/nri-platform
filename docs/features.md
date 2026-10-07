@@ -125,12 +125,14 @@ POST /posts/{id}/comments
 PUT /posts/{id}/comments/{comment_id}
 DELETE /posts/{id}/comments/{comment_id}
 
+All post and comment endpoints require a valid JWT, except `POST /auth/google`
+which issues the JWT used for subsequent API requests.
+
 Post and comment authors may edit their content during the first 30 minutes
 after creation. The backend enforces this limit; deletion permissions are
 unchanged.
 Edited posts and comments expose an `updated_at` timestamp and display an
-“Edited” indicator. Existing local databases receive the nullable columns at
-startup without modifying existing records.
+“Edited” indicator.
 
 
 POST /conversations

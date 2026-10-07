@@ -546,10 +546,17 @@ a {
   padding-top: 20px;
 }
 
-.post-detail-author > div {
+.post-detail-author > div:first-of-type {
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+.post-detail-timestamp,
+.comment-timestamp {
+  align-items: center;
+  display: inline-flex;
+  gap: 7px;
 }
 
 .post-detail-author strong,
@@ -657,9 +664,12 @@ a {
 .comment-meta {
   align-items: baseline;
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
   justify-content: space-between;
+}
+
+.comment-timestamp {
+  flex-shrink: 0;
 }
 
 .comment-content > p {
@@ -929,6 +939,10 @@ a {
 
 .profile-post-actions .comment-count-link {
   margin-right: auto;
+  margin-left: 0;
+}
+
+.profile-post-actions .post-delete-control {
   margin-left: 0;
 }
 

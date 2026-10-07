@@ -205,9 +205,11 @@ function PostDetailsContent({ postId }: { postId: number }) {
               )}
               <div>
                 <strong>{post.author.name}</strong>
-                <time dateTime={post.created_at}>{formatDate(post.created_at)}</time>
+                <div className="post-detail-timestamp">
+                  <time dateTime={post.created_at}>{formatDate(post.created_at)}</time>
+                  {post.updated_at && <span className="edited-indicator">Edited</span>}
+                </div>
               </div>
-              {post.updated_at && <span className="edited-indicator">Edited</span>}
             </div>
           </article>
 
@@ -278,8 +280,10 @@ function PostDetailsContent({ postId }: { postId: number }) {
                     <div className="comment-content">
                       <div className="comment-meta">
                         <strong>{comment.author.name}</strong>
-                        <time dateTime={comment.created_at}>{formatDate(comment.created_at)}</time>
-                        {comment.updated_at && <span className="edited-indicator">Edited</span>}
+                        <span className="comment-timestamp">
+                          <time dateTime={comment.created_at}>{formatDate(comment.created_at)}</time>
+                          {comment.updated_at && <span className="edited-indicator">Edited</span>}
+                        </span>
                       </div>
                       <p>{comment.content}</p>
                       {comment.user_id === currentUserId && (
