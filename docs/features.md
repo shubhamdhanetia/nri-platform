@@ -124,9 +124,17 @@ GET /posts/{id}/comments
 POST /posts/{id}/comments
 PUT /posts/{id}/comments/{comment_id}
 DELETE /posts/{id}/comments/{comment_id}
+POST /locations/search
+POST /locations/details
 
 All post and comment endpoints require a valid JWT, except `POST /auth/google`
 which issues the JWT used for subsequent API requests.
+`POST /locations/search` is public and forwards a validated latitude,
+longitude, query, and pickup type to Uber's location search endpoint. The
+pickup type defaults to `PICKUP` when omitted.
+`POST /locations/details` is public and forwards a selected Uber place ID,
+locale, provider, and type to Uber's place details endpoint. The provider
+defaults to `uber_places`, locale to `en`, and type to lowercase `pickup`.
 
 Post and comment authors may edit their content during the first 30 minutes
 after creation. The backend enforces this limit; deletion permissions are

@@ -5,6 +5,7 @@ from app.db.base import Base
 from app.db.session import engine
 
 from app.api.auth import router as auth_router
+from app.api.locations import router as locations_router
 from app.api.users import router as users_router
 from app.api.posts import (
     router as posts_router
@@ -44,4 +45,10 @@ app.include_router(
     posts_router,
     prefix="/posts",
     tags=["Posts"]
+)
+
+app.include_router(
+    locations_router,
+    prefix="/locations",
+    tags=["Locations"]
 )
