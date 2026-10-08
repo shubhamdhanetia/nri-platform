@@ -496,6 +496,55 @@ a {
   text-decoration: underline;
 }
 
+.post-reactions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.post-reaction-button,
+.post-reaction-count {
+  align-items: center;
+  background: #f7f8f6;
+  border: 1px solid #e7ebe7;
+  border-radius: 7px;
+  color: #66736a;
+  display: inline-flex;
+  font-size: 10px;
+  gap: 5px;
+  min-height: 28px;
+  padding: 0 8px;
+  white-space: nowrap;
+}
+
+.post-reaction-button {
+  cursor: pointer;
+}
+
+.post-reaction-button:hover:not(:disabled) {
+  background: #eef4ef;
+  border-color: #cddbd0;
+}
+
+.post-reaction-button:disabled {
+  cursor: wait;
+  opacity: .65;
+}
+
+.post-reaction-button.is-selected {
+  background: #e8f4ec;
+  border-color: #bdd7c5;
+  color: #24714e;
+  font-weight: 700;
+}
+
+.post-reaction-error {
+  color: #a1443a;
+  flex-basis: 100%;
+  font-size: 10px;
+}
+
 .detail-back-link {
   margin: 0 0 22px;
 }
@@ -569,6 +618,12 @@ a {
 .comment-meta time {
   color: #87928b;
   font-size: 11px;
+}
+
+.post-detail-card > .post-reactions {
+  border-top: 1px solid #edf0ed;
+  margin-top: 18px;
+  padding-top: 16px;
 }
 
 .author-photo,
@@ -943,6 +998,10 @@ a {
 }
 
 .profile-post-actions .post-delete-control {
+  margin-left: 0;
+}
+
+.profile-post-actions .post-reactions {
   margin-left: 0;
 }
 

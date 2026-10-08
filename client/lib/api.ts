@@ -21,6 +21,7 @@ export const POST_TYPES = ["OFFER", "REQUEST", "DISCUSSION"] as const;
 
 export type PostCategory = (typeof POST_CATEGORIES)[number];
 export type PostType = (typeof POST_TYPES)[number];
+export type PostReactionType = "LIKE" | "DISLIKE";
 
 export const POST_CATEGORY_LABELS: Record<PostCategory, string> = {
   HOUSING: "Housing",
@@ -50,6 +51,16 @@ export interface Post {
   city: string;
   user_id: number;
   comment_count: number;
+  like_count: number;
+  dislike_count: number;
+  my_reaction: PostReactionType | null;
+}
+
+export interface PostReactionSummary {
+  post_id: number;
+  like_count: number;
+  dislike_count: number;
+  my_reaction: PostReactionType | null;
 }
 
 export interface PostAuthor {

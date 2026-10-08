@@ -9,6 +9,7 @@ from app.db.base import Base
 if TYPE_CHECKING:
     from app.models.comment import Comment
     from app.models.post import Post
+    from app.models.reaction import PostReaction
 
 
 class User(Base):
@@ -54,4 +55,9 @@ class User(Base):
 
     comments: Mapped[list["Comment"]] = relationship(
         back_populates="author"
+    )
+
+    post_reactions: Mapped[list["PostReaction"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan"
     )

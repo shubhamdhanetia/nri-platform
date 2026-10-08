@@ -120,6 +120,8 @@ GET /posts
 GET /posts/{id}
 PUT /posts/{id}
 DELETE /posts/{id}
+PUT /posts/{id}/reaction
+DELETE /posts/{id}/reaction
 GET /posts/{id}/comments
 POST /posts/{id}/comments
 PUT /posts/{id}/comments/{comment_id}
@@ -135,6 +137,10 @@ pickup type defaults to `PICKUP` when omitted.
 `POST /locations/details` is public and forwards a selected Uber place ID,
 locale, provider, and type to Uber's place details endpoint. The provider
 defaults to `uber_places`, locale to `en`, and type to lowercase `pickup`.
+
+Authenticated users can like or dislike another user's post. Each user can
+have one reaction per post; setting the other reaction switches it, and
+deleting the reaction removes it. Post owners cannot react to their own posts.
 
 Post and comment authors may edit their content during the first 30 minutes
 after creation. The backend enforces this limit; deletion permissions are

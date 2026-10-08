@@ -7,14 +7,18 @@ from app.db.dependencies import get_db
 from app.api.dependencies import get_current_user
 from app.core.edit_window import EditWindowExpiredError
 
+from app.models.post import Post
 from app.models.user import User
 
 from app.schemas.post import (
     CreatePostRequest,
     PostDetailResponse,
+    PostReactionRequest,
+    PostReactionSummary,
     PostResponse,
     UpdatePostRequest
 )
+from app.models.reaction import PostReactionType
 from app.schemas.comment import (
     CommentResponse,
     CreateCommentRequest,
@@ -27,7 +31,11 @@ from app.repositories.post_repository import (
     get_posts,
     get_posts_by_user,
     get_post_by_id,
-    update_post
+    update_post,
+    get_user_post_reactions,
+    remove_post_reaction,
+    set_post_reaction,
+    PostOwnerReactionError,
 )
 from app.repositories.comment_repository import (
     create_comment,
@@ -37,6 +45,38 @@ from app.repositories.comment_repository import (
 )
 
 router = APIRouter()
+
+
+def _post_responses(
+    db: Session,
+    posts: list[Post],
+    user_id: int,
+) -> list[PostResponse]:
+    reactions = get_user_post_reactions(
+        db,
+        user_id,
+        [post.id for post in posts],
+    )
+    return [
+        PostResponse.model_validate(post).model_copy(
+            update={"my_reaction": reactions.get(post.id)}
+        )
+        for post in posts
+    ]
+
+
+def _reaction_summary(
+    post_id: int,
+    post: Post,
+    reaction: PostReactionType | None,
+) -> PostReactionSummary:
+    return PostReactionSummary(
+        post_id=post_id,
+        like_count=post.like_count,
+        dislike_count=post.dislike_count,
+        my_reaction=reaction,
+    )
+
 
 @router.post(
     "",
@@ -63,9 +103,10 @@ def create(
     dependencies=[Depends(get_current_user)]
 )
 def get_all(
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user)
 ):
-    return get_posts(db)
+    return _post_responses(db, get_posts(db), user.id)
 
 @router.get(
     "/me",
@@ -75,10 +116,11 @@ def get_my_posts(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user)
 ):
-    return get_posts_by_user(
+    posts = get_posts_by_user(
         db,
         user.id
     )
+    return _post_responses(db, posts, user.id)
 
 
 @router.get(
@@ -88,7 +130,8 @@ def get_my_posts(
 )
 def get_detail(
     post_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user)
 ):
     post = get_post_by_id(db, post_id)
     if post is None:
@@ -96,7 +139,69 @@ def get_detail(
             status_code=404,
             detail="Post not found"
         )
-    return post
+    reaction = get_user_post_reactions(db, user.id, [post_id]).get(post_id)
+    return PostDetailResponse.model_validate(post).model_copy(
+        update={"my_reaction": reaction}
+    )
+
+
+@router.put(
+    "/{post_id}/reaction",
+    response_model=PostReactionSummary,
+)
+def react_to_post(
+    post_id: int,
+    request: PostReactionRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user)
+):
+    try:
+        post = set_post_reaction(
+            db=db,
+            post_id=post_id,
+            user_id=user.id,
+            reaction_type=request.reaction,
+        )
+    except PostOwnerReactionError as error:
+        raise HTTPException(
+            status_code=403,
+            detail="You cannot react to your own post",
+        ) from error
+    if post is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Post not found",
+        )
+    reaction = get_user_post_reactions(db, user.id, [post_id]).get(post_id)
+    return _reaction_summary(post_id, post, reaction)
+
+
+@router.delete(
+    "/{post_id}/reaction",
+    response_model=PostReactionSummary,
+)
+def clear_post_reaction(
+    post_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user)
+):
+    try:
+        post = remove_post_reaction(
+            db=db,
+            post_id=post_id,
+            user_id=user.id,
+        )
+    except PostOwnerReactionError as error:
+        raise HTTPException(
+            status_code=403,
+            detail="You cannot react to your own post",
+        ) from error
+    if post is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Post not found",
+        )
+    return _reaction_summary(post_id, post, None)
 
 
 @router.get(

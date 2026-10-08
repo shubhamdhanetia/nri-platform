@@ -5,12 +5,14 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import ProtectedPage from "../../../components/ProtectedPage";
 import CommentActions from "../../../components/CommentActions";
+import PostReactions from "../../../components/PostReactions";
 import {
   apiRequest,
   POST_CATEGORY_LABELS,
   POST_TYPE_LABELS,
   type Comment,
   type PostDetail,
+  type PostReactionSummary,
   type User,
 } from "../../../lib/api";
 
@@ -170,6 +172,17 @@ function PostDetailsContent({ postId }: { postId: number }) {
       : currentPost);
   }
 
+  function updatePostReactions(summary: PostReactionSummary) {
+    setPost((currentPost) => currentPost
+      ? {
+        ...currentPost,
+        like_count: summary.like_count,
+        dislike_count: summary.dislike_count,
+        my_reaction: summary.my_reaction,
+      }
+      : currentPost);
+  }
+
   return (
     <>
       <div className="detail-back-link">
@@ -211,6 +224,14 @@ function PostDetailsContent({ postId }: { postId: number }) {
                 </div>
               </div>
             </div>
+            <PostReactions
+              canReact={post.user_id !== currentUserId}
+              dislikeCount={post.dislike_count}
+              likeCount={post.like_count}
+              myReaction={post.my_reaction}
+              onChanged={updatePostReactions}
+              postId={post.id}
+            />
           </article>
 
           <section className="comments-section" aria-labelledby="comments-heading">

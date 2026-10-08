@@ -7,8 +7,10 @@ from sqlalchemy.orm import Mapped, column_property, mapped_column, relationship
 
 from app.db.base import Base
 from app.models.comment import Comment
+from app.models.reaction import PostReaction, PostReactionType
 
 if TYPE_CHECKING:
+    from app.models.reaction import PostReaction
     from app.models.user import User
 
 
@@ -93,6 +95,31 @@ class Post(Base):
     comments: Mapped[list[Comment]] = relationship(
         back_populates="post",
         cascade="all, delete-orphan"
+    )
+
+    reactions: Mapped[list["PostReaction"]] = relationship(
+        back_populates="post",
+        cascade="all, delete-orphan"
+    )
+
+    like_count: Mapped[int] = column_property(
+        select(func.count(PostReaction.id))
+        .where(
+            PostReaction.post_id == id,
+            PostReaction.reaction == PostReactionType.LIKE
+        )
+        .correlate_except(PostReaction)
+        .scalar_subquery()
+    )
+
+    dislike_count: Mapped[int] = column_property(
+        select(func.count(PostReaction.id))
+        .where(
+            PostReaction.post_id == id,
+            PostReaction.reaction == PostReactionType.DISLIKE
+        )
+        .correlate_except(PostReaction)
+        .scalar_subquery()
     )
 
     comment_count: Mapped[int] = column_property(

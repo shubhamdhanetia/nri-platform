@@ -5,11 +5,13 @@ import Link from "next/link";
 import ProtectedPage from "../../components/ProtectedPage";
 import DeletePostButton from "../../components/DeletePostButton";
 import EditPostButton from "../../components/EditPostButton";
+import PostReactions from "../../components/PostReactions";
 import {
   apiRequest,
   POST_CATEGORY_LABELS,
   POST_TYPE_LABELS,
   type Post,
+  type PostReactionSummary,
   type User,
 } from "../../lib/api";
 
@@ -73,6 +75,19 @@ export default function FeedPage() {
     ));
   }
 
+  function updatePostReactions(summary: PostReactionSummary) {
+    setPosts((currentPosts) => currentPosts.map((post) => (
+      post.id === summary.post_id
+        ? {
+          ...post,
+          like_count: summary.like_count,
+          dislike_count: summary.dislike_count,
+          my_reaction: summary.my_reaction,
+        }
+        : post
+    )));
+  }
+
   return (
     <ProtectedPage>
       <section className="page-heading">
@@ -121,6 +136,14 @@ export default function FeedPage() {
               <div className="post-author">
                 <span className="author-avatar">N</span>
                 <span>Community member</span>
+                <PostReactions
+                  canReact={post.user_id !== currentUserId}
+                  dislikeCount={post.dislike_count}
+                  likeCount={post.like_count}
+                  myReaction={post.my_reaction}
+                  onChanged={updatePostReactions}
+                  postId={post.id}
+                />
                 <Link className="comment-count-link" href={`/posts/${post.id}`}>
                   {post.comment_count} {post.comment_count === 1 ? "comment" : "comments"}
                 </Link>

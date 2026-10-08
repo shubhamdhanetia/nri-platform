@@ -5,11 +5,13 @@ import Link from "next/link";
 import ProtectedPage from "../../components/ProtectedPage";
 import DeletePostButton from "../../components/DeletePostButton";
 import EditPostButton from "../../components/EditPostButton";
+import PostReactions from "../../components/PostReactions";
 import {
   apiRequest,
   POST_CATEGORY_LABELS,
   POST_TYPE_LABELS,
   type Post,
+  type PostReactionSummary,
   type User,
 } from "../../lib/api";
 
@@ -71,6 +73,19 @@ export default function ProfilePage() {
     setPosts((currentPosts) => currentPosts.map(
       (post) => post.id === updatedPost.id ? updatedPost : post,
     ));
+  }
+
+  function updatePostReactions(summary: PostReactionSummary) {
+    setPosts((currentPosts) => currentPosts.map((post) => (
+      post.id === summary.post_id
+        ? {
+          ...post,
+          like_count: summary.like_count,
+          dislike_count: summary.dislike_count,
+          my_reaction: summary.my_reaction,
+        }
+        : post
+    )));
   }
 
   return (
@@ -139,6 +154,14 @@ export default function ProfilePage() {
                       <Link className="comment-count-link" href={`/posts/${post.id}`}>
                         {post.comment_count} {post.comment_count === 1 ? "comment" : "comments"}
                       </Link>
+                      <PostReactions
+                        canReact={false}
+                        dislikeCount={post.dislike_count}
+                        likeCount={post.like_count}
+                        myReaction={post.my_reaction}
+                        onChanged={updatePostReactions}
+                        postId={post.id}
+                      />
                       <EditPostButton onUpdated={updatePost} post={post} />
                       <DeletePostButton onDeleted={removePost} postId={post.id} />
                     </div>
