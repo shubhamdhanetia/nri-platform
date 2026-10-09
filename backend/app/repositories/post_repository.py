@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.core.edit_window import EditWindowExpiredError, is_within_edit_window
 from app.models.post import Post, PostCategory, PostType
 from app.models.reaction import PostReaction, PostReactionType
+from app.schemas.post import PostLocationFields
 
 
 class PostOwnerReactionError(Exception):
@@ -17,7 +18,7 @@ def create_post(
     description: str,
     category: PostCategory,
     post_type: PostType,
-    city: str,
+    location: PostLocationFields,
     user_id: int
 ):
     post = Post(
@@ -25,7 +26,7 @@ def create_post(
         description=description,
         category=category,
         post_type=post_type,
-        city=city,
+        **location.model_dump(),
         user_id=user_id
     )
 
@@ -44,7 +45,7 @@ def update_post(
     description: str,
     category: PostCategory,
     post_type: PostType,
-    city: str
+    location: PostLocationFields
 ) -> Post | None:
     post = (
         db.query(Post)
@@ -63,7 +64,8 @@ def update_post(
     post.description = description
     post.category = category
     post.post_type = post_type
-    post.city = city
+    for field, value in location.model_dump().items():
+        setattr(post, field, value)
     post.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
     db.commit()
     db.refresh(post)

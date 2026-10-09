@@ -45,8 +45,8 @@ class LocationDetailsData(BaseModel):
     chainMetadata: Any | None = None
     fullAddress: str
     id: str
-    lat: float
-    long: float
+    lat: float = Field(ge=-90, le=90)
+    long: float = Field(ge=-180, le=180)
     merchantMetadata: Any | None = None
     provider: str
     title: str

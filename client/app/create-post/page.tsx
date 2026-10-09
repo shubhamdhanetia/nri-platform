@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import ProtectedPage from "../../components/ProtectedPage";
+import LocationAutocomplete from "../../components/LocationAutocomplete";
 import {
   apiRequest,
   POST_CATEGORIES,
@@ -28,12 +29,19 @@ export default function CreatePostPage() {
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState<PostCategory | "">("");
   const [postType, setPostType] = useState<PostType | "">("");
-  const [city, setCity] = useState("");
+  const [selectedLocation, setSelectedLocation] = useState<{
+    locationId: string;
+    location: string;
+  } | null>(null);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!selectedLocation) {
+      setError("Select a suggested location before publishing.");
+      return;
+    }
     setError("");
     setSubmitting(true);
     try {
@@ -44,7 +52,7 @@ export default function CreatePostPage() {
           description,
           category,
           post_type: postType,
-          city,
+          location_id: selectedLocation.locationId,
         }),
       });
       router.push("/feed");
@@ -122,18 +130,7 @@ export default function CreatePostPage() {
             </select>
           </label>
         </div>
-        <div className="form-row">
-          <label className="form-field">
-            <span>City</span>
-            <input
-              autoComplete="address-level2"
-              onChange={(event) => setCity(event.target.value)}
-              placeholder="e.g. Toronto"
-              required
-              value={city}
-            />
-          </label>
-        </div>
+        <LocationAutocomplete onAddressSelected={setSelectedLocation} />
         {error && <p className="form-error" role="alert">{error}</p>}
         <div className="form-actions">
           <button

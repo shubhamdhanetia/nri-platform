@@ -49,6 +49,14 @@ export interface Post {
   category: PostCategory;
   post_type: PostType;
   city: string;
+  location_id: string;
+  location: string;
+  country_code: string;
+  postal_code: string;
+  state: string;
+  latitude: number;
+  longitude: number;
+  h3_cell_id: string;
   user_id: number;
   comment_count: number;
   like_count: number;
@@ -67,6 +75,26 @@ export interface PostAuthor {
   id: number;
   name: string;
   picture: string | null;
+}
+
+export interface LocationSearchResult {
+  addressLine1: string;
+  addressLine2?: string | null;
+  id?: string | null;
+  provider?: string | null;
+}
+
+export interface LocationSearchResponse {
+  status: string;
+  data: LocationSearchResult[];
+}
+
+export interface LocationDetailsResponse {
+  status: "success";
+  data: {
+    id: string;
+    fullAddress: string;
+  };
 }
 
 export interface PostDetail extends Post {

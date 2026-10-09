@@ -129,7 +129,7 @@ export default function FeedPage() {
                   </span>
                   {post.updated_at && <span className="edited-indicator">Edited</span>}
                 </div>
-                <span className="post-location"><span aria-hidden="true">⌖</span> {post.city}</span>
+                <span className="post-location"><span aria-hidden="true">⌖</span> {post.location}</span>
               </div>
               <h2><Link href={`/posts/${post.id}`}>{post.title}</Link></h2>
               <p className="post-description">{post.description}</p>

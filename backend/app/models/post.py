@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, Enum as SQLAlchemyEnum, ForeignKey, String, Text, func, select
+from sqlalchemy import DateTime, Enum as SQLAlchemyEnum, Float, ForeignKey, String, Text, func, select
 from sqlalchemy.orm import Mapped, column_property, mapped_column, relationship
 
 from app.db.base import Base
@@ -70,8 +70,41 @@ class Post(Base):
         server_default=PostType.OFFER.value
     )
 
+    location_id: Mapped[str] = mapped_column(
+        String(200)
+    )
+
+    location: Mapped[str] = mapped_column(
+        Text
+    )
+
+    country_code: Mapped[str] = mapped_column(
+        String(2)
+    )
+
+    postal_code: Mapped[str] = mapped_column(
+        String(20)
+    )
+
+    state: Mapped[str] = mapped_column(
+        String(10)
+    )
+
     city: Mapped[str] = mapped_column(
         String(100)
+    )
+
+    latitude: Mapped[float] = mapped_column(
+        Float
+    )
+
+    longitude: Mapped[float] = mapped_column(
+        Float
+    )
+
+    h3_cell_id: Mapped[str] = mapped_column(
+        String(20),
+        index=True
     )
 
     user_id: Mapped[int] = mapped_column(

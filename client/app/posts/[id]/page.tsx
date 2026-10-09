@@ -205,7 +205,7 @@ function PostDetailsContent({ postId }: { postId: number }) {
                   {POST_TYPE_LABELS[post.post_type]}
                 </span>
               </div>
-              <span className="post-location"><span aria-hidden="true">⌖</span> {post.city}</span>
+              <span className="post-location"><span aria-hidden="true">⌖</span> {post.location}</span>
             </div>
             <h1>{post.title}</h1>
             <p className="post-detail-description">{post.description}</p>

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.models.post import PostCategory, PostType
 from app.models.reaction import PostReactionType
@@ -11,11 +11,23 @@ class CreatePostRequest(BaseModel):
     description: str
     category: PostCategory
     post_type: PostType
-    city: str
+    location_id: str = Field(min_length=1, max_length=200)
 
 
 class UpdatePostRequest(CreatePostRequest):
     pass
+
+
+class PostLocationFields(BaseModel):
+    city: str
+    location_id: str
+    location: str
+    country_code: str
+    postal_code: str
+    state: str
+    latitude: float
+    longitude: float
+    h3_cell_id: str
 
 
 class PostReactionRequest(BaseModel):
@@ -31,6 +43,14 @@ class PostResponse(BaseModel):
     category: PostCategory
     post_type: PostType
     city: str
+    location_id: str
+    location: str
+    country_code: str
+    postal_code: str
+    state: str
+    latitude: float
+    longitude: float
+    h3_cell_id: str
     user_id: int
     comment_count: int = 0
     like_count: int = 0

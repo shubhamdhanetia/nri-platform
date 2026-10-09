@@ -1,7 +1,10 @@
+import h3
 import requests
+
 from fastapi import HTTPException
 from requests.exceptions import JSONDecodeError, RequestException, Timeout
 
+from app.schemas.post import PostLocationFields
 from app.schemas.location import (
     LocationDetailsRequest,
     LocationDetailsResponse,
@@ -88,3 +91,18 @@ def get_location_details(
             status_code=502,
             detail="Location provider returned an invalid response",
         ) from error
+
+
+def resolve_post_location(location_id: str) -> PostLocationFields:
+    details = get_location_details(LocationDetailsRequest(id=location_id)).data
+    return PostLocationFields(
+        city=details.addressComponents.CITY,
+        location_id=details.id,
+        location=details.fullAddress,
+        country_code=details.addressComponents.COUNTRY_CODE,
+        postal_code=details.addressComponents.POSTAL_CODE,
+        state=details.addressComponents.FIRST_LEVEL_SUBDIVISION_CODE,
+        latitude=details.lat,
+        longitude=details.long,
+        h3_cell_id=h3.latlng_to_cell(details.lat, details.long, 8),
+    )

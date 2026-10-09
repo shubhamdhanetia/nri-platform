@@ -11,6 +11,7 @@ import {
   type PostCategory,
   type PostType,
 } from "../lib/api";
+import LocationAutocomplete from "./LocationAutocomplete";
 
 function isPostCategory(value: string): value is PostCategory {
   return POST_CATEGORIES.some((category) => category === value);
@@ -34,7 +35,13 @@ export default function EditPostForm({
   const [description, setDescription] = useState(post.description);
   const [category, setCategory] = useState<PostCategory>(post.category);
   const [postType, setPostType] = useState<PostType>(post.post_type);
-  const [city, setCity] = useState(post.city);
+  const [selectedLocation, setSelectedLocation] = useState<{
+    locationId: string;
+    location: string;
+  } | null>({
+    locationId: post.location_id,
+    location: post.location,
+  });
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -48,6 +55,10 @@ export default function EditPostForm({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!selectedLocation) {
+      setError("Select a suggested location before saving.");
+      return;
+    }
     setError("");
     setSaving(true);
     try {
@@ -58,7 +69,7 @@ export default function EditPostForm({
           description,
           category,
           post_type: postType,
-          city,
+          location_id: selectedLocation.locationId,
         }),
       });
       onUpdated(updatedPost);
@@ -106,16 +117,6 @@ export default function EditPostForm({
             />
           </label>
           <label className="form-field">
-            <span>City</span>
-            <input
-              autoComplete="address-level2"
-              maxLength={100}
-              onChange={(event) => setCity(event.target.value)}
-              required
-              value={city}
-            />
-          </label>
-          <label className="form-field">
             <span>Category</span>
             <select
               onChange={(event) => {
@@ -131,6 +132,13 @@ export default function EditPostForm({
               ))}
             </select>
           </label>
+          <LocationAutocomplete
+            initialSelection={{
+              locationId: post.location_id,
+              location: post.location,
+            }}
+            onAddressSelected={setSelectedLocation}
+          />
           <label className="form-field">
             <span>Post type</span>
             <select

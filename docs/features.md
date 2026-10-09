@@ -137,6 +137,9 @@ pickup type defaults to `PICKUP` when omitted.
 `POST /locations/details` is public and forwards a selected Uber place ID,
 locale, provider, and type to Uber's place details endpoint. The provider
 defaults to `uber_places`, locale to `en`, and type to lowercase `pickup`.
+Post create and edit requests accept the selected `location_id`; the backend
+resolves the place details and stores its full address, coordinates, country
+code, postal code, state, city, and H3 cell ID at resolution 8.
 
 Authenticated users can like or dislike another user's post. Each user can
 have one reaction per post; setting the other reaction switches it, and
@@ -181,8 +184,18 @@ user_id
 title
 description
 category
+post_type
 city
+location_id
+location
+country_code
+postal_code
+state
+latitude
+longitude
+h3_cell_id
 created_at
+updated_at
 
 comments table
 

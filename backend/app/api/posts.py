@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.db.dependencies import get_db
 from app.api.dependencies import get_current_user
-from app.core.edit_window import EditWindowExpiredError
+from app.core.edit_window import EditWindowExpiredError, is_within_edit_window
 
 from app.models.post import Post
 from app.models.user import User
@@ -19,6 +19,7 @@ from app.schemas.post import (
     UpdatePostRequest
 )
 from app.models.reaction import PostReactionType
+from app.services.location_search import resolve_post_location
 from app.schemas.comment import (
     CommentResponse,
     CreateCommentRequest,
@@ -93,7 +94,7 @@ def create(
         description=request.description,
         category=request.category,
         post_type=request.post_type,
-        city=request.city,
+        location=resolve_post_location(request.location_id),
         user_id=user.id
     )
 
@@ -319,6 +320,19 @@ def update(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user)
 ):
+    existing_post = get_post_by_id(db, post_id)
+    if existing_post is None or existing_post.user_id != user.id:
+        raise HTTPException(
+            status_code=404,
+            detail="Post not found"
+        )
+    if not is_within_edit_window(existing_post.created_at):
+        raise HTTPException(
+            status_code=403,
+            detail="Posts can only be edited within 30 minutes of creation"
+        )
+
+    location = resolve_post_location(request.location_id)
     try:
         post = update_post(
             db=db,
@@ -328,7 +342,7 @@ def update(
             description=request.description,
             category=request.category,
             post_type=request.post_type,
-            city=request.city
+            location=location
         )
     except EditWindowExpiredError as error:
         raise HTTPException(
