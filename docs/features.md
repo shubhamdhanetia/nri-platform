@@ -137,6 +137,10 @@ pickup type defaults to `PICKUP` when omitted.
 `POST /locations/details` is public and forwards a selected Uber place ID,
 locale, provider, and type to Uber's place details endpoint. The provider
 defaults to `uber_places`, locale to `en`, and type to lowercase `pickup`.
+The Explore page uses these endpoints to suggest locations near the current map
+center and to center the map on the selected place. It also requests browser
+geolocation on page load; if access is unavailable or denied, it keeps the
+default map view.
 Post create and edit requests accept the selected `location_id`; the backend
 resolves the place details and stores its full address, coordinates, country
 code, postal code, state, city, and H3 cell ID at resolution 8.

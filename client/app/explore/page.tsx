@@ -2,8 +2,9 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import ProtectedPage from "../../components/ProtectedPage";
+import ExploreLocationSearch from "../../components/ExploreLocationSearch";
 import {
   apiRequest,
   POST_CATEGORIES,
@@ -53,19 +54,17 @@ export default function ExplorePage() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [resultsOpen, setResultsOpen] = useState(true);
   const [center, setCenter] = useState<[number, number]>(DEFAULT_CENTER);
-  const [locateOnMap, setLocateOnMap] = useState<
-    ((coordinates: [number, number]) => void) | null
-  >(null);
+  const [searchCenter, setSearchCenter] = useState<[number, number]>(DEFAULT_CENTER);
   const [lastSearchedBounds, setLastSearchedBounds] = useState<PostSearchBounds | null>(null);
+  const autoLocationRequested = useRef(false);
+  const placeSelectedBeforeAutoLocation = useRef(false);
 
   const onBoundsChange = useCallback((nextBounds: PostSearchBounds) => {
     setBounds(nextBounds);
   }, []);
 
-  const onMapReady = useCallback((
-    locate: (coordinates: [number, number]) => void,
-  ) => {
-    setLocateOnMap(() => locate);
+  const onMapCenterChange = useCallback((coordinates: [number, number]) => {
+    setSearchCenter(coordinates);
   }, []);
 
   const selectPost = useCallback((postId: number) => {
@@ -105,9 +104,10 @@ export default function ExplorePage() {
     }
   }
 
-  function centerOnUser() {
+  const centerOnUser = useCallback((isAutomatic = false) => {
     if (!navigator.geolocation) {
-      setError("Location access is unavailable in this browser.");
+      setError("Location access is unavailable. Showing the default map view.");
+      setLocating(false);
       return;
     }
 
@@ -115,26 +115,48 @@ export default function ExplorePage() {
     setError("");
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        if (isAutomatic && placeSelectedBeforeAutoLocation.current) {
+          setLocating(false);
+          return;
+        }
         const coordinates: [number, number] = [
           position.coords.latitude,
           position.coords.longitude,
         ];
         setCenter(coordinates);
         setSelectedPostId(null);
-        locateOnMap?.(coordinates);
+        setSearchCenter(coordinates);
         setLocating(false);
       },
       (locationError) => {
+        if (isAutomatic && placeSelectedBeforeAutoLocation.current) {
+          setLocating(false);
+          return;
+        }
         setError(
           locationError.code === locationError.PERMISSION_DENIED
-            ? "Allow location access in your browser to center the map on you."
-            : "Unable to get your location. Check your device settings and try again.",
+            ? "Location access was denied. Showing the default map view."
+            : "Unable to get your location. Showing the default map view; check your device settings and try again.",
         );
         setLocating(false);
       },
       { enableHighAccuracy: false, maximumAge: 300000, timeout: 10000 },
     );
-  }
+  }, []);
+
+  useEffect(() => {
+    if (autoLocationRequested.current) return;
+    autoLocationRequested.current = true;
+    centerOnUser(true);
+  }, [centerOnUser]);
+
+  const onLocationSelected = useCallback((coordinates: [number, number]) => {
+    placeSelectedBeforeAutoLocation.current = true;
+    setCenter(coordinates);
+    setSearchCenter(coordinates);
+    setSelectedPostId(null);
+    setError("");
+  }, []);
 
   const filtersChanged = Boolean(
     searched
@@ -171,6 +193,10 @@ export default function ExplorePage() {
         <section className="explore-layout" aria-label="Explore posts by location">
           <div className="explore-map-panel">
             <div className="explore-map-toolbar">
+              <ExploreLocationSearch
+                center={searchCenter}
+                onLocationSelected={onLocationSelected}
+              />
               <label className="explore-category-filter">
                 <span>Category</span>
                 <select
@@ -190,7 +216,7 @@ export default function ExplorePage() {
               <button
                 className="button button-secondary"
                 disabled={locating}
-                onClick={centerOnUser}
+                onClick={() => centerOnUser()}
                 type="button"
               >
                 {locating ? "Finding you…" : "Center on my location"}
@@ -217,7 +243,7 @@ export default function ExplorePage() {
               center={center}
               fullscreen={isFullscreen}
               onBoundsChange={onBoundsChange}
-              onMapReady={onMapReady}
+              onCenterChange={onMapCenterChange}
               onSelectPost={selectPost}
               posts={posts}
               selectionVersion={selectionVersion}

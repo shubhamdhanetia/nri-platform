@@ -15,11 +15,14 @@ import type { Post, PostSearchBounds } from "../lib/api";
 
 function MapBoundsReporter({
   onBoundsChange,
+  onCenterChange,
 }: {
   onBoundsChange: (bounds: PostSearchBounds) => void;
+  onCenterChange: (center: [number, number]) => void;
 }) {
   const map = useMap();
   const lastReportedBounds = useRef<PostSearchBounds | null>(null);
+  const lastReportedCenter = useRef<[number, number] | null>(null);
 
   const reportBounds = useCallback(() => {
     const bounds = map.getBounds();
@@ -29,6 +32,18 @@ function MapBoundsReporter({
       south: bounds.getSouth(),
       west: bounds.getWest(),
     };
+    const center = map.getCenter();
+    const nextCenter: [number, number] = [center.lat, center.lng];
+    const previousCenter = lastReportedCenter.current;
+    if (
+      !previousCenter
+      || previousCenter[0] !== nextCenter[0]
+      || previousCenter[1] !== nextCenter[1]
+    ) {
+      lastReportedCenter.current = nextCenter;
+      onCenterChange(nextCenter);
+    }
+
     const previousBounds = lastReportedBounds.current;
     if (
       previousBounds
@@ -42,7 +57,7 @@ function MapBoundsReporter({
 
     lastReportedBounds.current = nextBounds;
     onBoundsChange(nextBounds);
-  }, [map, onBoundsChange]);
+  }, [map, onBoundsChange, onCenterChange]);
 
   useEffect(() => {
     reportBounds();
@@ -84,8 +99,8 @@ export default function ExploreMap({
   selectionVersion,
   onSelectPost,
   onBoundsChange,
+  onCenterChange,
   center,
-  onMapReady,
 }: {
   posts: Post[];
   fullscreen: boolean;
@@ -93,8 +108,8 @@ export default function ExploreMap({
   selectionVersion: number;
   onSelectPost: (postId: number) => void;
   onBoundsChange: (bounds: PostSearchBounds) => void;
+  onCenterChange: (center: [number, number]) => void;
   center: [number, number];
-  onMapReady: (locate: (coordinates: [number, number]) => void) => void;
 }) {
   const selectedPost = posts.find((post) => post.id === selectedPostId);
   const selectedMarker = useRef<LeafletMarker>(null);
@@ -113,9 +128,12 @@ export default function ExploreMap({
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      <MapBoundsReporter onBoundsChange={onBoundsChange} />
+      <MapBoundsReporter
+        onBoundsChange={onBoundsChange}
+        onCenterChange={onCenterChange}
+      />
       <MapResizeOnModeChange fullscreen={fullscreen} />
-      <MapReady onMapReady={onMapReady} />
+      <MapCenterSync center={center} />
       <SelectedPostPan
         marker={selectedMarker}
         post={selectedPost}
@@ -184,21 +202,17 @@ function PostMarker({
   );
 }
 
-function MapReady({
-  onMapReady,
-}: {
-  onMapReady: (locate: (coordinates: [number, number]) => void) => void;
-}) {
+function MapCenterSync({ center }: { center: [number, number] }) {
   const map = useMap();
-
-  const locate = useCallback(
-    (coordinates: [number, number]) => map.setView(coordinates, Math.max(map.getZoom(), 11)),
-    [map],
-  );
+  const previousCenter = useRef(center);
 
   useEffect(() => {
-    onMapReady(locate);
-  }, [locate, onMapReady]);
+    if (previousCenter.current === center) {
+      return;
+    }
+    previousCenter.current = center;
+    map.setView(center, Math.max(map.getZoom(), 11));
+  }, [center, map]);
 
   return null;
 }

@@ -112,6 +112,8 @@ export interface LocationDetailsResponse {
   data: {
     id: string;
     fullAddress: string;
+    lat: number;
+    long: number;
   };
 }
 
