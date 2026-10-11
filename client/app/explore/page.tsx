@@ -9,9 +9,11 @@ import {
   apiRequest,
   POST_CATEGORIES,
   POST_CATEGORY_LABELS,
+  POST_TYPES,
   POST_TYPE_LABELS,
   type Post,
   type PostCategory,
+  type PostType,
   type PostSearchBounds,
   type PostSearchRequest,
   type PostSearchResponse,
@@ -27,6 +29,10 @@ const DEFAULT_CENTER: [number, number] = [20, 0];
 
 function isPostCategory(value: string): value is PostCategory {
   return POST_CATEGORIES.some((category) => category === value);
+}
+
+function isPostType(value: string): value is PostType {
+  return POST_TYPES.some((postType) => postType === value);
 }
 
 function boundsHaveChanged(
@@ -48,7 +54,9 @@ export default function ExplorePage() {
   const [error, setError] = useState("");
   const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
   const [category, setCategory] = useState<PostCategory | "">("");
+  const [postType, setPostType] = useState<PostType | "">("");
   const [lastSearchedCategory, setLastSearchedCategory] = useState<PostCategory | "">("");
+  const [lastSearchedPostType, setLastSearchedPostType] = useState<PostType | "">("");
   const [selectionVersion, setSelectionVersion] = useState(0);
   const [locating, setLocating] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -82,6 +90,7 @@ export default function ExplorePage() {
         bounds,
         limit: SEARCH_RESULT_LIMIT,
         ...(category ? { category } : {}),
+        ...(postType ? { post_type: postType } : {}),
       };
       const response = await apiRequest<PostSearchResponse>("/posts/search", {
         method: "POST",
@@ -92,6 +101,7 @@ export default function ExplorePage() {
       setSelectedPostId(null);
       setLastSearchedBounds(bounds);
       setLastSearchedCategory(category);
+      setLastSearchedPostType(postType);
       setSearched(true);
     } catch (requestError) {
       setError(
@@ -162,6 +172,7 @@ export default function ExplorePage() {
     searched
     && (
       category !== lastSearchedCategory
+      || postType !== lastSearchedPostType
       || (bounds && lastSearchedBounds && boundsHaveChanged(bounds, lastSearchedBounds))
     ),
   );
@@ -213,6 +224,22 @@ export default function ExplorePage() {
                   ))}
                 </select>
               </label>
+              <label className="explore-category-filter">
+                <span>Post type</span>
+                <select
+                  aria-label="Filter posts by type"
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setPostType(isPostType(value) ? value : "");
+                  }}
+                  value={postType}
+                >
+                  <option value="">All types</option>
+                  {Object.entries(POST_TYPE_LABELS).map(([value, label]) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
+                </select>
+              </label>
               <button
                 className="button button-secondary"
                 disabled={locating}
@@ -250,7 +277,7 @@ export default function ExplorePage() {
               selectedPostId={selectedPostId}
             />
             {filtersChanged && (
-              <p className="explore-map-hint">Map or category changed. Search this area to refresh results.</p>
+              <p className="explore-map-hint">Map or filters changed. Search this area to refresh results.</p>
             )}
           </div>
 

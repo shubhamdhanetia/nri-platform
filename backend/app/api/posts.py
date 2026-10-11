@@ -130,6 +130,7 @@ def search(
         cell_ids,
         request.limit,
         request.category,
+        request.post_type,
     )
     has_more = len(matching_posts) > request.limit
     posts = _post_responses(db, matching_posts[:request.limit], user.id)

@@ -75,6 +75,7 @@ export interface PostSearchRequest {
   bounds: PostSearchBounds;
   limit: number;
   category?: PostCategory;
+  post_type?: PostType;
 }
 
 export interface PostSearchResponse {

@@ -1318,7 +1318,7 @@ a {
 }
 
 .explore-fullscreen.active .leaflet-top.leaflet-left {
-  top: 270px;
+  top: 315px;
 }
 
 .explore-fullscreen.active .explore-map,
@@ -1937,7 +1937,7 @@ a {
   }
 
   .explore-fullscreen.active .leaflet-top.leaflet-left {
-    top: 265px;
+    top: 310px;
   }
 
   .explore-fullscreen.active .explore-results-overlay {

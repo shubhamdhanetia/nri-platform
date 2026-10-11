@@ -37,6 +37,7 @@ class PostSearchRequest(BaseModel):
     bounds: PostSearchBounds
     limit: int = Field(default=50, ge=1, le=50)
     category: PostCategory | None = None
+    post_type: PostType | None = None
 
 
 class PostSearchResponse(BaseModel):

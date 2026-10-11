@@ -87,6 +87,7 @@ def get_posts_in_bounds(
     h3_cell_ids: set[str],
     limit: int,
     category: PostCategory | None = None,
+    post_type: PostType | None = None,
 ) -> list[Post]:
     if not h3_cell_ids:
         return []
@@ -98,6 +99,8 @@ def get_posts_in_bounds(
     ]
     if category is not None:
         filters.append(Post.category == category)
+    if post_type is not None:
+        filters.append(Post.post_type == post_type)
     if bounds.east < bounds.west:
         filters.append(
             or_(

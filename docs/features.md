@@ -149,8 +149,9 @@ code, postal code, state, city, and H3 cell ID at resolution 8.
 plus a result limit of at most 50. It uses a conservative H3 resolution-8
 bounding-box cover to find candidate posts, then filters by exact coordinates
 and returns newest posts with a `has_more` indicator. The optional `category`
-filter narrows results to a single post category; omitting it searches all
-categories. Oversized map searches are rejected with a request to zoom in.
+and `post_type` filters narrow results to a single category and post type;
+omitting either filter searches all values for that field. Oversized map
+searches are rejected with a request to zoom in.
 
 Search request:
 
@@ -163,13 +164,14 @@ Search request:
     "west": -122.5
   },
   "limit": 50,
-  "category": "HOUSING"
+  "category": "HOUSING",
+  "post_type": "OFFER"
 }
 ```
 
 The response contains `posts` and `has_more`; when `has_more` is true, users
-should zoom in to narrow the map area. Omit `category` or pass `null` to search
-all categories.
+should zoom in to narrow the map area. Omit `category` or `post_type`, or pass
+`null`, to search all values for those fields.
 
 Authenticated users can like or dislike another user's post. Each user can
 have one reaction per post; setting the other reaction switches it, and
