@@ -4,6 +4,7 @@ The client is a Next.js app that supports the MVP community flow:
 
 - `/login` — sign in with Google
 - `/feed` — browse community posts
+- `/explore` — search posts by map area
 - `/create-post` — publish a post with a title, description, category, and selected location
 - `/profile` — view the signed-in user and their posts
 

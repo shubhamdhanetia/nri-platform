@@ -16,6 +16,8 @@ from app.schemas.post import (
     PostReactionRequest,
     PostReactionSummary,
     PostResponse,
+    PostSearchRequest,
+    PostSearchResponse,
     UpdatePostRequest
 )
 from app.models.reaction import PostReactionType
@@ -30,6 +32,7 @@ from app.repositories.post_repository import (
     create_post,
     delete_post,
     get_posts,
+    get_posts_in_bounds,
     get_posts_by_user,
     get_post_by_id,
     update_post,
@@ -44,6 +47,7 @@ from app.repositories.comment_repository import (
     get_comments_by_post,
     update_comment
 )
+from app.services.post_search import h3_cells_for_bounds
 
 router = APIRouter()
 
@@ -108,6 +112,29 @@ def get_all(
     user: User = Depends(get_current_user)
 ):
     return _post_responses(db, get_posts(db), user.id)
+
+
+@router.post(
+    "/search",
+    response_model=PostSearchResponse,
+)
+def search(
+    request: PostSearchRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    cell_ids = h3_cells_for_bounds(request.bounds)
+    matching_posts = get_posts_in_bounds(
+        db,
+        request.bounds,
+        cell_ids,
+        request.limit,
+        request.category,
+    )
+    has_more = len(matching_posts) > request.limit
+    posts = _post_responses(db, matching_posts[:request.limit], user.id)
+    return PostSearchResponse(posts=posts, has_more=has_more)
+
 
 @router.get(
     "/me",

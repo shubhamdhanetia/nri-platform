@@ -1,11 +1,12 @@
 from datetime import datetime, timezone
 
+from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.edit_window import EditWindowExpiredError, is_within_edit_window
 from app.models.post import Post, PostCategory, PostType
 from app.models.reaction import PostReaction, PostReactionType
-from app.schemas.post import PostLocationFields
+from app.schemas.post import PostLocationFields, PostSearchBounds
 
 
 class PostOwnerReactionError(Exception):
@@ -76,6 +77,45 @@ def get_posts(db: Session):
     return (
         db.query(Post)
         .order_by(Post.created_at.desc())
+        .all()
+    )
+
+
+def get_posts_in_bounds(
+    db: Session,
+    bounds: PostSearchBounds,
+    h3_cell_ids: set[str],
+    limit: int,
+    category: PostCategory | None = None,
+) -> list[Post]:
+    if not h3_cell_ids:
+        return []
+
+    filters = [
+        Post.h3_cell_id.in_(h3_cell_ids),
+        Post.latitude >= bounds.south,
+        Post.latitude <= bounds.north,
+    ]
+    if category is not None:
+        filters.append(Post.category == category)
+    if bounds.east < bounds.west:
+        filters.append(
+            or_(
+                Post.longitude >= bounds.west,
+                Post.longitude <= bounds.east,
+            )
+        )
+    else:
+        filters.extend([
+            Post.longitude >= bounds.west,
+            Post.longitude <= bounds.east,
+        ])
+
+    return (
+        db.query(Post)
+        .filter(*filters)
+        .order_by(Post.created_at.desc(), Post.id.desc())
+        .limit(limit + 1)
         .all()
     )
 

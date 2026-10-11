@@ -64,6 +64,24 @@ export interface Post {
   my_reaction: PostReactionType | null;
 }
 
+export interface PostSearchBounds {
+  north: number;
+  east: number;
+  south: number;
+  west: number;
+}
+
+export interface PostSearchRequest {
+  bounds: PostSearchBounds;
+  limit: number;
+  category?: PostCategory;
+}
+
+export interface PostSearchResponse {
+  posts: Post[];
+  has_more: boolean;
+}
+
 export interface PostReactionSummary {
   post_id: number;
   like_count: number;

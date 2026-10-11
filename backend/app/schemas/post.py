@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from app.models.post import PostCategory, PostType
 from app.models.reaction import PostReactionType
@@ -16,6 +16,32 @@ class CreatePostRequest(BaseModel):
 
 class UpdatePostRequest(CreatePostRequest):
     pass
+
+
+class PostSearchBounds(BaseModel):
+    north: float = Field(ge=-90, le=90)
+    east: float = Field(ge=-180, le=180)
+    south: float = Field(ge=-90, le=90)
+    west: float = Field(ge=-180, le=180)
+
+    @model_validator(mode="after")
+    def validate_bounds(self):
+        if self.north <= self.south:
+            raise ValueError("north must be greater than south")
+        if self.east == self.west or self.east - self.west == -360:
+            raise ValueError("longitude bounds must enclose a non-zero area")
+        return self
+
+
+class PostSearchRequest(BaseModel):
+    bounds: PostSearchBounds
+    limit: int = Field(default=50, ge=1, le=50)
+    category: PostCategory | None = None
+
+
+class PostSearchResponse(BaseModel):
+    posts: list["PostResponse"]
+    has_more: bool
 
 
 class PostLocationFields(BaseModel):
