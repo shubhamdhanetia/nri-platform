@@ -41,16 +41,17 @@ export default function SavePostButton({
     <span className="save-post-control">
       <button
         aria-label={saved ? "Remove from saved posts" : "Save post"}
+        aria-busy={pending}
         aria-pressed={saved}
         className={saved ? "save-post-button is-saved" : "save-post-button"}
         disabled={pending}
         onClick={() => void toggleSaved()}
+        title={pending ? "Saving post…" : saved ? "Remove from saved posts" : "Save post"}
         type="button"
       >
-        <svg aria-hidden="true" fill="none" viewBox="0 0 20 20">
+        <svg aria-hidden="true" fill={saved ? "currentColor" : "none"} viewBox="0 0 20 20">
           <path d="M5 3.75h10v13l-5-3.25-5 3.25v-13Z" />
         </svg>
-        {pending ? "Saving…" : saved ? "Saved" : "Save"}
       </button>
       {error && <span className="save-post-error" role="alert">{error}</span>}
     </span>

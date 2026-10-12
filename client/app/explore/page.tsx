@@ -63,6 +63,7 @@ export default function ExplorePage() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [resultsOpen, setResultsOpen] = useState(true);
   const [center, setCenter] = useState<[number, number]>(DEFAULT_CENTER);
+  const [initialZoom, setInitialZoom] = useState(2);
   const [searchCenter, setSearchCenter] = useState<[number, number]>(DEFAULT_CENTER);
   const [lastSearchedBounds, setLastSearchedBounds] = useState<PostSearchBounds | null>(null);
   const autoLocationRequested = useRef(false);
@@ -141,6 +142,7 @@ export default function ExplorePage() {
           position.coords.longitude,
         ];
         setCenter(coordinates);
+        setInitialZoom(11);
         setSelectedPostId(null);
         setSearchCenter(coordinates);
         setLocating(false);
@@ -170,6 +172,7 @@ export default function ExplorePage() {
   const onLocationSelected = useCallback((coordinates: [number, number]) => {
     placeSelectedBeforeAutoLocation.current = true;
     setCenter(coordinates);
+    setInitialZoom(11);
     setSearchCenter(coordinates);
     setSelectedPostId(null);
     setError("");
@@ -276,6 +279,7 @@ export default function ExplorePage() {
             <ExploreMap
               center={center}
               fullscreen={isFullscreen}
+              initialZoom={initialZoom}
               onBoundsChange={onBoundsChange}
               onCenterChange={onMapCenterChange}
               onSelectPost={selectPost}

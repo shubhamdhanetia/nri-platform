@@ -60,28 +60,54 @@ export default function PostReactions({
       {canReact ? (
         <>
           <button
+            aria-label={summary.my_reaction === "LIKE"
+              ? `Remove like, ${summary.like_count} ${summary.like_count === 1 ? "like" : "likes"}`
+              : `Like, ${summary.like_count} ${summary.like_count === 1 ? "like" : "likes"}`}
             aria-pressed={summary.my_reaction === "LIKE"}
             className={`post-reaction-button${summary.my_reaction === "LIKE" ? " is-selected" : ""}`}
             disabled={pending}
             onClick={() => void react("LIKE")}
+            title={summary.my_reaction === "LIKE" ? "Remove like" : "Like"}
             type="button"
           >
-            <span aria-hidden="true">👍</span> Like <span>{summary.like_count}</span>
+            <span aria-hidden="true">👍</span>
+            <span>{summary.like_count}</span>
           </button>
           <button
+            aria-label={summary.my_reaction === "DISLIKE"
+              ? `Remove dislike, ${summary.dislike_count} ${summary.dislike_count === 1 ? "dislike" : "dislikes"}`
+              : `Dislike, ${summary.dislike_count} ${summary.dislike_count === 1 ? "dislike" : "dislikes"}`}
             aria-pressed={summary.my_reaction === "DISLIKE"}
             className={`post-reaction-button${summary.my_reaction === "DISLIKE" ? " is-selected" : ""}`}
             disabled={pending}
             onClick={() => void react("DISLIKE")}
+            title={summary.my_reaction === "DISLIKE" ? "Remove dislike" : "Dislike"}
             type="button"
           >
-            <span aria-hidden="true">👎</span> Dislike <span>{summary.dislike_count}</span>
+            <span aria-hidden="true">👎</span>
+            <span>{summary.dislike_count}</span>
           </button>
         </>
       ) : (
         <>
-          <span className="post-reaction-count"><span aria-hidden="true">👍</span> {summary.like_count}</span>
-          <span className="post-reaction-count"><span aria-hidden="true">👎</span> {summary.dislike_count}</span>
+          <span
+            aria-label={`${summary.like_count} ${summary.like_count === 1 ? "like" : "likes"}. You cannot react to your own post.`}
+            className="post-reaction-count is-disabled"
+            role="img"
+            title="You cannot react to your own post"
+          >
+            <span aria-hidden="true">👍</span>
+            <span aria-hidden="true">{summary.like_count}</span>
+          </span>
+          <span
+            aria-label={`${summary.dislike_count} ${summary.dislike_count === 1 ? "dislike" : "dislikes"}. You cannot react to your own post.`}
+            className="post-reaction-count is-disabled"
+            role="img"
+            title="You cannot react to your own post"
+          >
+            <span aria-hidden="true">👎</span>
+            <span aria-hidden="true">{summary.dislike_count}</span>
+          </span>
         </>
       )}
       {error && <span className="post-reaction-error" role="alert">{error}</span>}

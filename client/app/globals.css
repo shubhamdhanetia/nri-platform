@@ -511,10 +511,10 @@ a {
   border-radius: 7px;
   color: #66736a;
   display: inline-flex;
-  font-size: 10px;
-  gap: 5px;
+  font-size: 12px;
+  gap: 4px;
   min-height: 28px;
-  padding: 0 8px;
+  padding: 0 7px;
   white-space: nowrap;
 }
 
@@ -525,6 +525,19 @@ a {
 .post-reaction-button:hover:not(:disabled) {
   background: #eef4ef;
   border-color: #cddbd0;
+}
+
+.post-reaction-count.is-disabled {
+  background: #e8ebe8;
+  border-color: #d2d8d3;
+  color: #4f5c53;
+  cursor: not-allowed;
+}
+
+.post-reaction-button:focus-visible,
+.save-post-button:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
 }
 
 .post-reaction-button:disabled {
@@ -560,11 +573,11 @@ a {
   color: #66736a;
   cursor: pointer;
   display: inline-flex;
-  font-size: 10px;
-  gap: 5px;
-  min-height: 28px;
-  padding: 0 8px;
+  height: 30px;
+  justify-content: center;
+  padding: 0;
   white-space: nowrap;
+  width: 30px;
 }
 
 .save-post-button:hover:not(:disabled) {

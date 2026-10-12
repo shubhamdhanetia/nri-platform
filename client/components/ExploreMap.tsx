@@ -117,6 +117,7 @@ export default function ExploreMap({
   onBoundsChange,
   onCenterChange,
   center,
+  initialZoom,
 }: {
   posts: Post[];
   fullscreen: boolean;
@@ -126,6 +127,7 @@ export default function ExploreMap({
   onBoundsChange: (bounds: PostSearchBounds) => void;
   onCenterChange: (center: [number, number]) => void;
   center: [number, number];
+  initialZoom: number;
 }) {
   const selectedPost = posts.find((post) => post.id === selectedPostId);
   const selectedMarker = useRef<LeafletMarker>(null);
@@ -137,7 +139,7 @@ export default function ExploreMap({
       maxBoundsViscosity={1}
       minZoom={2}
       scrollWheelZoom
-      zoom={2}
+      zoom={initialZoom}
       className="explore-map"
     >
       <TileLayer
