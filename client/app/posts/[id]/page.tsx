@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import ProtectedPage from "../../../components/ProtectedPage";
 import CommentActions from "../../../components/CommentActions";
 import PostReactions from "../../../components/PostReactions";
+import SavePostButton from "../../../components/SavePostButton";
 import {
   apiRequest,
   POST_CATEGORY_LABELS,
@@ -183,6 +184,12 @@ function PostDetailsContent({ postId }: { postId: number }) {
       : currentPost);
   }
 
+  function updatePostSaved(isSaved: boolean) {
+    setPost((currentPost) => currentPost
+      ? { ...currentPost, my_saved: isSaved }
+      : currentPost);
+  }
+
   return (
     <>
       <div className="detail-back-link">
@@ -224,6 +231,11 @@ function PostDetailsContent({ postId }: { postId: number }) {
                 </div>
               </div>
             </div>
+            <SavePostButton
+              isSaved={post.my_saved}
+              onChanged={updatePostSaved}
+              postId={post.id}
+            />
             <PostReactions
               canReact={post.user_id !== currentUserId}
               dislikeCount={post.dislike_count}

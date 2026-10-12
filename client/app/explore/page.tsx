@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import ProtectedPage from "../../components/ProtectedPage";
 import ExploreLocationSearch from "../../components/ExploreLocationSearch";
+import SavePostButton from "../../components/SavePostButton";
 import {
   apiRequest,
   POST_CATEGORIES,
@@ -79,6 +80,12 @@ export default function ExplorePage() {
     setSelectedPostId(postId);
     setSelectionVersion((version) => version + 1);
   }, []);
+
+  function updatePostSaved(postId: number, isSaved: boolean) {
+    setPosts((currentPosts) => currentPosts.map((post) => (
+      post.id === postId ? { ...post, my_saved: isSaved } : post
+    )));
+  }
 
   async function searchArea() {
     if (!bounds) return;
@@ -373,6 +380,11 @@ export default function ExplorePage() {
                         <Link className="text-link" href={`/posts/${post.id}`}>
                           View post
                         </Link>
+                        <SavePostButton
+                          isSaved={post.my_saved}
+                          onChanged={(isSaved) => updatePostSaved(post.id, isSaved)}
+                          postId={post.id}
+                        />
                       </div>
                     </article>
                   ))}

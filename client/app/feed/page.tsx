@@ -6,6 +6,7 @@ import ProtectedPage from "../../components/ProtectedPage";
 import DeletePostButton from "../../components/DeletePostButton";
 import EditPostButton from "../../components/EditPostButton";
 import PostReactions from "../../components/PostReactions";
+import SavePostButton from "../../components/SavePostButton";
 import {
   apiRequest,
   POST_CATEGORY_LABELS,
@@ -88,6 +89,12 @@ export default function FeedPage() {
     )));
   }
 
+  function updatePostSaved(postId: number, isSaved: boolean) {
+    setPosts((currentPosts) => currentPosts.map((post) => (
+      post.id === postId ? { ...post, my_saved: isSaved } : post
+    )));
+  }
+
   return (
     <ProtectedPage>
       <section className="page-heading">
@@ -142,6 +149,11 @@ export default function FeedPage() {
                   likeCount={post.like_count}
                   myReaction={post.my_reaction}
                   onChanged={updatePostReactions}
+                  postId={post.id}
+                />
+                <SavePostButton
+                  isSaved={post.my_saved}
+                  onChanged={(isSaved) => updatePostSaved(post.id, isSaved)}
                   postId={post.id}
                 />
                 <Link className="comment-count-link" href={`/posts/${post.id}`}>

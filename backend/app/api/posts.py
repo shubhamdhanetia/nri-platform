@@ -16,6 +16,7 @@ from app.schemas.post import (
     PostReactionRequest,
     PostReactionSummary,
     PostResponse,
+    PostSaveResponse,
     PostSearchRequest,
     PostSearchResponse,
     UpdatePostRequest
@@ -34,11 +35,15 @@ from app.repositories.post_repository import (
     get_posts,
     get_posts_in_bounds,
     get_posts_by_user,
+    get_saved_posts,
+    get_user_saved_post_ids,
     get_post_by_id,
     update_post,
     get_user_post_reactions,
     remove_post_reaction,
     set_post_reaction,
+    save_post,
+    unsave_post,
     PostOwnerReactionError,
 )
 from app.repositories.comment_repository import (
@@ -62,9 +67,17 @@ def _post_responses(
         user_id,
         [post.id for post in posts],
     )
+    saved_post_ids = get_user_saved_post_ids(
+        db,
+        user_id,
+        [post.id for post in posts],
+    )
     return [
         PostResponse.model_validate(post).model_copy(
-            update={"my_reaction": reactions.get(post.id)}
+            update={
+                "my_reaction": reactions.get(post.id),
+                "my_saved": post.id in saved_post_ids,
+            }
         )
         for post in posts
     ]
@@ -138,6 +151,17 @@ def search(
 
 
 @router.get(
+    "/saved",
+    response_model=list[PostResponse],
+)
+def get_saved(
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    return _post_responses(db, get_saved_posts(db, user.id), user.id)
+
+
+@router.get(
     "/me",
     response_model=list[PostResponse]
 )
@@ -168,10 +192,40 @@ def get_detail(
             status_code=404,
             detail="Post not found"
         )
-    reaction = get_user_post_reactions(db, user.id, [post_id]).get(post_id)
+    response = _post_responses(db, [post], user.id)[0]
     return PostDetailResponse.model_validate(post).model_copy(
-        update={"my_reaction": reaction}
+        update=response.model_dump()
     )
+
+
+@router.post(
+    "/{post_id}/save",
+    response_model=PostSaveResponse,
+)
+def save(
+    post_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    post = save_post(db, post_id, user.id)
+    if post is None:
+        raise HTTPException(status_code=404, detail="Post not found")
+    return PostSaveResponse(post_id=post_id, is_saved=True)
+
+
+@router.delete(
+    "/{post_id}/save",
+    response_model=PostSaveResponse,
+)
+def unsave(
+    post_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    post = unsave_post(db, post_id, user.id)
+    if post is None:
+        raise HTTPException(status_code=404, detail="Post not found")
+    return PostSaveResponse(post_id=post_id, is_saved=False)
 
 
 @router.put(
@@ -382,7 +436,7 @@ def update(
             status_code=404,
             detail="Post not found"
         )
-    return post
+    return _post_responses(db, [post], user.id)[0]
 
 
 @router.delete(

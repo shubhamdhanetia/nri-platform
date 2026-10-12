@@ -15,6 +15,7 @@ import app.models.user
 import app.models.post
 import app.models.comment
 import app.models.reaction
+import app.models.saved_post
 
 Base.metadata.create_all(bind=engine)
 

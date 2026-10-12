@@ -11,6 +11,7 @@ from app.models.reaction import PostReaction, PostReactionType
 
 if TYPE_CHECKING:
     from app.models.reaction import PostReaction
+    from app.models.saved_post import SavedPost
     from app.models.user import User
 
 
@@ -131,6 +132,11 @@ class Post(Base):
     )
 
     reactions: Mapped[list["PostReaction"]] = relationship(
+        back_populates="post",
+        cascade="all, delete-orphan"
+    )
+
+    saved_by: Mapped[list["SavedPost"]] = relationship(
         back_populates="post",
         cascade="all, delete-orphan"
     )

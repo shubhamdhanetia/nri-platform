@@ -122,6 +122,9 @@ PUT /posts/{id}
 DELETE /posts/{id}
 PUT /posts/{id}/reaction
 DELETE /posts/{id}/reaction
+GET /posts/saved
+POST /posts/{id}/save
+DELETE /posts/{id}/save
 GET /posts/{id}/comments
 POST /posts/{id}/comments
 PUT /posts/{id}/comments/{comment_id}
@@ -152,6 +155,11 @@ and returns newest posts with a `has_more` indicator. The optional `category`
 and `post_type` filters narrow results to a single category and post type;
 omitting either filter searches all values for that field. Oversized map
 searches are rejected with a request to zoom in.
+Saved posts are private to the authenticated user. `POST /posts/{id}/save` and
+`DELETE /posts/{id}/save` save and remove a post; both operations are
+idempotent. `GET /posts/saved` returns the user's saved posts newest-saved
+first. Post responses include `my_saved` for the authenticated user. Saved
+records are deleted when their post is deleted.
 
 Search request:
 

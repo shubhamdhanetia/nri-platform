@@ -1,11 +1,13 @@
 from datetime import datetime, timezone
 
 from sqlalchemy import or_
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.edit_window import EditWindowExpiredError, is_within_edit_window
 from app.models.post import Post, PostCategory, PostType
 from app.models.reaction import PostReaction, PostReactionType
+from app.models.saved_post import SavedPost
 from app.schemas.post import PostLocationFields, PostSearchBounds
 
 
@@ -141,6 +143,88 @@ def get_posts_by_user(
         .filter(Post.user_id == user_id)
         .all()
     )
+
+
+def get_saved_posts(db: Session, user_id: int) -> list[Post]:
+    return (
+        db.query(Post)
+        .join(SavedPost, SavedPost.post_id == Post.id)
+        .filter(SavedPost.user_id == user_id)
+        .order_by(SavedPost.saved_at.desc(), SavedPost.id.desc())
+        .all()
+    )
+
+
+def get_user_saved_post_ids(
+    db: Session,
+    user_id: int,
+    post_ids: list[int],
+) -> set[int]:
+    if not post_ids:
+        return set()
+
+    saved_post_ids = (
+        db.query(SavedPost.post_id)
+        .filter(
+            SavedPost.user_id == user_id,
+            SavedPost.post_id.in_(post_ids),
+        )
+        .all()
+    )
+    return {post_id for (post_id,) in saved_post_ids}
+
+
+def save_post(db: Session, post_id: int, user_id: int) -> Post | None:
+    post = db.query(Post).filter(Post.id == post_id).first()
+    if post is None:
+        return None
+
+    saved_post = (
+        db.query(SavedPost)
+        .filter(
+            SavedPost.post_id == post_id,
+            SavedPost.user_id == user_id,
+        )
+        .first()
+    )
+    if saved_post is None:
+        db.add(SavedPost(post_id=post_id, user_id=user_id))
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            already_saved = (
+                db.query(SavedPost)
+                .filter(
+                    SavedPost.post_id == post_id,
+                    SavedPost.user_id == user_id,
+                )
+                .first()
+            )
+            if already_saved is None:
+                raise
+
+    return post
+
+
+def unsave_post(db: Session, post_id: int, user_id: int) -> Post | None:
+    post = db.query(Post).filter(Post.id == post_id).first()
+    if post is None:
+        return None
+
+    saved_post = (
+        db.query(SavedPost)
+        .filter(
+            SavedPost.post_id == post_id,
+            SavedPost.user_id == user_id,
+        )
+        .first()
+    )
+    if saved_post is not None:
+        db.delete(saved_post)
+        db.commit()
+
+    return post
 
 
 def delete_post(

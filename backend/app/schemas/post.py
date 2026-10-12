@@ -61,6 +61,11 @@ class PostReactionRequest(BaseModel):
     reaction: PostReactionType
 
 
+class PostSaveResponse(BaseModel):
+    post_id: int
+    is_saved: bool
+
+
 class PostResponse(BaseModel):
     id: int
     created_at: datetime
@@ -83,6 +88,7 @@ class PostResponse(BaseModel):
     like_count: int = 0
     dislike_count: int = 0
     my_reaction: PostReactionType | None = None
+    my_saved: bool = False
 
     class Config:
         from_attributes = True

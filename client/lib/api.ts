@@ -62,6 +62,7 @@ export interface Post {
   like_count: number;
   dislike_count: number;
   my_reaction: PostReactionType | null;
+  my_saved: boolean;
 }
 
 export interface PostSearchBounds {
