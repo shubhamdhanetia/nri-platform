@@ -129,14 +129,14 @@ DELETE /posts/{id}/comments/{comment_id}
 POST /locations/search
 POST /locations/details
 
-All post and comment endpoints require a valid JWT, except `POST /auth/google`
-which issues the JWT used for subsequent API requests.
-`POST /locations/search` is public and forwards a validated latitude,
-longitude, query, and pickup type to Uber's location search endpoint. The
-pickup type defaults to `PICKUP` when omitted.
-`POST /locations/details` is public and forwards a selected Uber place ID,
-locale, provider, and type to Uber's place details endpoint. The provider
-defaults to `uber_places`, locale to `en`, and type to lowercase `pickup`.
+All post, comment, and location endpoints require a valid JWT, except
+`POST /auth/google`, which issues the JWT used for subsequent API requests.
+`POST /locations/search` forwards a validated latitude, longitude, query, and
+pickup type to Uber's location search endpoint. The pickup type defaults to
+`PICKUP` when omitted.
+`POST /locations/details` forwards a selected Uber place ID, locale, provider,
+and type to Uber's place details endpoint. The provider defaults to
+`uber_places`, locale to `en`, and type to lowercase `pickup`.
 The Explore page uses these endpoints to suggest locations near the current map
 center and to center the map on the selected place. It also requests browser
 geolocation on page load; if access is unavailable or denied, it keeps the
@@ -172,6 +172,9 @@ Search request:
 The response contains `posts` and `has_more`; when `has_more` is true, users
 should zoom in to narrow the map area. Omit `category` or `post_type`, or pass
 `null`, to search all values for those fields.
+Explore groups nearby post pins into numbered clusters. Selecting a cluster
+zooms toward its posts; posts that still overlap at maximum zoom are spread
+apart so each pin can be selected.
 
 Authenticated users can like or dislike another user's post. Each user can
 have one reaction per post; setting the other reaction switches it, and

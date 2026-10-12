@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
+import MarkerClusterGroup from "react-leaflet-cluster";
 import {
   MapContainer,
   Marker,
@@ -11,7 +12,22 @@ import {
   useMapEvents,
 } from "react-leaflet";
 import { divIcon, type Marker as LeafletMarker } from "leaflet";
+import "leaflet.markercluster";
+import "react-leaflet-cluster/dist/assets/MarkerCluster.css";
+import "react-leaflet-cluster/dist/assets/MarkerCluster.Default.css";
 import type { Post, PostSearchBounds } from "../lib/api";
+
+const clusterIcon: NonNullable<
+  import("leaflet").MarkerClusterGroupOptions["iconCreateFunction"]
+> = (cluster) => {
+  const count = cluster.getChildCount();
+  return divIcon({
+    className: "post-marker-cluster",
+    html: `<span aria-label="${count} posts">${count}</span>`,
+    iconSize: [42, 42],
+    iconAnchor: [21, 21],
+  });
+};
 
 function MapBoundsReporter({
   onBoundsChange,
@@ -139,15 +155,24 @@ export default function ExploreMap({
         post={selectedPost}
         selectionVersion={selectionVersion}
       />
-      {posts.map((post) => (
-        <PostMarker
-          key={post.id}
-          post={post}
-          selected={post.id === selectedPostId}
-          onSelect={onSelectPost}
-          markerRef={post.id === selectedPostId ? selectedMarker : undefined}
-        />
-      ))}
+      <MarkerClusterGroup
+        chunkedLoading
+        iconCreateFunction={clusterIcon}
+        maxClusterRadius={70}
+        spiderfyDistanceMultiplier={1.5}
+        spiderfyOnMaxZoom
+        spiderLegPolylineOptions={{ color: "#226b55", weight: 2, opacity: 0.7 }}
+      >
+        {posts.map((post) => (
+          <PostMarker
+            key={post.id}
+            post={post}
+            selected={post.id === selectedPostId}
+            onSelect={onSelectPost}
+            markerRef={post.id === selectedPostId ? selectedMarker : undefined}
+          />
+        ))}
+      </MarkerClusterGroup>
     </MapContainer>
   );
 }
