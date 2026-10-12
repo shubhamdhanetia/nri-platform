@@ -418,10 +418,10 @@ a {
 }
 
 .post-meta {
-  align-items: center;
+  align-items: flex-start;
   display: flex;
-  justify-content: space-between;
-  gap: 12px;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .category-pill,
@@ -550,6 +550,12 @@ a {
   border-color: #bdd7c5;
   color: #24714e;
   font-weight: 700;
+}
+
+.post-reaction-button.is-selected.is-dislike-selected {
+  background: #fcebea;
+  border-color: #efc2bf;
+  color: #a1443a;
 }
 
 .post-reaction-error {

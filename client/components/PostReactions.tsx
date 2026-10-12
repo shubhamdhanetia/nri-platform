@@ -78,7 +78,7 @@ export default function PostReactions({
               ? `Remove dislike, ${summary.dislike_count} ${summary.dislike_count === 1 ? "dislike" : "dislikes"}`
               : `Dislike, ${summary.dislike_count} ${summary.dislike_count === 1 ? "dislike" : "dislikes"}`}
             aria-pressed={summary.my_reaction === "DISLIKE"}
-            className={`post-reaction-button${summary.my_reaction === "DISLIKE" ? " is-selected" : ""}`}
+            className={`post-reaction-button${summary.my_reaction === "DISLIKE" ? " is-selected is-dislike-selected" : ""}`}
             disabled={pending}
             onClick={() => void react("DISLIKE")}
             title={summary.my_reaction === "DISLIKE" ? "Remove dislike" : "Dislike"}
