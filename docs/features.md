@@ -31,29 +31,6 @@ How to run backend => go to the backend folder in terminal -> uvicorn app.main:a
 
 How to run frontend => npm run dev
 
-Google OAuth keys
-
-339379291313-6opn25dfthhgkuqldm5mmbbp6g4u5kcn.apps.googleusercontent.com
-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
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 Housing - Looking for roommate in Sunnyvale
 Ride - Need ride from SFO to Fremont Sunday evening
 Food - Gujarati tiffin available in Santa Clara
