@@ -35,6 +35,7 @@ export default function EditPostForm({
   const [description, setDescription] = useState(post.description);
   const [category, setCategory] = useState<PostCategory>(post.category);
   const [postType, setPostType] = useState<PostType>(post.post_type);
+  const [isPrivate, setIsPrivate] = useState(post.is_private);
   const [selectedLocation, setSelectedLocation] = useState<{
     locationId: string;
     location: string;
@@ -69,6 +70,7 @@ export default function EditPostForm({
           description,
           category,
           post_type: postType,
+          is_private: isPrivate,
           location_id: selectedLocation.locationId,
         }),
       });
@@ -154,6 +156,21 @@ export default function EditPostForm({
                 <option key={value} value={value}>{POST_TYPE_LABELS[value]}</option>
               ))}
             </select>
+          </label>
+          <label className="form-field">
+            <span>Who can see this post?</span>
+            <select
+              onChange={(event) => setIsPrivate(event.target.value === "private")}
+              value={isPrivate ? "private" : "public"}
+            >
+              <option value="public">Public</option>
+              <option value="private">Only me</option>
+            </select>
+            <span className="field-hint">
+              {isPrivate
+                ? "Only you can see this post. It won't appear in the community feed or Explore."
+                : "Everyone in the community can see this post."}
+            </span>
           </label>
           <label className="form-field edit-description-field">
             <span>Description</span>

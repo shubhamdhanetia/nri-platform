@@ -19,6 +19,7 @@ from app.schemas.post import (
     PostSaveResponse,
     PostSearchRequest,
     PostSearchResponse,
+    UpdatePostVisibilityRequest,
     UpdatePostRequest
 )
 from app.models.reaction import PostReactionType
@@ -44,6 +45,7 @@ from app.repositories.post_repository import (
     set_post_reaction,
     save_post,
     unsave_post,
+    set_post_visibility,
     PostOwnerReactionError,
 )
 from app.repositories.comment_repository import (
@@ -96,6 +98,17 @@ def _reaction_summary(
     )
 
 
+def _get_visible_post_or_404(
+    db: Session,
+    post_id: int,
+    user_id: int,
+) -> Post:
+    post = get_post_by_id(db, post_id)
+    if post is None or (post.is_private and post.user_id != user_id):
+        raise HTTPException(status_code=404, detail="Post not found")
+    return post
+
+
 @router.post(
     "",
     response_model=PostResponse
@@ -111,6 +124,7 @@ def create(
         description=request.description,
         category=request.category,
         post_type=request.post_type,
+        is_private=request.is_private,
         location=resolve_post_location(request.location_id),
         user_id=user.id
     )
@@ -186,12 +200,7 @@ def get_detail(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user)
 ):
-    post = get_post_by_id(db, post_id)
-    if post is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Post not found"
-        )
+    post = _get_visible_post_or_404(db, post_id, user.id)
     response = _post_responses(db, [post], user.id)[0]
     return PostDetailResponse.model_validate(post).model_copy(
         update=response.model_dump()
@@ -207,6 +216,7 @@ def save(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
+    _get_visible_post_or_404(db, post_id, user.id)
     post = save_post(db, post_id, user.id)
     if post is None:
         raise HTTPException(status_code=404, detail="Post not found")
@@ -222,10 +232,27 @@ def unsave(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
+    _get_visible_post_or_404(db, post_id, user.id)
     post = unsave_post(db, post_id, user.id)
     if post is None:
         raise HTTPException(status_code=404, detail="Post not found")
     return PostSaveResponse(post_id=post_id, is_saved=False)
+
+
+@router.put(
+    "/{post_id}/visibility",
+    response_model=PostResponse,
+)
+def update_visibility(
+    post_id: int,
+    request: UpdatePostVisibilityRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    post = set_post_visibility(db, post_id, user.id, request.is_private)
+    if post is None:
+        raise HTTPException(status_code=404, detail="Post not found")
+    return _post_responses(db, [post], user.id)[0]
 
 
 @router.put(
@@ -238,6 +265,7 @@ def react_to_post(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user)
 ):
+    _get_visible_post_or_404(db, post_id, user.id)
     try:
         post = set_post_reaction(
             db=db,
@@ -268,6 +296,7 @@ def clear_post_reaction(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user)
 ):
+    _get_visible_post_or_404(db, post_id, user.id)
     try:
         post = remove_post_reaction(
             db=db,
@@ -290,17 +319,13 @@ def clear_post_reaction(
 @router.get(
     "/{post_id}/comments",
     response_model=list[CommentResponse],
-    dependencies=[Depends(get_current_user)]
 )
 def get_comments(
     post_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
 ):
-    if get_post_by_id(db, post_id) is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Post not found"
-        )
+    _get_visible_post_or_404(db, post_id, user.id)
     return get_comments_by_post(db, post_id)
 
 
@@ -315,11 +340,7 @@ def create_post_comment(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user)
 ):
-    if get_post_by_id(db, post_id) is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Post not found"
-        )
+    _get_visible_post_or_404(db, post_id, user.id)
     return create_comment(
         db=db,
         content=request.content,
@@ -339,11 +360,7 @@ def update_post_comment(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user)
 ):
-    if get_post_by_id(db, post_id) is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Post not found"
-        )
+    _get_visible_post_or_404(db, post_id, user.id)
     try:
         comment = update_comment(
             db=db,
@@ -374,11 +391,7 @@ def delete_post_comment(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user)
 ):
-    if get_post_by_id(db, post_id) is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Post not found"
-        )
+    _get_visible_post_or_404(db, post_id, user.id)
     if not delete_comment(
         db=db,
         comment_id=comment_id,
@@ -424,6 +437,7 @@ def update(
             description=request.description,
             category=request.category,
             post_type=request.post_type,
+            is_private=request.is_private,
             location=location
         )
     except EditWindowExpiredError as error:

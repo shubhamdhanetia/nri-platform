@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, Enum as SQLAlchemyEnum, Float, ForeignKey, String, Text, func, select
+from sqlalchemy import Boolean, DateTime, Enum as SQLAlchemyEnum, Float, ForeignKey, String, Text, false, func, select
 from sqlalchemy.orm import Mapped, column_property, mapped_column, relationship
 
 from app.db.base import Base
@@ -69,6 +69,13 @@ class Post(Base):
         ),
         default=PostType.OFFER.value,
         server_default=PostType.OFFER.value
+    )
+
+    is_private: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        server_default=false(),
+        nullable=False,
     )
 
     location_id: Mapped[str] = mapped_column(

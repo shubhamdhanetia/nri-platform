@@ -48,6 +48,7 @@ export interface Post {
   description: string;
   category: PostCategory;
   post_type: PostType;
+  is_private: boolean;
   city: string;
   location_id: string;
   location: string;

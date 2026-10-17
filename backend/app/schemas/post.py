@@ -11,11 +11,16 @@ class CreatePostRequest(BaseModel):
     description: str
     category: PostCategory
     post_type: PostType
+    is_private: bool = False
     location_id: str = Field(min_length=1, max_length=200)
 
 
 class UpdatePostRequest(CreatePostRequest):
-    pass
+    is_private: bool | None = None
+
+
+class UpdatePostVisibilityRequest(BaseModel):
+    is_private: bool
 
 
 class PostSearchBounds(BaseModel):
@@ -74,6 +79,7 @@ class PostResponse(BaseModel):
     description: str
     category: PostCategory
     post_type: PostType
+    is_private: bool
     city: str
     location_id: str
     location: str

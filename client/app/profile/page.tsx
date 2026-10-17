@@ -6,6 +6,7 @@ import ProtectedPage from "../../components/ProtectedPage";
 import DeletePostButton from "../../components/DeletePostButton";
 import EditPostButton from "../../components/EditPostButton";
 import PostReactions from "../../components/PostReactions";
+import PostVisibilityButton from "../../components/PostVisibilityButton";
 import {
   apiRequest,
   POST_CATEGORY_LABELS,
@@ -145,6 +146,7 @@ export default function ProfilePage() {
                           {POST_TYPE_LABELS[post.post_type]}
                         </span>
                         {post.updated_at && <span className="edited-indicator">Edited</span>}
+                        {post.is_private && <span className="visibility-private-pill">Only me</span>}
                       </div>
                       <span className="post-location"><span aria-hidden="true">⌖</span> {post.location}</span>
                     </div>
@@ -162,6 +164,7 @@ export default function ProfilePage() {
                         onChanged={updatePostReactions}
                         postId={post.id}
                       />
+                      <PostVisibilityButton onChanged={updatePost} post={post} />
                       <EditPostButton onUpdated={updatePost} post={post} />
                       <DeletePostButton onDeleted={removePost} postId={post.id} />
                     </div>

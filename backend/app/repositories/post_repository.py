@@ -21,6 +21,7 @@ def create_post(
     description: str,
     category: PostCategory,
     post_type: PostType,
+    is_private: bool,
     location: PostLocationFields,
     user_id: int
 ):
@@ -29,6 +30,7 @@ def create_post(
         description=description,
         category=category,
         post_type=post_type,
+        is_private=is_private,
         **location.model_dump(),
         user_id=user_id
     )
@@ -48,6 +50,7 @@ def update_post(
     description: str,
     category: PostCategory,
     post_type: PostType,
+    is_private: bool | None,
     location: PostLocationFields
 ) -> Post | None:
     post = (
@@ -67,6 +70,8 @@ def update_post(
     post.description = description
     post.category = category
     post.post_type = post_type
+    if is_private is not None:
+        post.is_private = is_private
     for field, value in location.model_dump().items():
         setattr(post, field, value)
     post.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
@@ -75,9 +80,33 @@ def update_post(
     return post
 
 
+def set_post_visibility(
+    db: Session,
+    post_id: int,
+    user_id: int,
+    is_private: bool,
+) -> Post | None:
+    post = (
+        db.query(Post)
+        .filter(
+            Post.id == post_id,
+            Post.user_id == user_id,
+        )
+        .first()
+    )
+    if post is None:
+        return None
+
+    post.is_private = is_private
+    db.commit()
+    db.refresh(post)
+    return post
+
+
 def get_posts(db: Session):
     return (
         db.query(Post)
+        .filter(Post.is_private.is_(False))
         .order_by(Post.created_at.desc())
         .all()
     )
@@ -95,6 +124,7 @@ def get_posts_in_bounds(
         return []
 
     filters = [
+        Post.is_private.is_(False),
         Post.h3_cell_id.in_(h3_cell_ids),
         Post.latitude >= bounds.south,
         Post.latitude <= bounds.north,
@@ -149,7 +179,10 @@ def get_saved_posts(db: Session, user_id: int) -> list[Post]:
     return (
         db.query(Post)
         .join(SavedPost, SavedPost.post_id == Post.id)
-        .filter(SavedPost.user_id == user_id)
+        .filter(
+            SavedPost.user_id == user_id,
+            or_(Post.is_private.is_(False), Post.user_id == user_id),
+        )
         .order_by(SavedPost.saved_at.desc(), SavedPost.id.desc())
         .all()
     )

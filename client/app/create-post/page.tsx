@@ -29,6 +29,7 @@ export default function CreatePostPage() {
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState<PostCategory | "">("");
   const [postType, setPostType] = useState<PostType | "">("");
+  const [isPrivate, setIsPrivate] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<{
     locationId: string;
     location: string;
@@ -52,6 +53,7 @@ export default function CreatePostPage() {
           description,
           category,
           post_type: postType,
+          is_private: isPrivate,
           location_id: selectedLocation.locationId,
         }),
       });
@@ -130,6 +132,21 @@ export default function CreatePostPage() {
             </select>
           </label>
         </div>
+        <label className="form-field post-visibility-field">
+          <span>Who can see this post?</span>
+          <select
+            onChange={(event) => setIsPrivate(event.target.value === "private")}
+            value={isPrivate ? "private" : "public"}
+          >
+            <option value="public">Public</option>
+            <option value="private">Only me</option>
+          </select>
+          <span className="field-hint">
+            {isPrivate
+              ? "Only you can see this post. It won't appear in the community feed or Explore."
+              : "Everyone in the community can see this post."}
+          </span>
+        </label>
         <LocationAutocomplete onAddressSelected={setSelectedLocation} />
         {error && <p className="form-error" role="alert">{error}</p>}
         <div className="form-actions">

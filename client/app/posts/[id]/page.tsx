@@ -211,6 +211,7 @@ function PostDetailsContent({ postId }: { postId: number }) {
                 <span className={`post-type-pill post-type-${post.post_type.toLowerCase()}`}>
                   {POST_TYPE_LABELS[post.post_type]}
                 </span>
+                {post.is_private && <span className="visibility-private-pill">Only me</span>}
               </div>
               <span className="post-location"><span aria-hidden="true">⌖</span> {post.location}</span>
             </div>
