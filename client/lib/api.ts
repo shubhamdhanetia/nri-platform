@@ -170,9 +170,11 @@ export async function apiRequest<T>(
 
     if (responseText) {
       try {
-        const payload: { detail?: string } = JSON.parse(responseText);
-        if (payload.detail) {
+        const payload: { detail?: string | { msg: string; loc?: (string | number)[] }[] } = JSON.parse(responseText);
+        if (typeof payload.detail === "string") {
           message = payload.detail;
+        } else if (Array.isArray(payload.detail)) {
+          message = payload.detail.map((item) => `${item.loc?.slice(1).join(".") || "Request"}: ${item.msg}`).join("; ");
         }
       } catch {
         // Keep the response text when the server does not return JSON.

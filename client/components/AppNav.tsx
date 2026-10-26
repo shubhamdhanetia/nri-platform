@@ -8,6 +8,7 @@ import { apiRequest, type User } from "../lib/api";
 const links = [
   { href: "/feed", label: "Feed" },
   { href: "/explore", label: "Explore" },
+  { href: "/rides", label: "Rides" },
   { href: "/create-post", label: "Create a post" },
 ];
 
@@ -74,7 +75,7 @@ export default function AppNav() {
         <nav className="main-nav" aria-label="Main navigation">
           {links.map((link) => (
             <Link
-              className={pathname === link.href ? "nav-link active" : "nav-link"}
+              className={pathname === link.href || (link.href === "/rides" && pathname.startsWith("/rides/")) ? "nav-link active" : "nav-link"}
               href={link.href}
               key={link.href}
             >

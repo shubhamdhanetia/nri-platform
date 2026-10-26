@@ -1,5 +1,39 @@
 @import "tailwindcss";
 
+.ride-tabs { display:flex; gap:25px; border-bottom:1px solid #e0e6dc; margin-bottom:28px; overflow-x:auto; }
+.ride-tabs a { padding:15px 0; white-space:nowrap; color:#64736b; font-weight:600; }
+.ride-tabs a[aria-current="page"] { color:#226b55; box-shadow:inset 0 -2px #226b55; }
+.ride-card { padding:25px; border:1px solid #e6eae5; border-radius:13px; background:white; margin:18px 0; overflow-wrap:anywhere; }
+.ride-card h2 { font:normal 27px Georgia,serif; margin:0 0 18px; }
+.ride-card h3 { margin:0 0 10px; }
+.ride-card p { line-height:1.65; }
+.ride-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 22px; }
+.ride-columns { display:grid; grid-template-columns:minmax(0,1fr) 290px; gap:25px; align-items:start; }
+.ride-between { display:flex; justify-content:space-between; align-items:center; gap:15px; flex-wrap:wrap; }
+.ride-badge { background:#edf4ee; color:#226b55; padding:6px 9px; border-radius:5px; font-size:11px; font-weight:700; }
+.ride-route { display:grid; gap:20px; margin:24px 0; padding-left:18px; border-left:2px solid #dce8db; }
+.ride-route span { display:block; font-size:11px; text-transform:uppercase; color:#75817a; margin-bottom:7px; }
+.ride-route strong { font-size:17px; line-height:1.5; }
+.ride-meta { display:flex; gap:8px; flex-wrap:wrap; }
+.ride-meta span { padding:7px 10px; border-radius:5px; background:#f4f6f1; font-size:12px; }
+.ride-notice,.ride-message { padding:16px; background:#edf3e9; border-radius:8px; color:#465d4d; line-height:1.7; margin:20px 0; overflow-wrap:anywhere; }
+.ride-message { background:#f7f8f5; white-space:pre-wrap; }
+.ride-notice a { text-decoration:underline; }
+.ride-aside { background:#eef2e8; }
+.ride-check { display:flex; gap:12px; font-size:13px; line-height:1.7; align-items:flex-start; }
+.ride-check input { margin-top:5px; width:18px; height:18px; flex-shrink:0; }
+.ride-confirm { border:2px solid #226b55; }
+.ride-map-search .explore-category-filter input { background:#fcfdfb; border:1px solid #dfe5df; border-radius:8px; height:38px; min-width:0; padding:0 10px; flex:1; font:inherit; }
+.ride-map-search .explore-post-card { overflow-wrap:anywhere; }
+.ride-map-search .explore-map-toolbar > .explore-location-search { flex-basis:100%; }
+.ride-map-filter-help { color:var(--muted); flex-basis:100%; font-size:11px; line-height:1.5; margin:0; }
+.ride-map-time-toggle { flex-basis:100%; text-align:left; }
+.ride-map-time-toggle:disabled { cursor:not-allowed; opacity:.65; }
+.ride-map-time-range { display:flex; flex-basis:100%; gap:9px; min-width:0; }
+.ride-map-time-range .explore-category-filter { flex-direction:column; align-items:stretch; min-width:0; }
+.ride-map-time-range input { width:100%; flex:none; }
+@media(max-width:800px) { .ride-columns,.ride-grid { grid-template-columns:minmax(0,1fr); } .ride-card { padding:20px; } }
+
 :root {
   --background: #f7f8f5;
   --foreground: #222d29;
@@ -2219,7 +2253,70 @@ a {
     flex-direction: column;
     gap: 0;
   }
+}
 
+.ride-map-search.explore-fullscreen.active .explore-map-toolbar {
+  width: 320px;
+}
+
+.ride-map-search.explore-fullscreen.active .explore-results-overlay {
+  width: min(370px, calc(100% - 380px));
+}
+
+.ride-map-search.explore-fullscreen.active .leaflet-top.leaflet-left {
+  bottom: 14px;
+  top: auto;
+}
+
+@media (max-width: 760px) {
+  .ride-map-search.explore-fullscreen.active .explore-map-toolbar {
+    width: auto;
+  }
+
+  .ride-map-search.explore-fullscreen.active .explore-category-filter {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 4px;
+    grid-column: auto;
+    min-width: 0;
+  }
+
+  .ride-map-search.explore-fullscreen.active .explore-category-filter input,
+  .ride-map-search.explore-fullscreen.active .explore-category-filter select {
+    flex: none;
+    width: 100%;
+  }
+
+  .ride-map-search.explore-fullscreen.active .ride-map-filter-help {
+    grid-column: 1 / -1;
+  }
+
+  .ride-map-search.explore-fullscreen.active .ride-map-time-toggle,
+  .ride-map-search.explore-fullscreen.active .ride-map-time-range {
+    grid-column: 1 / -1;
+  }
+
+  .ride-map-search.explore-fullscreen.active .explore-results-overlay {
+    max-height: 30dvh;
+    width: auto;
+  }
+
+  .ride-map-search.explore-fullscreen.active .explore-results-overlay.collapsed {
+    max-height: 64px;
+  }
+
+  .ride-map-search.explore-fullscreen.active .leaflet-top.leaflet-left {
+    bottom: calc(30dvh + 24px);
+  }
+
+  .ride-map-search.explore-fullscreen.active .explore-map-hint {
+    bottom: calc(30dvh + 24px);
+    left: 54px;
+    top: auto;
+  }
+}
+
+@media (max-width: 900px) {
   .profile-card {
     align-items: flex-start;
     padding: 19px;

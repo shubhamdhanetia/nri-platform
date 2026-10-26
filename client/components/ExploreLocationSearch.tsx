@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import {
   apiRequest,
   type LocationDetailsResponse,
@@ -19,10 +19,18 @@ function suggestionLabel(location: LocationSearchResult): string {
 export default function ExploreLocationSearch({
   center,
   onLocationSelected,
+  label = "Find location",
+  onSelectionChange,
+  onQueryChange,
 }: {
   center: Coordinates;
-  onLocationSelected: (coordinates: Coordinates) => void;
+  onLocationSelected?: (coordinates: Coordinates) => void;
+  label?: string;
+  onSelectionChange?: (selection: { locationId: string; location: string } | null) => void;
+  onQueryChange?: (query: string) => void;
 }) {
+  const inputId = useId();
+  const suggestionsId = `${inputId}-suggestions`;
   const [query, setQuery] = useState("");
   const [searchCenter, setSearchCenter] = useState(center);
   const [suggestions, setSuggestions] = useState<LocationSearchResult[]>([]);
@@ -101,7 +109,8 @@ export default function ExploreLocationSearch({
       if (requestVersion !== detailsRequestVersion.current) return;
       setQuery(response.data.fullAddress);
       setHasSelection(true);
-      onLocationSelected([response.data.lat, response.data.long]);
+      onLocationSelected?.([response.data.lat, response.data.long]);
+      onSelectionChange?.({ locationId: response.data.id, location: response.data.fullAddress });
     } catch (requestError) {
       if (requestVersion !== detailsRequestVersion.current) return;
       setDetailsError(
@@ -128,17 +137,19 @@ export default function ExploreLocationSearch({
     setLoadingDetails(false);
     setSelectedPlace(null);
     setHasSelection(false);
+    onQueryChange?.(value);
+    onSelectionChange?.(null);
   }
 
   return (
     <div className="explore-location-search">
-      <label htmlFor="explore-location">Find location</label>
+      <label htmlFor={inputId}>{label}</label>
       <input
         aria-autocomplete="list"
-        aria-controls="explore-location-suggestions"
+        aria-controls={suggestionsId}
         aria-expanded={suggestions.length > 0}
         autoComplete="off"
-        id="explore-location"
+        id={inputId}
         onChange={(event) => handleChange(event.target.value)}
         placeholder="Search a city or area"
         role="combobox"
@@ -147,7 +158,7 @@ export default function ExploreLocationSearch({
       {suggestions.length > 0 && (
         <ul
           className="location-suggestions explore-location-suggestions"
-          id="explore-location-suggestions"
+          id={suggestionsId}
           role="listbox"
         >
           {suggestions.map((location) => (
