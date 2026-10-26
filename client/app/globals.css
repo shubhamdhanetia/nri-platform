@@ -360,6 +360,13 @@ a {
   width: 21px;
 }
 
+.account-menu-avatar {
+  border-radius: 50%;
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
 .account-menu-dropdown {
   background: #fff;
   border: 1px solid var(--line);

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { apiRequest, type User } from "../lib/api";
 
 const links = [
   { href: "/feed", label: "Feed" },
@@ -14,7 +15,24 @@ export default function AppNav() {
   const pathname = usePathname();
   const router = useRouter();
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+  const [profilePicture, setProfilePicture] = useState<string | null>(null);
+  const [failedPicture, setFailedPicture] = useState<string | null>(null);
   const accountMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let active = true;
+    apiRequest<User>("/users/me")
+      .then((user) => {
+        if (active) setProfilePicture(user.picture ?? null);
+      })
+      .catch(() => {
+        if (active) setProfilePicture(null);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!isAccountMenuOpen) return;
@@ -73,9 +91,19 @@ export default function AppNav() {
             onClick={() => setIsAccountMenuOpen((isOpen) => !isOpen)}
             type="button"
           >
-            <svg aria-hidden="true" viewBox="0 0 24 24">
-              <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5Z" />
-            </svg>
+            {profilePicture && failedPicture !== profilePicture ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                alt=""
+                className="account-menu-avatar"
+                onError={() => setFailedPicture(profilePicture)}
+                src={profilePicture}
+              />
+            ) : (
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5Z" />
+              </svg>
+            )}
           </button>
           {isAccountMenuOpen && (
             <div className="account-menu-dropdown" id="account-menu-options">
