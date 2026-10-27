@@ -32,7 +32,7 @@ export default function ExploreLocationSearch({
   const inputId = useId();
   const suggestionsId = `${inputId}-suggestions`;
   const [query, setQuery] = useState("");
-  const [searchCenter, setSearchCenter] = useState(center);
+  const [latitude, longitude] = center;
   const [suggestions, setSuggestions] = useState<LocationSearchResult[]>([]);
   const [searchedQuery, setSearchedQuery] = useState("");
   const [searching, setSearching] = useState(false);
@@ -56,13 +56,14 @@ export default function ExploreLocationSearch({
       void apiRequest<LocationSearchResponse>("/locations/search", {
         method: "POST",
         body: JSON.stringify({
-          latitude: searchCenter[0],
-          longitude: searchCenter[1],
+          latitude,
+          longitude,
           query: normalizedQuery,
         }),
         signal: controller.signal,
       })
         .then((response) => {
+          if (controller.signal.aborted) return;
           setSuggestions(response.data.filter((location) => location.id));
           setSearchedQuery(normalizedQuery);
         })
@@ -87,7 +88,7 @@ export default function ExploreLocationSearch({
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [hasSelection, query, searchCenter, selectedPlace]);
+  }, [hasSelection, query, latitude, longitude, selectedPlace]);
 
   async function selectLocation(location: LocationSearchResult) {
     if (!location.id) {
@@ -128,7 +129,6 @@ export default function ExploreLocationSearch({
   function handleChange(value: string) {
     detailsRequestVersion.current += 1;
     setQuery(value);
-    setSearchCenter(center);
     setSuggestions([]);
     setSearching(false);
     setSearchedQuery("");

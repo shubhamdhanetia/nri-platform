@@ -1,5 +1,18 @@
 @import "tailwindcss";
 
+.ride-table-section { margin-top:48px; padding-top:32px; border-top:1px solid var(--line); }
+.ride-table-section h2 { font:normal 30px Georgia,serif; margin:0 0 12px; }
+.ride-table-toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-bottom:20px; }
+.ride-table-toolbar .field-hint { margin:0; }
+.ride-table-filters { display:flex; flex-wrap:wrap; gap:16px; padding:20px; background:var(--card); border:1px solid var(--line); border-radius:14px; margin-bottom:20px; }
+.ride-table-filters .form-field { flex:1 1 180px; margin:0; min-width:0; }
+.ride-table-filters .field-hint,.ride-table-filters .form-actions { flex-basis:100%; margin:0; }
+.ride-table-scroll { max-width:100%; overflow-x:auto; background:var(--card); border:1px solid var(--line); border-radius:14px; }
+.ride-requests-table { width:100%; border-collapse:collapse; text-align:left; font-size:13px; min-width:740px; }
+.ride-requests-table th { background:#edf4ef; color:var(--green-dark); }
+.ride-requests-table th,.ride-requests-table td { padding:16px; border-bottom:1px solid var(--line); vertical-align:top; }
+.ride-requests-table td { max-width:250px; overflow-wrap:anywhere; }
+
 .ride-tabs { display:flex; gap:25px; border-bottom:1px solid #e0e6dc; margin-bottom:28px; overflow-x:auto; }
 .ride-tabs a { padding:15px 0; white-space:nowrap; color:#64736b; font-weight:600; }
 .ride-tabs a[aria-current="page"] { color:#226b55; box-shadow:inset 0 -2px #226b55; }

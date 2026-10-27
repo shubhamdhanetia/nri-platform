@@ -230,6 +230,54 @@ coordinates, and the address components used by posts and rides remain required.
 
 ### Rides
 
+#### Independent request table
+
+Below pickup-map discovery, **Browse all active requests** loads independently.
+It shares the driver-profile gate and contact privacy. Its location autocomplete
+uses the map's current latitude/longitude as the same provider search bias
+(including geolocation, city selection, and panning), but its selected pickup,
+filters, results, and pagination stay independent. Selecting a table pickup
+does not move the map or search automatically.
+`POST /rides/requests/table-search` accepts:
+
+```json
+{
+  "pickup_location_id": "<optional selected provider ID>",
+  "radius_km": 40.2336,
+  "departure_date": "2026-11-02",
+  "pickup_time_from": "09:00",
+  "pickup_time_to": "10:00",
+  "max_passengers": 3,
+  "limit": 20,
+  "cursor": null
+}
+```
+
+All filters are optional; the default is all active requests except the
+driver's own. The UI offers 5/10/25/50 miles, defaulting to 25 miles, effective only
+with a pickup selection. It converts miles to decimal kilometers without rounding
+(1 mile = 1.609344 km). The API keeps its 1–100 km range and 25 km default for
+compatibility. No destination filter is accepted. Date/time validation
+matches map search; date-only searches the whole day in each ride's timezone.
+The response contains `rides`, `has_more`, and `next_cursor` (null on the last
+page). Send the returned `{pickup_start, id}` cursor for the next page, with
+the same filters. Results sort by pickup start then ID. The client stores prior
+cursors for Previous, and resets pagination on Apply, Clear, or Refresh.
+Pagination is live rather than a historical snapshot: newly closed requests
+disappear and returning to a previous page may show updated results.
+
+The PostgreSQL query applies status/expiry, passenger, local date/time overlap,
+H3 candidates, and exact spherical distance before its limit. Radius coverings
+use boundary-overlapping resolution-8 cells, including antimeridian and polar
+areas, with a 200,000-cell cap; cells are bound as one PostgreSQL array.
+`ix_ride_requests_status_pickup_id` supports ordered keyset browsing. The
+two-hour maximum request window permits an indexed lower pickup-start bound
+when excluding expired requests. Startup creates this index on existing tables.
+There is no OFFSET or per-search exact COUNT. This avoids application-wide
+scans, but does not guarantee million-row latency: check query plans and
+representative data before production scaling, particularly large radii and
+per-row timezone calculations. The new table query targets PostgreSQL.
+
 All ride endpoints require authentication. Browse and non-owner open-request
 details additionally require a driver profile. Historical details are retained
 for the owner, selected driver, and drivers who previously offered, but only

@@ -62,6 +62,10 @@ the previous navigation labels.
 Ride discovery supports pickup-map bounds, an optional departure date, and an
 optional same-day time range. A date alone considers the whole day; a time
 range matches overlapping pickup windows in each ride's saved timezone.
+An independent table below the map browses all active requests with optional
+pickup-area/radius (5–50 miles), date/time, and passenger filters. It uses server-side
+cursor pagination (20 rows per page), indexed H3 candidates, and an exact
+distance check rather than downloading every request or using offset pagination.
 Members can track requests, offers, cancellations, and completion in **My rides**.
 
 > **Privacy and scope:** exact ride addresses are visible to signed-in members

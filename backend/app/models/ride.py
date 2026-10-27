@@ -62,6 +62,7 @@ class RideRequest(Base):
 
 
 ride_pickup_h3_index = Index("ix_ride_requests_pickup_h3", RideRequest.pickup["h3_cell_id"].as_string())
+ride_browse_index = Index("ix_ride_requests_status_pickup_id", RideRequest.status, RideRequest.pickup_start, RideRequest.id)
 
 
 class RideOffer(Base):
