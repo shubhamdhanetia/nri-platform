@@ -2,12 +2,14 @@ from datetime import date, datetime, time, timedelta, timezone
 from math import asin, cos, radians, sin, sqrt
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import exists, or_, select
+from sqlalchemy import DateTime, String, any_, bindparam, case, cast, exists, func, or_, select, tuple_
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Session
 
 from app.models.ride import DriverProfile, RideBooking, RideOffer, RideRequest
 from app.schemas.post import PostLocationFields, PostSearchBounds
 from app.core.ride_time import utc_now_naive
+from app.schemas.ride import RideTableSearchInput
 
 
 def driver_profile(db: Session, user_id: int) -> DriverProfile | None:
@@ -96,3 +98,59 @@ def open_requests(
         if len(matches) == limit:
             break
     return matches
+
+
+def _local_boundary_utc(local: datetime, *, latest: bool):
+    wall = cast(local, DateTime)
+    zone = RideRequest.timezone
+    before = cast(local - timedelta(days=2), DateTime)
+    after = cast(local + timedelta(days=2), DateTime)
+    before_offset = before - func.timezone("UTC", func.timezone(zone, before))
+    after_offset = after - func.timezone("UTC", func.timezone(zone, after))
+    first = wall - before_offset
+    second = wall - after_offset
+    first_valid = func.timezone(zone, func.timezone("UTC", first)) == wall
+    second_valid = func.timezone(zone, func.timezone("UTC", second)) == wall
+    # Match ZoneInfo fold=0 at the start and fold=1 at the end of a window.
+    return case(
+        (first_valid & second_valid, func.greatest(first, second) if latest else func.least(first, second)),
+        (first_valid, first), (second_valid, second),
+        else_=second if latest else first,
+    )
+
+
+def table_requests(
+    db: Session, user_id: int, data: RideTableSearchInput,
+    pickup: PostLocationFields | None, cells: set[str] | None,
+) -> list[RideRequest]:
+    now = utc_now_naive()
+    query = select(RideRequest).where(
+        RideRequest.status == "OPEN", RideRequest.pickup_end > now,
+        RideRequest.pickup_start > now - timedelta(hours=2),
+        RideRequest.rider_id != user_id,
+    )
+    if data.cursor:
+        cursor_time = data.cursor.pickup_start.astimezone(timezone.utc).replace(tzinfo=None)
+        query = query.where(tuple_(RideRequest.pickup_start, RideRequest.id) > tuple_(cursor_time, data.cursor.id))
+    if data.max_passengers is not None:
+        query = query.where(RideRequest.passengers <= data.max_passengers)
+    if pickup is not None:
+        query = query.where(
+            RideRequest.pickup["h3_cell_id"].as_string() == any_(bindparam("pickup_cells", sorted(cells or set()), type_=ARRAY(String)))
+        )
+        latitude = func.radians(RideRequest.pickup["latitude"].as_float())
+        longitude = func.radians(RideRequest.pickup["longitude"].as_float())
+        cosine = func.sin(latitude) * sin(radians(pickup.latitude)) + func.cos(latitude) * cos(radians(pickup.latitude)) * func.cos(longitude - radians(pickup.longitude))
+        query = query.where(6371 * func.acos(func.least(1.0, func.greatest(-1.0, cosine))) <= data.radius_km)
+    if data.departure_date:
+        start = datetime.combine(data.departure_date, data.pickup_time_from or time.min)
+        end = datetime.combine(
+            data.departure_date if data.pickup_time_to else data.departure_date + timedelta(days=1),
+            data.pickup_time_to or time.min,
+        )
+        window_start = _local_boundary_utc(start, latest=False)
+        window_end = _local_boundary_utc(end, latest=True)
+        query = query.where(RideRequest.pickup_end >= window_start)
+        query = query.where(RideRequest.pickup_start <= window_end if data.pickup_time_to else RideRequest.pickup_start < window_end)
+        query = query.where(RideRequest.pickup_end >= start - timedelta(days=1), RideRequest.pickup_start < end + timedelta(days=1))
+    return list(db.scalars(query.order_by(RideRequest.pickup_start, RideRequest.id).limit(data.limit + 1)))

@@ -18,10 +18,11 @@ import app.models.comment
 import app.models.reaction
 import app.models.saved_post
 import app.models.ride
-from app.models.ride import ride_pickup_h3_index
+from app.models.ride import ride_browse_index, ride_pickup_h3_index
 
 Base.metadata.create_all(bind=engine)
 ride_pickup_h3_index.create(bind=engine, checkfirst=True)
+ride_browse_index.create(bind=engine, checkfirst=True)
 
 app = FastAPI(title="NRI Platform")
 

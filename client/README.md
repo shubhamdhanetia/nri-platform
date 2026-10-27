@@ -32,6 +32,16 @@ same-day From/To range matches overlapping pickup windows. Dates and times use
 each ride's saved timezone, shown in the results. Drop-off addresses are still
 shown, but destination filters are not offered in this version.
 
+Below the map, **Browse all active requests** is an independent table with
+pickup/radius (5/10/25/50 miles, default 25 miles), date/time, and maximum-passenger filters.
+The client converts miles to decimal kilometers for the API without rounding.
+It initially loads all active requests, excluding your own; no GPS filter is
+applied. Apply/Clear filters and Refresh table affect only the table.
+Filters start collapsed; Show/Hide filters preserves selections without searching.
+An active-filter count stays visible, and Refresh table is always available.
+Previous/Next use server-side cursors, 20 results per page, without an exact
+total count. On narrow screens the table scrolls within its own container.
+
 ## Local setup
 
 The header contains **Posts** and **Rides**. Rides opens **My rides**

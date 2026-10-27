@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import RideLayout from "../../components/RideLayout";
 import ExploreLocationSearch from "../../components/ExploreLocationSearch";
+import RideRequestsTable from "../../components/RideRequestsTable";
 import { apiRequest, type PostSearchBounds } from "../../lib/api";
 import { rideDate, rideError, type DriverProfile, type RideRequest } from "../../lib/rides";
 
@@ -16,6 +17,7 @@ const DEFAULT_CENTER: [number, number] = [20, 0];
 const RESULT_LIMIT = 50;
 
 export default function RidesPage() {
+  const [searchCenter, setSearchCenter] = useState<[number, number]>(DEFAULT_CENTER);
   const [profile, setProfile] = useState<DriverProfile | null>(null);
   const [ready, setReady] = useState(false);
   const [profileError, setProfileError] = useState("");
@@ -32,16 +34,18 @@ export default function RidesPage() {
     {!ready ? profileError ? <div className="state-card error-state" role="alert"><p>{profileError}</p><button className="button button-secondary" onClick={() => window.location.reload()}>Retry loading rides</button></div> : <p role="status">Loading rides...</p> : !profile ? <>
       <section className="page-heading"><div><p className="eyebrow">Go together</p><h1>Browse ride requests</h1><p className="muted">Find members who need a ride. Search pickup locations and send an offer.</p></div><Link className="button button-primary" href="/rides/new">Request a ride</Link></section>
       <div className="ride-card"><h2>Offer a little help.</h2><p className="muted">Complete your driver profile to browse the map and exact pickup/drop-off addresses. You can request a ride without becoming a driver.</p><Link className="button button-primary" href="/rides/driver">Set up driver profile</Link></div>
-    </> : <RideMapSearch />}
+    </> : <><RideMapSearch searchCenter={searchCenter} setSearchCenter={setSearchCenter} /><RideRequestsTable searchCenter={searchCenter} /></>}
     <p className="ride-notice">Community members are not vetted by this platform. Cost-sharing is agreed between members; no payments are collected here. No notifications are sent: check My rides and refresh for updates.</p>
   </RideLayout>;
 }
 
-function RideMapSearch() {
+function RideMapSearch({ searchCenter, setSearchCenter }: {
+  searchCenter: [number, number];
+  setSearchCenter: (center: [number, number]) => void;
+}) {
   const [rides, setRides] = useState<RideRequest[]>([]);
   const [bounds, setBounds] = useState<PostSearchBounds | null>(null);
   const [center, setCenter] = useState<[number, number]>(DEFAULT_CENTER);
-  const [searchCenter, setSearchCenter] = useState<[number, number]>(DEFAULT_CENTER);
   const [zoom, setZoom] = useState(2);
   const [date, setDate] = useState("");
   const [timeRangeOpen, setTimeRangeOpen] = useState(false);
@@ -64,12 +68,12 @@ function RideMapSearch() {
   const searchController = useRef<AbortController | null>(null);
 
   const onBoundsChange = useCallback((next: PostSearchBounds) => setBounds(next), []);
-  const onCenterChange = useCallback((next: [number, number]) => setSearchCenter(next), []);
+  const onCenterChange = useCallback((next: [number, number]) => setSearchCenter(next), [setSearchCenter]);
   const onLocationSelected = useCallback((next: [number, number]) => {
     locationVersion.current += 1;
     setCenter(next); setSearchCenter(next); setZoom(11); setLocationError("");
     setLocating(false); setSelectedId(null);
-  }, []);
+  }, [setSearchCenter]);
   const selectRide = useCallback((id: number) => {
     setSelectedId(id); setSelectionVersion(version => version + 1);
   }, []);
@@ -87,7 +91,7 @@ function RideMapSearch() {
       setLocationError("Unable to get your location. Search for a city or move the map instead.");
       setLocating(false);
     }, { enableHighAccuracy: false, maximumAge: 300000, timeout: 10000 });
-  }, []);
+  }, [setSearchCenter]);
 
   useEffect(() => {
     mounted.current = true;

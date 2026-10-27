@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timezone
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
@@ -11,10 +11,12 @@ from app.schemas.ride import (
     CancellationInput, ConfirmationInput, DriverProfileInput, DriverProfileResponse,
     RideDetailResponse, RideOfferInput, RideRequestInput, RideRequestResponse,
     RideMapSearchInput, RideMapSearchResponse,
+    RideTableSearchInput, RideTableSearchResponse, RideSearchCursor,
 )
 from app.services import rides
 from app.services.location_search import resolve_post_location
 from app.services.post_search import h3_cells_for_bounds
+from app.services.ride_search import pickup_radius_cells
 
 router = APIRouter()
 
@@ -74,6 +76,26 @@ def search_map(
     return RideMapSearchResponse(
         rides=[rides.request_response(db, ride) for ride in matches[:data.limit]],
         has_more=len(matches) > data.limit,
+    )
+
+
+@router.post("/requests/table-search", response_model=RideTableSearchResponse)
+def search_table(
+    data: RideTableSearchInput, db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    rides.require_driver(db, user.id)
+    pickup = resolve_post_location(data.pickup_location_id) if data.pickup_location_id else None
+    cells = pickup_radius_cells(pickup, data.radius_km) if pickup else None
+    matches = repo.table_requests(db, user.id, data, pickup, cells)
+    has_more = len(matches) > data.limit
+    page = matches[:data.limit]
+    return RideTableSearchResponse(
+        rides=[rides.request_response(db, ride) for ride in page],
+        has_more=has_more,
+        next_cursor=RideSearchCursor(
+            pickup_start=page[-1].pickup_start.replace(tzinfo=timezone.utc), id=page[-1].id,
+        ) if has_more else None,
     )
 
 

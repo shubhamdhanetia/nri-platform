@@ -1,7 +1,7 @@
 import re
 from datetime import date, datetime, time, timezone
 from decimal import Decimal
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Self
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, StringConstraints, field_serializer, field_validator, model_validator
@@ -156,17 +156,13 @@ class RideDetailResponse(BaseModel):
     booking: RideBookingResponse | None
 
 
-class RideMapSearchInput(BaseModel):
-    bounds: PostSearchBounds
-    limit: int = Field(default=50, ge=1, le=50)
-    dropoff_location_id: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)] | None = None
+class RideTimeFilters(BaseModel):
     departure_date: date | None = None
-    radius_km: int = Field(default=25, ge=1, le=100)
     pickup_time_from: time | None = None
     pickup_time_to: time | None = None
 
     @model_validator(mode="after")
-    def validate_time_range(self) -> "RideMapSearchInput":
+    def validate_time_range(self) -> Self:
         if self.pickup_time_from is None and self.pickup_time_to is None:
             return self
         if self.departure_date is None or self.pickup_time_from is None or self.pickup_time_to is None:
@@ -178,6 +174,31 @@ class RideMapSearchInput(BaseModel):
         return self
 
 
+class RideMapSearchInput(RideTimeFilters):
+    bounds: PostSearchBounds
+    limit: int = Field(default=50, ge=1, le=50)
+    dropoff_location_id: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)] | None = None
+    radius_km: int = Field(default=25, ge=1, le=100)
+
+
 class RideMapSearchResponse(BaseModel):
     rides: list[RideRequestResponse]
     has_more: bool
+
+
+class RideSearchCursor(BaseModel):
+    pickup_start: AwareDatetime
+    id: int = Field(gt=0)
+
+
+class RideTableSearchInput(RideTimeFilters):
+    model_config = ConfigDict(extra="forbid")
+    pickup_location_id: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)] | None = None
+    radius_km: float = Field(default=25, ge=1, le=100, allow_inf_nan=False)
+    max_passengers: int | None = Field(default=None, ge=1, le=8)
+    cursor: RideSearchCursor | None = None
+    limit: int = Field(default=20, ge=1, le=50)
+
+
+class RideTableSearchResponse(RideMapSearchResponse):
+    next_cursor: RideSearchCursor | None = None
