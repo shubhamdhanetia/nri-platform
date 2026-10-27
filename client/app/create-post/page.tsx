@@ -58,7 +58,7 @@ export default function CreatePostPage() {
           location_id: selectedLocation.locationId,
         }),
       });
-      router.push("/feed");
+      router.push("/explore");
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Unable to create your post.");
     } finally {
@@ -165,7 +165,7 @@ export default function CreatePostPage() {
           >
             {submitting ? "Publishing…" : "Publish post"}
           </button>
-          <button className="button button-quiet" onClick={() => router.push("/feed")} type="button">
+          <button className="button button-quiet" onClick={() => router.push("/explore")} type="button">
             Cancel
           </button>
         </div>

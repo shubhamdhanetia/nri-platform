@@ -3,8 +3,8 @@
 The client is a Next.js app that supports the MVP community flow:
 
 - `/login` — sign in with Google
-- `/feed` — browse community posts
-- `/explore` — search posts by map area
+- `/feed` — legacy community feed, retained without a top-level navigation link
+- `/explore` — Posts: the primary post discovery page and post-login destination
 - `/create-post` — publish a post with a title, description, category, and selected location
 - `/profile` — view the signed-in user and their posts
 - `/rides` — search scheduled ride pickups on a map after completing a driver profile
@@ -33,6 +33,15 @@ each ride's saved timezone, shown in the results. Drop-off addresses are still
 shown, but destination filters are not offered in this version.
 
 ## Local setup
+
+The header contains **Posts** and **Rides**. Rides opens **My rides**
+(`/rides/mine`); tabs are **My rides**, **Browse requests**, and **Driver profile**.
+Discovery stays at `/rides`, including driver-profile setup guidance.
+My rides keeps request creation prominent and offers a browse action when empty.
+The brand opens Posts; viewing or
+creating posts keeps Posts highlighted. **Create a post** is available on the
+Posts page in both normal and fullscreen map modes. My profile, Saved posts,
+and Log out remain in the account menu. Existing URLs are unchanged.
 
 Create `client/.env.local` with the Google OAuth web client ID:
 

@@ -34,7 +34,7 @@ export default function MyRidesPage() {
     <p className="ride-notice">No notifications are sent. Refresh here to check for offers, confirmations, and cancellations.</p>
     <button className="button button-secondary" disabled={busy} onClick={() => refresh(offset)}>Refresh rides</button>
     {error && <p className="form-error" role="alert">{error}</p>}
-    {busy ? <p role="status">Loading your rides...</p> : rides.length ? <div className="ride-grid">{rides.map(ride => <RideCard key={ride.id} ride={ride} />)}</div> : !error && <div className="state-card"><h2>No rides yet</h2><p>Request a ride or offer to help a community member.</p></div>}
+    {busy ? <p role="status">Loading your rides...</p> : rides.length ? <div className="ride-grid">{rides.map(ride => <RideCard key={ride.id} ride={ride} />)}</div> : !error && <div className="state-card"><h2>No rides yet</h2><p>Request a ride, or help a community member by browsing requests.</p><div className="form-actions"><Link className="button button-primary" href="/rides/new">Request a ride</Link><Link className="button button-secondary" href="/rides">Browse requests</Link></div></div>}
     <div className="form-actions"><button className="button button-secondary" disabled={busy || offset === 0} onClick={() => refresh(offset - 20)}>Previous</button><button className="button button-secondary" disabled={busy || !more} onClick={() => refresh(offset + 20)}>Next</button></div>
   </RideLayout>;
 }

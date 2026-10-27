@@ -30,7 +30,7 @@ export default function RidesPage() {
 
   return <RideLayout>
     {!ready ? profileError ? <div className="state-card error-state" role="alert"><p>{profileError}</p><button className="button button-secondary" onClick={() => window.location.reload()}>Retry loading rides</button></div> : <p role="status">Loading rides...</p> : !profile ? <>
-      <section className="page-heading"><div><p className="eyebrow">Go together</p><h1>Explore community rides</h1></div><Link className="button button-primary" href="/rides/new">Request a ride</Link></section>
+      <section className="page-heading"><div><p className="eyebrow">Go together</p><h1>Browse ride requests</h1><p className="muted">Find members who need a ride. Search pickup locations and send an offer.</p></div><Link className="button button-primary" href="/rides/new">Request a ride</Link></section>
       <div className="ride-card"><h2>Offer a little help.</h2><p className="muted">Complete your driver profile to browse the map and exact pickup/drop-off addresses. You can request a ride without becoming a driver.</p><Link className="button button-primary" href="/rides/driver">Set up driver profile</Link></div>
     </> : <RideMapSearch />}
     <p className="ride-notice">Community members are not vetted by this platform. Cost-sharing is agreed between members; no payments are collected here. No notifications are sent: check My rides and refresh for updates.</p>
@@ -137,7 +137,7 @@ function RideMapSearch() {
   }
 
   return <div className={fullscreen ? "explore-fullscreen active ride-map-search" : "explore-fullscreen ride-map-search"}>
-    <section className="page-heading explore-heading"><div><p className="eyebrow">Go together</p><h1>Explore community rides</h1><p className="muted">Find open rides with pickups inside the map. Pan or zoom, then search this area.</p></div><div className="explore-heading-actions"><button className="button button-secondary" aria-pressed={fullscreen} onClick={() => setFullscreen(true)}>Full screen map</button><Link className="button button-primary" href="/rides/new">Request a ride</Link></div></section>
+    <section className="page-heading explore-heading"><div><p className="eyebrow">Go together</p><h1>Browse ride requests</h1><p className="muted">Find members who need a ride. Search pickup locations and send an offer.</p></div><div className="explore-heading-actions"><button className="button button-secondary" aria-pressed={fullscreen} onClick={() => setFullscreen(true)}>Full screen map</button><Link className="button button-primary" href="/rides/new">Request a ride</Link></div></section>
     <section className="explore-layout" aria-label="Explore rides by pickup location">
       <div className="explore-map-panel">
         <div className="explore-map-toolbar">

@@ -16,6 +16,14 @@ or dispatch service.
 
 ## Features
 
+The main navigation has two sections: **Posts** for map-based community
+discovery and **Rides** for scheduled trips. Posts is the destination after
+sign-in and when selecting the brand. **Create a post** is available inside
+Posts, including fullscreen map mode. Profile, saved posts, and logout are in
+the account menu. The existing `/feed` route remains available as a secondary
+view, but is no longer in the top navigation. Older screenshots below may show
+the previous navigation labels.
+
 ### Community
 
 - **Google sign-in** with backend credential verification and JWT-authenticated

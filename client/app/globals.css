@@ -1580,6 +1580,11 @@ a {
   top: 315px;
 }
 
+.posts-map-search.explore-fullscreen.active .leaflet-top.leaflet-left {
+  bottom: 60px;
+  top: auto;
+}
+
 .explore-fullscreen.active .explore-map,
 .explore-fullscreen.active .explore-map-loading {
   height: 100%;

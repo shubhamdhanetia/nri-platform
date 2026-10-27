@@ -189,11 +189,11 @@ export default function ExplorePage() {
 
   return (
     <ProtectedPage>
-      <div className={isFullscreen ? "explore-fullscreen active" : "explore-fullscreen"}>
+      <div className={isFullscreen ? "explore-fullscreen active posts-map-search" : "explore-fullscreen posts-map-search"}>
         <section className="page-heading explore-heading">
           <div>
             <p className="eyebrow">Discover nearby</p>
-            <h1>Explore posts</h1>
+            <h1>Posts</h1>
             <p className="muted">Move the map to an area and search for community posts there.</p>
           </div>
           <div className="explore-heading-actions">
@@ -206,7 +206,7 @@ export default function ExplorePage() {
               Full screen map
             </button>
             <Link className="button button-primary" href="/create-post">
-              <span aria-hidden="true">＋</span> Share something
+              <span aria-hidden="true">＋</span> Create a post
             </Link>
           </div>
         </section>
@@ -266,6 +266,11 @@ export default function ExplorePage() {
               >
                 {searchPending ? "Searching…" : "Search this area"}
               </button>
+              {isFullscreen && (
+                <Link className="button button-primary" href="/create-post">
+                  Create a post
+                </Link>
+              )}
               {isFullscreen && (
                 <button
                   className="button button-secondary explore-exit-fullscreen"

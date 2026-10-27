@@ -14,8 +14,17 @@ application.
 - The client stores the access token in browser local storage and sends it as a
   Bearer token for authenticated API requests.
 - Protected pages redirect unauthenticated visitors to `/login`.
-- Main navigation links to Feed, Explore, Saved posts, Create a post, and My
-  profile. Signing out removes the local access token.
+- Main navigation contains Posts and Rides. Posts uses the existing `/explore`
+  map route and is the post-login and brand-link destination. Feed remains
+  accessible at `/feed` without a top-level navigation link.
+- The main Rides link opens `/rides/mine`. Ride tabs are ordered My rides,
+  Browse requests, Driver profile. Discovery remains at `/rides`; members without
+  a driver profile see setup guidance there. My rides includes request creation
+  and empty-state links to request a ride or browse requests.
+- Create a post is a page action in normal and fullscreen Posts views. Post
+  details, creation, and the legacy feed keep Posts highlighted in navigation.
+  My profile, Saved posts, and Log out are available in the account menu.
+  Signing out removes the local access token.
 
 ### Posts
 
