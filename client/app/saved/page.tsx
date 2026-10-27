@@ -90,7 +90,7 @@ export default function SavedPostsPage() {
           <span className="empty-icon" aria-hidden="true">▱</span>
           <h2>No saved posts yet</h2>
           <p className="muted">Save posts that you want to come back to later.</p>
-          <Link className="button button-primary" href="/feed">Browse the feed</Link>
+          <Link className="button button-primary" href="/explore">Browse posts</Link>
         </div>
       ) : (
         <section className="post-grid" aria-label="Saved posts">

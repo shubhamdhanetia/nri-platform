@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ProtectedPage from "../../components/ProtectedPage";
 import LocationAutocomplete from "../../components/LocationAutocomplete";
@@ -57,7 +58,7 @@ export default function CreatePostPage() {
           location_id: selectedLocation.locationId,
         }),
       });
-      router.push("/feed");
+      router.push("/explore");
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Unable to create your post.");
     } finally {
@@ -132,6 +133,13 @@ export default function CreatePostPage() {
             </select>
           </label>
         </div>
+        {category === "RIDES" && (
+          <p className="ride-notice">
+            Planning a scheduled ride? <Link href="/rides/new">Request a ride</Link> or{" "}
+            <Link href="/rides">browse ride requests</Link> to arrange driver offers and confirmation.
+            This community post does not create a ride booking.
+          </p>
+        )}
         <label className="form-field post-visibility-field">
           <span>Who can see this post?</span>
           <select
@@ -157,7 +165,7 @@ export default function CreatePostPage() {
           >
             {submitting ? "Publishing…" : "Publish post"}
           </button>
-          <button className="button button-quiet" onClick={() => router.push("/feed")} type="button">
+          <button className="button button-quiet" onClick={() => router.push("/explore")} type="button">
             Cancel
           </button>
         </div>

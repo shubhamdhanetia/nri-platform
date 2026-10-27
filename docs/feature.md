@@ -14,8 +14,17 @@ application.
 - The client stores the access token in browser local storage and sends it as a
   Bearer token for authenticated API requests.
 - Protected pages redirect unauthenticated visitors to `/login`.
-- Main navigation links to Feed, Explore, Saved posts, Create a post, and My
-  profile. Signing out removes the local access token.
+- Main navigation contains Posts and Rides. Posts uses the existing `/explore`
+  map route and is the post-login and brand-link destination. Feed remains
+  accessible at `/feed` without a top-level navigation link.
+- The main Rides link opens `/rides/mine`. Ride tabs are ordered My rides,
+  Browse requests, Driver profile. Discovery remains at `/rides`; members without
+  a driver profile see setup guidance there. My rides includes request creation
+  and empty-state links to request a ride or browse requests.
+- Create a post is a page action in normal and fullscreen Posts views. Post
+  details, creation, and the legacy feed keep Posts highlighted in navigation.
+  My profile, Saved posts, and Log out are available in the account menu.
+  Signing out removes the local access token.
 
 ### Posts
 
@@ -91,6 +100,82 @@ application.
 - Own posts can be edited or deleted within the applicable rules. Reaction
   counts are visible but non-interactive for own posts.
 
+### Scheduled community rides
+
+- `/rides` is a separate ride board, not an extension of post comments.
+  Members may request rides without registering as drivers.
+  Existing posts in the Rides category remain community content, not bookings;
+  selecting that category during post creation links to the structured ride flow.
+- Request creation selects **both exact pickup and drop-off** through the same
+  location autocomplete/provider used by posts. The server resolves both IDs;
+  client-supplied coordinates and address strings are not trusted.
+- Riders explicitly consent to sharing both full addresses with any signed-in
+  member who has a completed driver profile. This is not a public anonymous board.
+  Public meeting points are recommended instead of home addresses.
+- A driver profile includes vehicle make/model, passenger seats excluding the
+  driver, an international-format phone number, and an eligibility/privacy
+  acknowledgement. It is marked Required, with explanatory helper text;
+  creating or updating a profile stays disabled until it is checked. Browser
+  validation and backend enforcement remain in place. Drivers and phone
+  numbers are **not verified or vetted**.
+- Requests contain a future pickup window (at most two hours), an IANA timezone,
+  passengers, bags, notes, a rider contact phone, and a cost-sharing currency.
+  Creation uses the browser's timezone, explicitly displayed alongside inputs.
+- Drivers discover requests on an Explore-style Leaflet map. Search for a
+  pickup area, pan/zoom, and explicitly select **Search this area**. Only open
+  requests with exact pickups inside the viewport are returned. Pickup markers
+  cluster and overlapping markers can be spiderfied. Selecting a marker or
+  **Show on map** highlights its result; popups link to ride details.
+- Discovery offers pickup area and an optional departure date. A date alone
+  searches the whole day; **Add time range** reveals optional same-day From/To
+  controls. Requests match when their pickup window overlaps the selected range,
+  including its time endpoints. Date-only searches exclude the following midnight.
+  Dates and times use each request's saved timezone, explicitly explained in the
+  filter card and shown in results. Without a date, all future open requests match.
+  Destination filters are deferred; drop-off addresses remain visible.
+- Location IDs are resolved server-side. H3 resolution-8 cells covering the
+  viewport narrow database candidates using the pickup H3 expression index;
+  exact latitude/longitude checks remove cell-boundary false positives.
+  Viewports crossing the antimeridian are supported. As with post search,
+  areas over 10,000 square kilometers or 20,000 covering cells are rejected.
+- Map search returns at most 50 rides, ordered by earliest pickup, with
+  `has_more` prompting users to zoom in or add filters. Map/filter changes
+  display a refresh hint; they never silently issue another search. A
+  full-screen map has collapsible results and Escape/Exit controls.
+- Browser geolocation can center the map; denied/unavailable access displays
+  an error and users can still search for a city without location permission.
+- An offer includes a pickup time within the requested window, a message, a
+  vehicle/capacity snapshot, and a proposed contribution (0–9,999.99).
+  Supported currencies are USD, CAD, INR, GBP, EUR, and AUD; the rider chooses
+  the currency and every offer on that request uses it. No currency conversion
+  or payment collection occurs.
+- Each driver has at most one offer per request. A withdrawn or time-expired
+  offer can be resubmitted while the request is open. Contributions are total
+  amounts for the requested trip, not per passenger. Drivers cannot offer on their own
+  requests or when their passenger capacity is insufficient.
+- The rider reviews offers and explicitly confirms one driver. A transaction
+  locks the request, rechecks availability/eligibility/time, creates a unique
+  booking, accepts the selected offer, and closes other pending offers.
+  Repeating the same confirmation returns the existing confirmed booking;
+  selecting another driver after booking returns a conflict.
+- Before confirmation, the rider sees all offers and drivers see only their
+  own. **Neither contact phone number is included in these responses.** After
+  confirmation, only the rider and selected driver receive the booking and
+  both phone numbers. Bookings snapshot vehicle, time, contribution, currency,
+  and contacts so later profile edits do not change an agreed booking.
+- Both participants can cancel a confirmed booking with a reason. The rider
+  can cancel an open request. Cancellation never reopens the request; the
+  rider can explicitly create another request.
+- Only the rider can mark a confirmed ride completed, after the pickup window
+  ends. This is a self-reported status, not proof the journey occurred.
+- Expired requests/offers are derived at read time and are rejected on writes;
+  no scheduler is needed. `/rides/mine` includes the rider's requests and
+  requests the member offered to drive, with their offer and booking statuses.
+- **No notifications, private messaging, SMS verification, live tracking,
+  dispatch, or payment processing are included.** Members must refresh My
+  rides/detail pages and coordinate using the contact numbers after booking.
+  Local licensing, insurance, and cost-sharing rules still apply.
+
 ## Web application routes
 
 | Route | Purpose |
@@ -103,6 +188,11 @@ application.
 | `/posts/[id]` | Post details, reactions, saves, and comments |
 | `/saved` | Current user's saved posts |
 | `/profile` | Current user's profile and posts |
+| `/rides` | Driver-only map discovery of open ride pickups and exact locations |
+| `/rides/new` | Request a scheduled ride |
+| `/rides/driver` | Register/update the current user's driver profile |
+| `/rides/mine` | Own rider requests and driver offers |
+| `/rides/[id]` | Request details, offers, confirmation and booking management |
 
 ## Backend API
 
@@ -134,6 +224,62 @@ search type is `PICKUP`. Location details accepts an `id` and uses the
 `uber_places` provider by default. The backend calls the location provider and
 validates its response before returning it. Provider timeouts and invalid
 responses are reported as API errors rather than silently substituted.
+`addressComponents.HOUSE_NUMBER` is optional and may be null: valid places
+and meeting points do not always have a street number. Their full address,
+coordinates, and the address components used by posts and rides remain required.
+
+### Rides
+
+All ride endpoints require authentication. Browse and non-owner open-request
+details additionally require a driver profile. Historical details are retained
+for the owner, selected driver, and drivers who previously offered, but only
+booking participants receive phone numbers.
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/rides/driver-profile` | Own profile including own phone, or `null` |
+| `PUT` | `/rides/driver-profile` | Create/update profile with eligibility acknowledgement |
+| `POST` | `/rides/requests` | Resolve both selected locations and create a request |
+| `GET` | `/rides/requests` | Browse open requests; optional `pickup_location_id`, `dropoff_location_id`, `departure_date`, `radius_km` |
+| `POST` | `/rides/requests/search` | Map search: pickup viewport plus optional date and pickup time range |
+| `GET` | `/rides/mine` | Own requests and trips offered as driver |
+| `GET` | `/rides/requests/{id}` | Request, permitted offers, and participant-only booking |
+| `POST` | `/rides/requests/{id}/offers` | Send/resubmit own offer |
+| `POST` | `/rides/requests/{id}/offers/{offer_id}/withdraw` | Withdraw own pending offer |
+| `POST` | `/rides/requests/{id}/confirm` | Rider chooses `{ "offer_id": 1 }` |
+| `POST` | `/rides/requests/{id}/cancel` | Cancel an open owned request |
+| `POST` | `/rides/requests/{id}/booking/cancel` | Participant cancels with `{ "reason": "..." }` |
+| `POST` | `/rides/requests/{id}/booking/complete` | Rider marks the ride completed |
+
+Both list endpoints accept `offset` (default 0) and `limit` (default 20, maximum
+50). Browse distance defaults to 25 km and accepts 1–100 km. API datetimes
+must include a UTC offset; stored UTC values are returned with explicit UTC
+offsets. Amounts use database decimals and serialize as decimal strings.
+Phones must use `+` followed by 8–15 digits, starting with a nonzero digit.
+Validation failures return 422; permission failures 403; unavailable/changed
+offers and lifecycle conflicts 409. Missing/inaccessible requests return 404.
+
+The map uses `POST /rides/requests/search`:
+
+```json
+{
+  "bounds": { "north": 37.6, "south": 37.5, "west": -122.05, "east": -121.9 },
+  "limit": 50,
+  "departure_date": "2026-11-02",
+  "pickup_time_from": "09:00",
+  "pickup_time_to": "10:00"
+}
+```
+
+Only `bounds` is required. Both time endpoints must be supplied together with a
+date, without UTC offsets, and the end must be later on the same day.
+No time range means the whole selected day. Overlap checks use each request's
+saved IANA timezone; repeated fall-back hours include both occurrences.
+Destination/radius parameters remain supported by the API for compatibility,
+but are no longer offered in the UI. The response is
+`{ "rides": [...], "has_more": false }`. Filtering occurs before the limit.
+The existing `GET /rides/requests` radius/list API remains available for
+compatibility but is no longer used by the Ride requests discovery page.
 
 ### Posts
 
@@ -246,6 +392,13 @@ Core persisted entities:
 - **Comment** — post content, author, and timestamps.
 - **PostReaction** — one `LIKE` or `DISLIKE` per user/post pair.
 - **SavedPost** — one saved-post association per user/post pair.
+- **DriverProfile** — self-reported vehicle/capacity, private phone and eligibility acknowledgement.
+- **RideRequest** — provider-resolved exact endpoint snapshots, UTC pickup
+  window, IANA timezone, rider, private contact and requirements.
+- **RideOffer** — unique driver/request association with time, contribution,
+  message and vehicle snapshot.
+- **RideBooking** — unique booking per request/offer with agreed contact and
+  contribution snapshots; confirmed/completed/cancelled lifecycle.
 
 Posts store latitude/longitude and an H3 cell at resolution 8. Map search
 first identifies candidate H3 cells intersecting the requested bounds, then
@@ -287,6 +440,53 @@ npm run build
 
 Run the FastAPI application with the backend's configured ASGI entry point
 (the application object is `app` in `backend/app/main.py`).
+
+### Ride database setup and validation
+
+Install the updated backend requirements before starting/restarting the API;
+`tzdata` supplies IANA timezone data on Windows. Startup creates the four new
+ride tables (`driver_profiles`, `ride_requests`, `ride_offers`, `ride_bookings`)
+through the repository's existing `Base.metadata.create_all` setup. This is
+additive: existing user/post tables and rows are not rewritten. The configured
+database user must have permission to create tables. No manual column
+alterations are needed for this feature.
+
+The ride-map update adds `ix_ride_requests_pickup_h3`, an expression index on
+the pickup JSON's `h3_cell_id`. Startup explicitly creates this index if missing,
+including on an existing ride table (`create_all` alone does not add indexes
+to existing tables). Restart the API after updating. No location backfill is
+needed: requests already store resolution-8 H3 cells in their pickup snapshots.
+
+From the backend directory, using your configured Python environment:
+
+```powershell
+python -m pip install -r requirements-test.txt
+python -W ignore::DeprecationWarning -m unittest discover -s tests -v
+```
+
+The API tests use an isolated in-memory SQLite database, synthetic users, real
+authentication dependencies, and mocked location-provider responses. To
+additionally verify actual PostgreSQL row-lock behavior:
+
+```powershell
+$env:RIDE_TEST_POSTGRES = "1"
+python -W ignore::DeprecationWarning -m unittest discover -s tests -v
+Remove-Item Env:RIDE_TEST_POSTGRES
+```
+
+The opt-in concurrency test uses the configured PostgreSQL connection, creates
+a uniquely named `ride_test_*` schema, tests competing confirmations, duplicate
+confirmation retries, and withdrawal-versus-confirmation races, then drops only
+that test schema. It does not insert fixtures into the application's tables.
+The database user needs schema creation permission for this optional test.
+
+Ride map discovery filters pickup candidates in SQL using the H3 index and
+exact viewport bounds, then streams those candidates for per-request local
+date/time overlap checks (and compatibility destination filters) before
+enforcing the result cap. The legacy
+radius-only list endpoint still streams open candidates without a spatial
+prefilter. A larger deployment may also benefit from destination geospatial
+indexing and database-side timezone/date filtering.
 
 ## Current implementation notes
 

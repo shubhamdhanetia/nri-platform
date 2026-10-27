@@ -26,7 +26,7 @@ export default function LoginButton() {
             });
             window.localStorage.setItem("access_token", data.access_token);
             window.localStorage.setItem("user", JSON.stringify(data.user));
-            router.replace("/feed");
+            router.replace("/explore");
           } catch (requestError) {
             setError(requestError instanceof Error ? requestError.message : "Unable to sign in. Please try again.");
           }

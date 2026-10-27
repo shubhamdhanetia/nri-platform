@@ -6,14 +6,16 @@ import { usePathname, useRouter } from "next/navigation";
 import { apiRequest, type User } from "../lib/api";
 
 const links = [
-  { href: "/feed", label: "Feed" },
-  { href: "/explore", label: "Explore" },
-  { href: "/create-post", label: "Create a post" },
+  { href: "/explore", label: "Posts" },
+  { href: "/rides/mine", label: "Rides" },
 ];
 
 export default function AppNav() {
   const pathname = usePathname();
   const router = useRouter();
+  const activeSection = pathname === "/explore" || pathname === "/feed" || pathname === "/create-post" || pathname.startsWith("/posts/")
+    ? "/explore"
+    : pathname === "/rides" || pathname.startsWith("/rides/") ? "/rides/mine" : null;
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [failedPicture, setFailedPicture] = useState<string | null>(null);
@@ -67,14 +69,15 @@ export default function AppNav() {
   return (
     <header className="app-header">
       <div className="nav-inner">
-        <Link className="brand nav-brand" href="/feed">
+        <Link className="brand nav-brand" href="/explore">
           <span className="brand-mark">N</span>
           <span>NRI Platform</span>
         </Link>
         <nav className="main-nav" aria-label="Main navigation">
           {links.map((link) => (
             <Link
-              className={pathname === link.href ? "nav-link active" : "nav-link"}
+              className={activeSection === link.href ? "nav-link active" : "nav-link"}
+              aria-current={activeSection === link.href ? "page" : undefined}
               href={link.href}
               key={link.href}
             >

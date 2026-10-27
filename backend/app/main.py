@@ -6,6 +6,7 @@ from app.db.session import engine
 
 from app.api.auth import router as auth_router
 from app.api.locations import router as locations_router
+from app.api.rides import router as rides_router
 from app.api.users import router as users_router
 from app.api.posts import (
     router as posts_router
@@ -16,8 +17,11 @@ import app.models.post
 import app.models.comment
 import app.models.reaction
 import app.models.saved_post
+import app.models.ride
+from app.models.ride import ride_pickup_h3_index
 
 Base.metadata.create_all(bind=engine)
+ride_pickup_h3_index.create(bind=engine, checkfirst=True)
 
 app = FastAPI(title="NRI Platform")
 
@@ -54,3 +58,5 @@ app.include_router(
     prefix="/locations",
     tags=["Locations"]
 )
+
+app.include_router(rides_router, prefix="/rides", tags=["Rides"])

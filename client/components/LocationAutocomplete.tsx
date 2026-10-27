@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import {
   apiRequest,
   type LocationDetailsResponse,
@@ -22,10 +22,16 @@ function suggestionLabel(location: LocationSearchResult): string {
 export default function LocationAutocomplete({
   onAddressSelected,
   initialSelection,
+  label = "Location",
+  onQueryChange,
 }: {
   onAddressSelected: (selection: { locationId: string; location: string } | null) => void;
   initialSelection?: { locationId: string; location: string };
+  label?: string;
+  onQueryChange?: (query: string) => void;
 }) {
+  const inputId = useId();
+  const suggestionsId = `${inputId}-suggestions`;
   const [value, setValue] = useState(initialSelection?.location ?? "");
   const [hasSelection, setHasSelection] = useState(Boolean(initialSelection));
   const [coordinates, setCoordinates] = useState<Coordinates | null>(null);
@@ -164,6 +170,7 @@ export default function LocationAutocomplete({
 
   function handleChange(nextValue: string) {
     setValue(nextValue);
+    onQueryChange?.(nextValue);
     setSuggestions([]);
     setSearching(false);
     setSearchedQuery("");
@@ -177,13 +184,13 @@ export default function LocationAutocomplete({
 
   return (
     <div className="form-field location-autocomplete">
-      <label className="location-autocomplete-label" htmlFor="post-location">Location</label>
+      <label className="location-autocomplete-label" htmlFor={inputId}>{label}</label>
       <input
         aria-autocomplete="list"
-        aria-controls="post-location-suggestions"
+        aria-controls={suggestionsId}
         aria-expanded={suggestions.length > 0}
         autoComplete="off"
-        id="post-location"
+        id={inputId}
         onChange={(event) => handleChange(event.target.value)}
         onFocus={requestBrowserLocation}
         placeholder="Start typing an address or place"
@@ -223,7 +230,7 @@ export default function LocationAutocomplete({
       {suggestions.length > 0 && (
         <ul
           className="location-suggestions"
-          id="post-location-suggestions"
+          id={suggestionsId}
           role="listbox"
         >
           {suggestions.map((location) => (

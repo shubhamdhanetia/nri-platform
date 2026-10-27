@@ -35,7 +35,7 @@ export default function PostDetailsPage() {
       ) : (
         <div className="state-card error-state" role="alert">
           <p>Post not found.</p>
-          <Link className="button button-secondary" href="/feed">Back to feed</Link>
+          <Link className="button button-secondary" href="/explore">Back to posts</Link>
         </div>
       )}
     </ProtectedPage>
@@ -193,14 +193,14 @@ function PostDetailsContent({ postId }: { postId: number }) {
   return (
     <>
       <div className="detail-back-link">
-        <Link href="/feed"><span aria-hidden="true">←</span> Back to the community</Link>
+        <Link href="/explore"><span aria-hidden="true">←</span> Back to posts</Link>
       </div>
       {loading ? (
         <div className="state-card"><span className="spinner" /> Loading post…</div>
       ) : pageError ? (
         <div className="state-card error-state" role="alert">
           <p>{pageError}</p>
-          <Link className="button button-secondary" href="/feed">Back to feed</Link>
+          <Link className="button button-secondary" href="/explore">Back to posts</Link>
         </div>
       ) : post ? (
         <>
