@@ -30,7 +30,7 @@ class LocationAddressComponents(BaseModel):
     CITY: str
     COUNTRY_CODE: str
     FIRST_LEVEL_SUBDIVISION_CODE: str
-    HOUSE_NUMBER: str
+    HOUSE_NUMBER: str | None = None
     POSTAL_CODE: str
     STREET_NAME: str
 

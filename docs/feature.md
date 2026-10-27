@@ -105,7 +105,10 @@ application.
   Public meeting points are recommended instead of home addresses.
 - A driver profile includes vehicle make/model, passenger seats excluding the
   driver, an international-format phone number, and an eligibility/privacy
-  acknowledgement. Drivers and phone numbers are **not verified or vetted**.
+  acknowledgement. It is marked Required, with explanatory helper text;
+  creating or updating a profile stays disabled until it is checked. Browser
+  validation and backend enforcement remain in place. Drivers and phone
+  numbers are **not verified or vetted**.
 - Requests contain a future pickup window (at most two hours), an IANA timezone,
   passengers, bags, notes, a rider contact phone, and a cost-sharing currency.
   Creation uses the browser's timezone, explicitly displayed alongside inputs.
@@ -212,6 +215,9 @@ search type is `PICKUP`. Location details accepts an `id` and uses the
 `uber_places` provider by default. The backend calls the location provider and
 validates its response before returning it. Provider timeouts and invalid
 responses are reported as API errors rather than silently substituted.
+`addressComponents.HOUSE_NUMBER` is optional and may be null: valid places
+and meeting points do not always have a street number. Their full address,
+coordinates, and the address components used by posts and rides remain required.
 
 ### Rides
 
