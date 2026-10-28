@@ -1,18 +1,5 @@
 @import "tailwindcss";
 
-.ride-table-section { margin-top:48px; padding-top:32px; border-top:1px solid var(--line); }
-.ride-table-section h2 { font:normal 30px Georgia,serif; margin:0 0 12px; }
-.ride-table-toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-bottom:20px; }
-.ride-table-toolbar .field-hint { margin:0; }
-.ride-table-filters { display:flex; flex-wrap:wrap; gap:16px; padding:20px; background:var(--card); border:1px solid var(--line); border-radius:14px; margin-bottom:20px; }
-.ride-table-filters .form-field { flex:1 1 180px; margin:0; min-width:0; }
-.ride-table-filters .field-hint,.ride-table-filters .form-actions { flex-basis:100%; margin:0; }
-.ride-table-scroll { max-width:100%; overflow-x:auto; background:var(--card); border:1px solid var(--line); border-radius:14px; }
-.ride-requests-table { width:100%; border-collapse:collapse; text-align:left; font-size:13px; min-width:740px; }
-.ride-requests-table th { background:#edf4ef; color:var(--green-dark); }
-.ride-requests-table th,.ride-requests-table td { padding:16px; border-bottom:1px solid var(--line); vertical-align:top; }
-.ride-requests-table td { max-width:250px; overflow-wrap:anywhere; }
-
 .ride-tabs { display:flex; gap:25px; border-bottom:1px solid #e0e6dc; margin-bottom:28px; overflow-x:auto; }
 .ride-tabs a { padding:15px 0; white-space:nowrap; color:#64736b; font-weight:600; }
 .ride-tabs a[aria-current="page"] { color:#226b55; box-shadow:inset 0 -2px #226b55; }
@@ -2355,14 +2342,19 @@ a {
 .community-page { --community-ink: #243a32; --community-accent: #226b55; min-width: 0; }
 .rides-discovery { display: flex; align-items: stretch; flex-wrap: wrap; gap: 12px; }
 .rides-discovery > .community-location { flex: 1 1 280px; }
+.rides-filter-form { display: flex; flex-wrap: wrap; align-items: stretch; gap: 12px; min-width: 0; }
+.rides-filter-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.rides-filter-actions .button { border-radius: 6px; }
 .rides-date-field { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid #dce3dc; border-radius: 6px; background: white; color: #677d6e; min-width: 0; }
 .rides-date-field > span { display: grid; gap: 3px; font-size: 10px; min-width: 0; }
 .rides-date-field input { border: 0; padding: 0; background: transparent; color: var(--foreground); font: inherit; font-size: 13px; min-width: 0; width: 100%; height: 25px; }
 .rides-time-toggle { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #586b5e; }
 .rides-time-toggle input { accent-color: var(--green); }
 .rides-time-fields { display: flex; gap: 8px; }
-.rides-map-status { border-bottom: 1px solid var(--line); margin-bottom: 22px; }
-.rides-map-status .community-sort { display: flex; white-space: normal; text-align: right; }
+.rides-map-status { border-bottom: 1px solid var(--line); margin-bottom: 16px; }
+.rides-search-summary { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 22px; }
+.rides-search-summary .field-hint { margin: 0; }
+.community-content.rides-feed { grid-template-columns: minmax(0, 1fr); }
 .rides-result .community-category-icon { color: #357c88; background: #e5f1f4; }
 .rides-result-route { display: grid; gap: 12px; margin: 14px 0; padding-left: 12px; border-left: 2px solid #d5e3db; }
 .rides-result-route dt { font-size: 10px; color: #758176; margin-bottom: 3px; }
@@ -2373,11 +2365,6 @@ a {
 .rides-result .community-post-footer > button { margin-left: auto; }
 .rides-map-browser.community-expanded .community-sheet-toggle { display: inline-flex; }
 .rides-map-browser .community-results-collapsed .community-result-body { display: none; }
-.rides-browse .ride-table-section { border-top: 1px solid var(--line); margin-top: 36px; padding-top: 24px; }
-.rides-browse .ride-table-section h2 { font: 500 25px/1.2 Georgia, serif; color: var(--community-ink); }
-.rides-browse .ride-table-toolbar { justify-content: flex-start; }
-.rides-browse .ride-table-toolbar > button:last-child { margin-left: auto; }
-.rides-browse .ride-table-filters { border-radius: 6px; }
 .rides-browse .ride-notice { margin-top: 28px; font-size: 12px; background: transparent; border-top: 1px solid var(--line); border-radius: 0; }
 .community-page * { letter-spacing: 0; }
 .community-page svg { flex-shrink: 0; }

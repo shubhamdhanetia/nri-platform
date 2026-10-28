@@ -7,7 +7,7 @@ import { apiRequest, type User } from "../lib/api";
 
 const links = [
   { href: "/explore", label: "Community" },
-  { href: "/rides/mine", label: "Rides" },
+  { href: "/rides", label: "Rides" },
 ];
 
 export default function AppNav() {
@@ -15,7 +15,7 @@ export default function AppNav() {
   const router = useRouter();
   const activeSection = pathname === "/explore" || pathname === "/feed" || pathname === "/create-post" || pathname.startsWith("/posts/")
     ? "/explore"
-    : pathname === "/rides" || pathname.startsWith("/rides/") ? "/rides/mine" : null;
+    : pathname === "/rides" || pathname.startsWith("/rides/") ? "/rides" : null;
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [failedPicture, setFailedPicture] = useState<string | null>(null);
