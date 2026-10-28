@@ -107,13 +107,33 @@ class RideAPITests(unittest.TestCase):
         self.assertEqual(self.client.get("/rides/mine").status_code, 401)
         self.assertEqual(self.client.get("/rides/driver-profile").status_code, 401)
 
-    def test_driver_gate_and_location_resolution(self):
+    def test_member_browsing_and_location_resolution(self):
         ride = self.create()
         self.assertEqual(ride.status_code, 201, ride.text)
         ride_id = ride.json()["id"]
         self.assertNotIn("rider_phone", ride.json())
-        self.assertEqual(self.client.get("/rides/requests", headers=self.headers(2)).status_code, 403)
-        self.assertEqual(self.client.get(f"/rides/requests/{ride_id}", headers=self.headers(2)).status_code, 403)
+        self.assertEqual(self.client.get("/rides/requests", headers=self.headers(2)).status_code, 200)
+        detail = self.client.get(f"/rides/requests/{ride_id}", headers=self.headers(2))
+        self.assertEqual(detail.status_code, 200, detail.text)
+        self.assertEqual(detail.json()["offers"], [])
+        self.assertIsNone(detail.json()["booking"])
+        responses = [
+            detail.json()["request"],
+            self.client.get("/rides/requests", headers=self.headers(2)).json()[0],
+            self.map_search().json()["rides"][0],
+            self.client.post("/rides/requests/table-search", json={}, headers=self.headers(2)).json()["rides"][0],
+        ]
+        for response in responses:
+            for field in ("pickup", "dropoff"):
+                location = response[field]
+                self.assertNotIn("Exact address", location["location"])
+                self.assertEqual(location["location_id"], "")
+                self.assertEqual(location["postal_code"], "")
+                self.assertEqual(h3.get_resolution(location["h3_cell_id"]), 6)
+                self.assertNotEqual((location["latitude"], location["longitude"]),
+                                    (place(field).latitude, place(field).longitude))
+            self.assertNotIn("phone", str(response))
+        self.assertEqual(ride.json()["pickup"]["location"], "Exact address: pickup")
         self.driver()
         results = self.client.get("/rides/requests", headers=self.headers(2))
         self.assertEqual(results.status_code, 200, results.text)
@@ -335,7 +355,7 @@ class RideAPITests(unittest.TestCase):
     def test_map_search_permissions_and_exact_pickup_bounds(self):
         ride_id = self.create().json()["id"]
         self.assertEqual(self.client.post("/rides/requests/search", json={}).status_code, 401)
-        self.assertEqual(self.map_search().status_code, 403)
+        self.assertEqual(self.map_search().status_code, 200)
         self.driver()
         response = self.map_search()
         self.assertEqual(response.status_code, 200, response.text)

@@ -114,7 +114,7 @@ class PostgreSQLTableTests(unittest.TestCase):
         ids = [self.seed() for _ in range(5)]
         self.seed(rider=2)
         self.seed(status="CANCELLED")
-        self.assertEqual(self.search(user=3).status_code, 403)
+        self.assertEqual(self.search(user=3).status_code, 200)
         self.assertEqual(self.client.post("/rides/requests/table-search", json={}).status_code, 401)
         first = self.search(limit=2)
         self.assertEqual(first.status_code, 200, first.text)

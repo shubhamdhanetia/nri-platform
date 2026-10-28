@@ -7,7 +7,7 @@ import RideLayout from "../../components/RideLayout";
 import ExploreLocationSearch from "../../components/ExploreLocationSearch";
 import RideRequestsTable from "../../components/RideRequestsTable";
 import { apiRequest, type PostSearchBounds } from "../../lib/api";
-import { rideDate, rideError, type DriverProfile, type RideRequest } from "../../lib/rides";
+import { rideDate, rideError, type RideRequest } from "../../lib/rides";
 
 const RideMap = dynamic(() => import("../../components/CommunityMap"), {
   ssr: false,
@@ -18,23 +18,10 @@ const RESULT_LIMIT = 50;
 
 export default function RidesPage() {
   const [searchCenter, setSearchCenter] = useState<[number, number]>(DEFAULT_CENTER);
-  const [profile, setProfile] = useState<DriverProfile | null>(null);
-  const [ready, setReady] = useState(false);
-  const [profileError, setProfileError] = useState("");
-
-  useEffect(() => {
-    const controller = new AbortController();
-    apiRequest<DriverProfile | null>("/rides/driver-profile", { signal: controller.signal })
-      .then(result => { if (!controller.signal.aborted) { setProfile(result); setReady(true); } })
-      .catch((err: unknown) => { if (!controller.signal.aborted) setProfileError(rideError(err)); });
-    return () => controller.abort();
-  }, []);
 
   return <RideLayout>
-    {!ready ? profileError ? <div className="state-card error-state" role="alert"><p>{profileError}</p><button className="button button-secondary" onClick={() => window.location.reload()}>Retry loading rides</button></div> : <p role="status">Loading rides...</p> : !profile ? <>
-      <section className="page-heading"><div><p className="eyebrow">Go together</p><h1>Browse ride requests</h1><p className="muted">Find members who need a ride. Search pickup locations and send an offer.</p></div><Link className="button button-primary" href="/rides/new">Request a ride</Link></section>
-      <div className="ride-card"><h2>Offer a little help.</h2><p className="muted">Complete your driver profile to browse the map and exact pickup/drop-off addresses. You can request a ride without becoming a driver.</p><Link className="button button-primary" href="/rides/driver">Set up driver profile</Link></div>
-    </> : <><RideMapSearch searchCenter={searchCenter} setSearchCenter={setSearchCenter} /><RideRequestsTable searchCenter={searchCenter} /></>}
+    <RideMapSearch searchCenter={searchCenter} setSearchCenter={setSearchCenter} />
+    <RideRequestsTable searchCenter={searchCenter} />
     <p className="ride-notice">Community members are not vetted by this platform. Cost-sharing is agreed between members; no payments are collected here. No notifications are sent: check My rides and refresh for updates.</p>
   </RideLayout>;
 }

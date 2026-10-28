@@ -33,7 +33,7 @@ def put_driver(data: DriverProfileInput, db: Session = Depends(get_db), user: Us
 
 @router.post("/requests", response_model=RideRequestResponse, status_code=201)
 def create(data: RideRequestInput, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
-    return rides.request_response(db, rides.create_request(db, user.id, data))
+    return rides.request_response(db, rides.create_request(db, user.id, data), user.id)
 
 
 @router.get("/requests", response_model=list[RideRequestResponse])
@@ -44,11 +44,10 @@ def browse(
     departure_date: date | None = None, radius_km: int = Query(25, ge=1, le=100),
     db: Session = Depends(get_db), user: User = Depends(get_current_user),
 ):
-    rides.require_driver(db, user.id)
     pickup = resolve_post_location(pickup_location_id) if pickup_location_id else None
     dropoff = resolve_post_location(dropoff_location_id) if dropoff_location_id else None
     matches = repo.open_requests(db, user.id, offset, limit, pickup, dropoff, departure_date, radius_km)
-    return [rides.request_response(db, ride) for ride in matches]
+    return [rides.request_response(db, ride, user.id) for ride in matches]
 
 
 @router.get("/mine", response_model=list[RideRequestResponse])
@@ -64,7 +63,6 @@ def search_map(
     data: RideMapSearchInput, db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    rides.require_driver(db, user.id)
     cells = h3_cells_for_bounds(data.bounds)
     dropoff = resolve_post_location(data.dropoff_location_id) if data.dropoff_location_id else None
     matches = repo.open_requests(
@@ -74,7 +72,7 @@ def search_map(
         pickup_time_from=data.pickup_time_from, pickup_time_to=data.pickup_time_to,
     )
     return RideMapSearchResponse(
-        rides=[rides.request_response(db, ride) for ride in matches[:data.limit]],
+        rides=[rides.request_response(db, ride, user.id) for ride in matches[:data.limit]],
         has_more=len(matches) > data.limit,
     )
 
@@ -84,14 +82,13 @@ def search_table(
     data: RideTableSearchInput, db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    rides.require_driver(db, user.id)
     pickup = resolve_post_location(data.pickup_location_id) if data.pickup_location_id else None
     cells = pickup_radius_cells(pickup, data.radius_km) if pickup else None
     matches = repo.table_requests(db, user.id, data, pickup, cells)
     has_more = len(matches) > data.limit
     page = matches[:data.limit]
     return RideTableSearchResponse(
-        rides=[rides.request_response(db, ride) for ride in page],
+        rides=[rides.request_response(db, ride, user.id) for ride in page],
         has_more=has_more,
         next_cursor=RideSearchCursor(
             pickup_start=page[-1].pickup_start.replace(tzinfo=timezone.utc), id=page[-1].id,
