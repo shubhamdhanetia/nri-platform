@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { apiRequest, type User } from "../lib/api";
 
 const links = [
-  { href: "/explore", label: "Posts" },
+  { href: "/explore", label: "Community" },
   { href: "/rides/mine", label: "Rides" },
 ];
 

@@ -150,7 +150,7 @@ def search(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    cell_ids = h3_cells_for_bounds(request.bounds)
+    cell_ids = h3_cells_for_bounds(request.bounds) if request.bounds is not None else set()
     matching_posts = get_posts_in_bounds(
         db,
         request.bounds,
@@ -158,6 +158,8 @@ def search(
         request.limit,
         request.category,
         request.post_type,
+        request.offset,
+        request.query,
     )
     has_more = len(matching_posts) > request.limit
     posts = _post_responses(db, matching_posts[:request.limit], user.id)

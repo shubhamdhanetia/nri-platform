@@ -12,6 +12,7 @@ export default function ExploreMap(props: {
   onSelectPost: (postId: number) => void;
   onBoundsChange: (bounds: PostSearchBounds) => void;
   onCenterChange: (center: [number, number]) => void;
+  onViewportChange?: (center: [number, number], zoom: number) => void;
   center: [number, number];
   initialZoom: number;
 }) {

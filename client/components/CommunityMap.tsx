@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import {
@@ -11,7 +11,7 @@ import {
   useMap,
   useMapEvents,
 } from "react-leaflet";
-import { divIcon, type Marker as LeafletMarker } from "leaflet";
+import { divIcon, type Marker as LeafletMarker, type MarkerClusterGroup as LeafletCluster } from "leaflet";
 import "leaflet.markercluster";
 import "react-leaflet-cluster/dist/assets/MarkerCluster.css";
 import "react-leaflet-cluster/dist/assets/MarkerCluster.Default.css";
@@ -42,9 +42,11 @@ const clusterIcon: NonNullable<
 function MapBoundsReporter({
   onBoundsChange,
   onCenterChange,
+  onViewportChange,
 }: {
   onBoundsChange: (bounds: PostSearchBounds) => void;
   onCenterChange: (center: [number, number]) => void;
+  onViewportChange?: (center: [number, number], zoom: number) => void;
 }) {
   const map = useMap();
   const lastReportedBounds = useRef<PostSearchBounds | null>(null);
@@ -60,6 +62,7 @@ function MapBoundsReporter({
     };
     const center = map.getCenter();
     const nextCenter: [number, number] = [center.lat, center.lng];
+    onViewportChange?.(nextCenter, map.getZoom());
     const previousCenter = lastReportedCenter.current;
     if (
       !previousCenter
@@ -83,7 +86,7 @@ function MapBoundsReporter({
 
     lastReportedBounds.current = nextBounds;
     onBoundsChange(nextBounds);
-  }, [map, onBoundsChange, onCenterChange]);
+  }, [map, onBoundsChange, onCenterChange, onViewportChange]);
 
   useEffect(() => {
     reportBounds();
@@ -101,19 +104,37 @@ function MapBoundsReporter({
 function SelectedPostPan({
   post,
   marker,
+  cluster,
   selectionVersion,
 }: {
   post: MapPoint | undefined;
   marker: React.RefObject<LeafletMarker | null>;
+  cluster: React.RefObject<LeafletCluster | null>;
   selectionVersion: number;
 }) {
   const map = useMap();
 
   useEffect(() => {
     if (!post) return;
-    map.panTo([post.latitude, post.longitude]);
-    marker.current?.openPopup();
-  }, [map, marker, post, selectionVersion]);
+    const selectedMarker = marker.current;
+    const markerCluster = cluster.current;
+    if (!selectedMarker || !markerCluster) {
+      map.panTo([post.latitude, post.longitude]);
+      return;
+    }
+    let revealed = false;
+    const reveal = () => {
+      if (revealed || !markerCluster.getVisibleParent(selectedMarker)) return;
+      revealed = true;
+      markerCluster.zoomToShowLayer(selectedMarker, () => selectedMarker.openPopup());
+    };
+    markerCluster.on("layeradd", reveal);
+    const frame = requestAnimationFrame(reveal);
+    return () => {
+      cancelAnimationFrame(frame);
+      markerCluster.off("layeradd", reveal);
+    };
+  }, [cluster, map, marker, post, selectionVersion]);
 
   return null;
 }
@@ -126,6 +147,7 @@ export default function CommunityMap({
   onSelectPost,
   onBoundsChange,
   onCenterChange,
+  onViewportChange,
   center,
   initialZoom,
 }: {
@@ -136,11 +158,13 @@ export default function CommunityMap({
   onSelectPost: (postId: number) => void;
   onBoundsChange: (bounds: PostSearchBounds) => void;
   onCenterChange: (center: [number, number]) => void;
+  onViewportChange?: (center: [number, number], zoom: number) => void;
   center: [number, number];
   initialZoom: number;
 }) {
   const selectedPost = posts.find((post) => post.id === selectedPostId);
   const selectedMarker = useRef<LeafletMarker>(null);
+  const cluster = useRef<LeafletCluster>(null);
 
   return (
     <MapContainer
@@ -159,15 +183,18 @@ export default function CommunityMap({
       <MapBoundsReporter
         onBoundsChange={onBoundsChange}
         onCenterChange={onCenterChange}
+        onViewportChange={onViewportChange}
       />
       <MapResizeOnModeChange fullscreen={fullscreen} />
       <MapCenterSync center={center} />
       <SelectedPostPan
         marker={selectedMarker}
+        cluster={cluster}
         post={selectedPost}
         selectionVersion={selectionVersion}
       />
       <MarkerClusterGroup
+        ref={cluster}
         chunkedLoading
         iconCreateFunction={clusterIcon}
         maxClusterRadius={70}
@@ -202,7 +229,7 @@ function MapResizeOnModeChange({ fullscreen }: { fullscreen: boolean }) {
   return null;
 }
 
-function PostMarker({
+const PostMarker = memo(function PostMarker({
   post,
   selected,
   onSelect,
@@ -213,6 +240,10 @@ function PostMarker({
   onSelect: (postId: number) => void;
   markerRef?: React.RefObject<LeafletMarker | null>;
 }) {
+  const position = useMemo<[number, number]>(
+    () => [post.latitude, post.longitude],
+    [post.latitude, post.longitude],
+  );
   const icon = useMemo(() => divIcon({
     className: "post-map-marker-container",
     html: `<span class="post-map-marker${selected ? " selected" : ""}" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M20 10.2c0 5.1-8 11.1-8 11.1S4 15.3 4 10.2a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg></span>`,
@@ -223,7 +254,7 @@ function PostMarker({
 
   return (
     <Marker
-      position={[post.latitude, post.longitude]}
+      position={position}
       title={post.title}
       alt={post.title}
       eventHandlers={{ click: () => onSelect(post.id) }}
@@ -239,7 +270,7 @@ function PostMarker({
       </Popup>
     </Marker>
   );
-}
+});
 
 function MapCenterSync({ center }: { center: [number, number] }) {
   const map = useMap();

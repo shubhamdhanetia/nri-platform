@@ -114,33 +114,42 @@ def get_posts(db: Session):
 
 def get_posts_in_bounds(
     db: Session,
-    bounds: PostSearchBounds,
+    bounds: PostSearchBounds | None,
     h3_cell_ids: set[str],
     limit: int,
     category: PostCategory | None = None,
     post_type: PostType | None = None,
+    offset: int = 0,
+    query: str = "",
 ) -> list[Post]:
-    if not h3_cell_ids:
+    if bounds is not None and not h3_cell_ids:
         return []
 
-    filters = [
-        Post.is_private.is_(False),
-        Post.h3_cell_id.in_(h3_cell_ids),
-        Post.latitude >= bounds.south,
-        Post.latitude <= bounds.north,
-    ]
+    filters = [Post.is_private.is_(False)]
+    if bounds is not None:
+        filters.extend([
+            Post.h3_cell_id.in_(h3_cell_ids),
+            Post.latitude >= bounds.south,
+            Post.latitude <= bounds.north,
+        ])
     if category is not None:
         filters.append(Post.category == category)
     if post_type is not None:
         filters.append(Post.post_type == post_type)
-    if bounds.east < bounds.west:
+    if query.strip():
+        filters.append(or_(
+            Post.title.icontains(query.strip(), autoescape=True),
+            Post.description.icontains(query.strip(), autoescape=True),
+            Post.location.icontains(query.strip(), autoescape=True),
+        ))
+    if bounds is not None and bounds.east < bounds.west:
         filters.append(
             or_(
                 Post.longitude >= bounds.west,
                 Post.longitude <= bounds.east,
             )
         )
-    else:
+    elif bounds is not None:
         filters.extend([
             Post.longitude >= bounds.west,
             Post.longitude <= bounds.east,
@@ -150,6 +159,7 @@ def get_posts_in_bounds(
         db.query(Post)
         .filter(*filters)
         .order_by(Post.created_at.desc(), Post.id.desc())
+        .offset(offset)
         .limit(limit + 1)
         .all()
     )
