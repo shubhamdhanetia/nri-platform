@@ -17,9 +17,12 @@ application.
 - Main navigation contains Posts and Rides. Posts uses the existing `/explore`
   map route and is the post-login and brand-link destination. Feed remains
   accessible at `/feed` without a top-level navigation link.
-- The main Rides link opens `/rides` (Browse requests). Ride tabs are ordered
-  Browse requests, Find a carpool, Request a ride, My rides, Driver profile.
+- The main Rides link opens `/rides` (Ride requests). Ride tabs are ordered
+  Ride requests, Find a carpool, Request a ride, Offer a carpool, My rides, Driver profile.
   Request a ride opens the existing creation form at `/rides/new`.
+  Offer a carpool opens the existing publishing form at `/rides/carpools/new`.
+  Ride requests describes people looking for transportation, with guidance to
+  offer to drive someone going your way.
   A notification bell beside the profile button opens the shared inbox at
   `/notifications`; it is not a Rides-specific tab.
   Discovery remains at `/rides`; members without
@@ -120,7 +123,7 @@ application.
   selecting that category in Community (Feed or Map), post creation, or editing
   displays a neutral "Ride discussions, not ride requests" notice. Post details
   show a compact version. The notice explains that posts/comments do not create
-  ride requests or bookings, and links to Browse ride requests and Request a ride.
+  ride requests or bookings, and links to Ride requests and Request a ride.
   It is not repeated on individual browse cards.
 - Request creation selects **both exact pickup and drop-off** through the same
   location autocomplete/provider used by posts. The server resolves both IDs;
@@ -264,7 +267,7 @@ application.
   read. The global bell refreshes the unread count every 30 seconds, on focus,
   and after in-app mutations. The inbox itself has an explicit Refresh button.
 - My rides lists both carpool directions separately, including closed/historical
-  trips. It separates **Carpools** from **Ride requests** with keyboard-accessible
+  trips. It separates **Carpools** from **Requests & offers** with keyboard-accessible
   tabs, defaulting to Carpools. The selected tab is remembered in session storage
   when returning from trip details. Each section retains its own pagination,
   loading/error/empty states, and creation actions; switching tabs preserves both
@@ -374,7 +377,7 @@ coordinates, and the address components used by posts and rides remain required.
 
 #### Legacy all-request search API
 
-The independent request table has been removed from Browse requests. Feed and
+The independent request table has been removed from Ride requests. Feed and
 Map both use the area-scoped search described above, not all-request browsing.
 The table-search endpoint remains available for API compatibility and retains
 the driver-profile gate and contact privacy.

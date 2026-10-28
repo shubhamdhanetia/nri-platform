@@ -58,9 +58,11 @@ New databases include it through the post model. Existing local databases need
 the category column widened to `VARCHAR(15)` and the `post_category` check updated
 to include `MEDICAL_SUPPORT`; `create_all` does not alter existing tables.
 
-The header contains **Posts** and **Rides**. Rides opens **Browse requests**
-(`/rides`); tabs are **Browse requests**, **Find a carpool**, **Request a ride**,
-**My rides**, and **Driver profile**. Notifications are global, not a Rides tab.
+The header contains **Posts** and **Rides**. Rides opens **Ride requests**
+(`/rides`); tabs are **Ride requests**, **Find a carpool**, **Request a ride**,
+**Offer a carpool**, **My rides**, and **Driver profile**. Offer a carpool opens
+the existing publishing form at `/rides/carpools/new`. My rides separates
+**Carpools** from **Requests & offers**. Notifications are global, not a Rides tab.
 The former `/rides/carpools/inbox` page redirects to `/notifications`.
 Discovery stays at `/rides`, including driver-profile setup guidance.
 My rides keeps request creation prominent and offers a browse action when empty.

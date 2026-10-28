@@ -49,7 +49,7 @@ export default function DriverPage() {
       {!acknowledged && <p className="field-hint" id="driver-acknowledgement-hint">Please accept the eligibility and address-use acknowledgement to continue.</p>}
       <p className="field-hint">Profile changes apply to new offers. Existing offers keep their vehicle details, and confirmed bookings keep the agreed vehicle and contact numbers.</p>
       {success && <p className="ride-notice" role="status">{success}</p>}
-      <div className="form-actions"><button className="button button-primary" disabled={busy || !acknowledged}>{busy ? "Saving..." : profile ? "Update profile" : "Create driver profile"}</button><Link className="button button-secondary" href="/rides">Browse requests</Link></div>
+      <div className="form-actions"><button className="button button-primary" disabled={busy || !acknowledged}>{busy ? "Saving..." : profile ? "Update profile" : "Create driver profile"}</button><Link className="button button-secondary" href="/rides">Ride requests</Link></div>
     </form>}
   </RideLayout>;
 }

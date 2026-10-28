@@ -13,7 +13,7 @@ export default function RideCommunityNotice({ compact = false }: { compact?: boo
             : "These are community posts about rides. Posting or commenting here does not create a ride request or booking. To request a ride or offer to drive, use the dedicated Rides section."}
         </p>
         <div className="ride-community-notice-links">
-          <Link className="text-link" href="/rides">Browse ride requests <ArrowUpRight size={14} aria-hidden="true" /></Link>
+          <Link className="text-link" href="/rides">Ride requests <ArrowUpRight size={14} aria-hidden="true" /></Link>
           <Link className="text-link" href="/rides/new">Request a ride <ArrowUpRight size={14} aria-hidden="true" /></Link>
         </div>
       </div>

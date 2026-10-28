@@ -167,7 +167,7 @@ export default function RidesPage() {
 
   return <RideLayout><div className={`community-page rides-browse rides-map-browser${fullscreen ? " community-expanded" : ""}`}>
     <header className="community-heading">
-      <div><p className="eyebrow">GO TOGETHER. YOUR COMMUNITY.</p><h1>Ride requests</h1></div>
+      <div><p className="eyebrow">GO TOGETHER. YOUR COMMUNITY.</p><h1>Ride requests</h1><p className="muted">People looking for a ride. Offer to drive someone going your way.</p></div>
       <div className="community-heading-actions">
         <button className="button button-secondary" aria-pressed={fullscreen} onClick={toggleFullscreen}>
           {fullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}{fullscreen ? "Exit full screen" : "Full screen map"}
@@ -222,7 +222,7 @@ export default function RidesPage() {
         </div>
       </div>}
       <section className={`community-results${!resultsOpen && view === "map" ? " community-results-collapsed" : ""}`} aria-label="Rides in this area" aria-busy={resultsLoading}>
-        <div className="community-results-heading"><div><h2>Upcoming rides</h2><span aria-live="polite">{resultsLoading ? "Searching..." : error ? "Search unavailable" : `${rides.length}${more ? "+" : ""} ${rides.length === 1 && !more ? "request" : "requests"}`}</span></div>
+        <div className="community-results-heading"><div><h2>Upcoming ride requests</h2><span aria-live="polite">{resultsLoading ? "Searching..." : error ? "Search unavailable" : `${rides.length}${more ? "+" : ""} ${rides.length === 1 && !more ? "request" : "requests"}`}</span></div>
           {view === "map" && <button className="community-icon-button community-sheet-toggle" aria-expanded={resultsOpen} aria-label={resultsOpen ? "Collapse ride results" : "Expand ride results"} onClick={() => setResultsOpen(!resultsOpen)}>{resultsOpen ? <ChevronDown size={20} /> : <ChevronUp size={20} />}</button>}
         </div>
         <div className="community-result-body">
