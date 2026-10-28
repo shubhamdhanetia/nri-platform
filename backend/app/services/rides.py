@@ -1,6 +1,5 @@
 from datetime import datetime, timezone
 
-import h3
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -214,17 +213,6 @@ def request_response(db: Session, ride: RideRequest, viewer_id: int | None = Non
     booking = repo.booking_for_request(db, ride.id)
     if booking is not None:
         result.booking_status = booking.status
-    participant = booking is not None and viewer_id in (booking.rider_id, booking.driver_id)
-    if viewer_id != ride.rider_id and not participant and (
-        viewer_id is None or repo.driver_profile(db, viewer_id) is None
-    ):
-        for location in (result.pickup, result.dropoff):
-            area_cell = h3.latlng_to_cell(location.latitude, location.longitude, 6)
-            location.latitude, location.longitude = h3.cell_to_latlng(area_cell)
-            location.h3_cell_id = area_cell
-            location.location_id = ""
-            location.postal_code = ""
-            location.location = f"{location.city}, {location.state} (approximate area)"
     if viewer_id is not None and viewer_id != ride.rider_id:
         offers = repo.offers_for_request(db, ride.id, viewer_id)
         if offers:

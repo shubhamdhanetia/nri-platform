@@ -125,13 +125,7 @@ class RideAPITests(unittest.TestCase):
         ]
         for response in responses:
             for field in ("pickup", "dropoff"):
-                location = response[field]
-                self.assertNotIn("Exact address", location["location"])
-                self.assertEqual(location["location_id"], "")
-                self.assertEqual(location["postal_code"], "")
-                self.assertEqual(h3.get_resolution(location["h3_cell_id"]), 6)
-                self.assertNotEqual((location["latitude"], location["longitude"]),
-                                    (place(field).latitude, place(field).longitude))
+                self.assertEqual(response[field], place(field).model_dump())
             self.assertNotIn("phone", str(response))
         self.assertEqual(ride.json()["pickup"]["location"], "Exact address: pickup")
         self.driver()

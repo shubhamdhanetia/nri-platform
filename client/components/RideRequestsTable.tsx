@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ArrowLeft, ArrowRight, RefreshCw, SlidersHorizontal } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import ExploreLocationSearch from "./ExploreLocationSearch";
 import { apiRequest } from "../lib/api";
@@ -88,15 +89,14 @@ export default function RideRequestsTable({ searchCenter }: { searchCenter: [num
   }
 
   return <section className="ride-table-section" aria-labelledby="ride-table-title">
-    <div className="page-heading"><div><h2 id="ride-table-title">Browse all active requests</h2>
-      <p className="muted">Table filters are separate from the map. Select a pickup area to narrow the results.</p>
+    <div className="community-results-heading"><div><h2 id="ride-table-title">All active requests</h2>
     </div></div>
     <div className="ride-table-toolbar">
       <button type="button" className="button button-secondary" aria-expanded={filtersOpen} aria-controls="ride-table-filter-panel" onClick={() => setFiltersOpen(open => !open)}>
-        {filtersOpen ? "Hide filters" : "Show filters"}
+        <SlidersHorizontal size={16} />{filtersOpen ? "Hide filters" : "Show filters"}
       </button>
       {activeFilterCount > 0 && <span className="field-hint">{activeFilterCount} active filter{activeFilterCount === 1 ? "" : "s"}</span>}
-      <button type="button" className="button button-secondary" disabled={busy} onClick={() => void load(applied, [null])}>Refresh table</button>
+      <button type="button" className="community-icon-button" title="Refresh table" aria-label="Refresh table" disabled={busy} onClick={() => void load(applied, [null])}><RefreshCw size={17} /></button>
     </div>
     <div id="ride-table-filter-panel" hidden={!filtersOpen}>
     <form className="ride-table-filters" onSubmit={apply}>
@@ -115,7 +115,7 @@ export default function RideRequestsTable({ searchCenter }: { searchCenter: [num
       </button>
       {timeOpen && <><label className="form-field"><span>Table From</span><input type="time" value={from} onChange={e => setFrom(e.target.value)} required /></label>
         <label className="form-field"><span>Table To</span><input type="time" value={to} onChange={e => setTo(e.target.value)} required /></label></>}
-      <p className="field-hint">Dates and times use each ride&apos;s saved timezone. Without a time range, the whole day is considered. Radius is straight-line distance; select a pickup suggestion to enable it.</p>
+      <p className="field-hint">Local ride times / straight-line radius</p>
       <div className="form-actions"><button className="button button-primary" disabled={busy}>Apply filters</button>
         <button type="button" className="button button-secondary" disabled={busy} onClick={clear}>Clear filters</button></div>
     </form>
@@ -133,14 +133,14 @@ export default function RideRequestsTable({ searchCenter }: { searchCenter: [num
               <td>{ride.passengers}</td><td>{ride.bags}</td><td><Link className="text-link" href={`/rides/${ride.id}`}>View ride</Link></td>
             </tr>)}</tbody>
           </table>
-        </div> : <div className="state-card">No active requests match these filters. Try another area, date, time range, or passenger limit.</div>}
+        </div> : <div className="community-state"><h3>No matching requests</h3><button type="button" className="button button-secondary" onClick={clear}>Clear filters</button></div>}
       </>}
     </div>
     <div className="form-actions">
-      <button className="button button-secondary" disabled={busy || history.length === 1} onClick={() => void load(applied, history.slice(0, -1))}>Previous requests</button>
-      <button className="button button-secondary" disabled={busy || !!error || !page.has_more} onClick={() => {
+      <button className="community-icon-button" title="Previous requests" aria-label="Previous requests" disabled={busy || history.length === 1} onClick={() => void load(applied, history.slice(0, -1))}><ArrowLeft size={18} /></button>
+      <button className="community-icon-button" title="Next requests" aria-label="Next requests" disabled={busy || !!error || !page.has_more} onClick={() => {
         if (page.next_cursor) void load(applied, [...history, page.next_cursor]);
-      }}>Next requests</button>
+      }}><ArrowRight size={18} /></button>
     </div>
   </section>;
 }

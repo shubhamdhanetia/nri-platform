@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { ArrowUpRight, CalendarDays, Car, ChevronDown, ChevronUp, Clock3, LocateFixed, Luggage, MapPin, Maximize2, Minimize2, Plus, Search, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import RideLayout from "../../components/RideLayout";
 import ExploreLocationSearch from "../../components/ExploreLocationSearch";
@@ -20,9 +21,11 @@ export default function RidesPage() {
   const [searchCenter, setSearchCenter] = useState<[number, number]>(DEFAULT_CENTER);
 
   return <RideLayout>
+    <div className="community-page rides-browse">
     <RideMapSearch searchCenter={searchCenter} setSearchCenter={setSearchCenter} />
     <RideRequestsTable searchCenter={searchCenter} />
     <p className="ride-notice">Community members are not vetted by this platform. Cost-sharing is agreed between members; no payments are collected here. No notifications are sent: check My rides and refresh for updates.</p>
+    </div>
   </RideLayout>;
 }
 
@@ -127,42 +130,63 @@ function RideMapSearch({ searchCenter, setSearchCenter }: {
     finally { if (!controller.signal.aborted) setBusy(false); }
   }
 
-  return <div className={fullscreen ? "explore-fullscreen active ride-map-search" : "explore-fullscreen ride-map-search"}>
-    <section className="page-heading explore-heading"><div><p className="eyebrow">Go together</p><h1>Browse ride requests</h1><p className="muted">Find members who need a ride. Search pickup locations and send an offer.</p></div><div className="explore-heading-actions"><button className="button button-secondary" aria-pressed={fullscreen} onClick={() => setFullscreen(true)}>Full screen map</button><Link className="button button-primary" href="/rides/new">Request a ride</Link></div></section>
-    <section className="explore-layout" aria-label="Explore rides by pickup location">
-      <div className="explore-map-panel">
-        <div className="explore-map-toolbar">
-          <ExploreLocationSearch label="Find pickup area" center={searchCenter} onLocationSelected={onLocationSelected} />
-          <label className="explore-category-filter"><span>Departure date</span><input type="date" value={date} onChange={e => { setDate(e.target.value); if (!e.target.value) { setTimeRangeOpen(false); setTimeFrom(""); setTimeTo(""); } }} /></label>
-          <button className="text-link ride-map-time-toggle" disabled={!date} aria-expanded={timeRangeOpen} aria-controls="ride-pickup-time-range" onClick={() => setTimeRangeOpen(open => !open)}>{timeRangeOpen ? "Remove time range" : "Add time range"}</button>
-          {timeRangeOpen && <div className="ride-map-time-range" id="ride-pickup-time-range">
-            <label className="explore-category-filter"><span>From</span><input type="time" value={timeFrom} onChange={e => setTimeFrom(e.target.value)} /></label>
-            <label className="explore-category-filter"><span>To</span><input type="time" value={timeTo} onChange={e => setTimeTo(e.target.value)} /></label>
-          </div>}
-          <p className="ride-map-filter-help">Dates and times use each ride&apos;s timezone, shown in the results. {date ? timeRangeOpen ? "Matches overlapping pickup windows. Select times within the same day." : "Whole day selected." : "All future dates. Select a date to add a time range."}</p>
-          <button className="button button-secondary" disabled={locating} onClick={() => locate()}>{locating ? "Finding you..." : "Center on my location"}</button>
-          <button className="button button-primary" disabled={!bounds || busy} onClick={() => void searchArea()}>{busy ? "Searching..." : "Search this area"}</button>
-          {fullscreen && <button className="button button-secondary explore-exit-fullscreen" onClick={() => setFullscreen(false)}>Exit full screen</button>}
-          {locationError && <p className="ride-map-filter-help location-error" role="alert">{locationError}</p>}
-        </div>
-        <RideMap posts={points} center={center} initialZoom={zoom} fullscreen={fullscreen} onBoundsChange={onBoundsChange} onCenterChange={onCenterChange} onSelectPost={selectRide} selectedPostId={selectedId} selectionVersion={selectionVersion} />
-        {changed && <p className="explore-map-hint" role="status">Map or filters changed. Search this area to refresh results.</p>}
+  return <div className={`rides-map-browser${fullscreen ? " community-expanded" : ""}`}>
+    <header className="community-heading">
+      <div><p className="eyebrow">GO TOGETHER. YOUR COMMUNITY.</p><h1>Ride requests</h1></div>
+      <div className="community-heading-actions">
+        <button className="button button-secondary" aria-pressed={fullscreen} onClick={() => setFullscreen(!fullscreen)}>
+          {fullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}{fullscreen ? "Exit full screen" : "Full screen map"}
+        </button>
+        <Link className="button button-primary" href="/rides/new"><Plus size={18} />Request a ride</Link>
       </div>
-      <aside className={["explore-results", fullscreen ? "explore-results-overlay" : "", fullscreen && !resultsOpen ? "collapsed" : ""].filter(Boolean).join(" ")} aria-label="Rides in this area">
-        <div className="explore-results-heading"><div><h2>Rides in this area</h2><p className="muted">{searched ? `${rides.length}${more ? "+" : ""} results / earliest pickup first` : "Search an area to see matching requests."}</p></div>{fullscreen && <button className="explore-results-toggle" aria-expanded={resultsOpen} aria-label={resultsOpen ? "Collapse ride results" : "Expand ride results"} onClick={() => setResultsOpen(open => !open)}>{resultsOpen ? "Hide" : "Results"}<span aria-hidden="true">{resultsOpen ? "\u2304" : "\u2303"}</span></button>}</div>
-        {(!fullscreen || resultsOpen) && <>
-          {error && <div className="explore-error" role="alert"><p>{error}</p><button className="button button-secondary" disabled={busy} onClick={() => void searchArea()}>Try again</button></div>}
-          {busy ? <div className="state-card" role="status"><span className="spinner" /> Searching this area...</div> : !searched ? <div className="explore-empty"><span aria-hidden="true">&#8982;</span><p>Pan or zoom to a pickup area, then select <strong>Search this area</strong>.</p></div> : rides.length === 0 ? <div className="explore-empty"><span aria-hidden="true">&#8982;</span><p>No matching rides. Try another area, date, or time range.</p></div> : <>
-            {more && <p className="explore-map-hint">Showing the first {RESULT_LIMIT} rides. Zoom in or add filters to narrow your search.</p>}
-            <div className="explore-post-list">{rides.map(ride => <article className={selectedId === ride.id ? "explore-post-card selected" : "explore-post-card"} key={ride.id}>
-              <span className="ride-badge">OPEN REQUEST</span><h3>{ride.rider.name}</h3>
-              <p className="explore-post-location"><strong>Pickup:</strong> {ride.pickup.location}</p><p className="explore-post-location"><strong>Drop-off:</strong> {ride.dropoff.location}</p>
-              <p className="explore-post-description">{rideDate(ride.pickup_start, ride.timezone)} - {rideDate(ride.pickup_end, ride.timezone)} ({ride.timezone})</p>
-              <p className="explore-post-description">{ride.passengers} passenger(s) / {ride.bags} bag(s) / offers in {ride.currency}</p>
-              <div className="explore-post-actions"><button className="text-link" onClick={() => selectRide(ride.id)}>Show on map</button><Link className="text-link" href={`/rides/${ride.id}`}>View ride</Link></div>
-            </article>)}</div>
+    </header>
+    <section className="rides-discovery" aria-label="Search ride requests">
+      <div className="community-location"><MapPin size={18} />
+        <ExploreLocationSearch label="Pickup area" center={searchCenter} onLocationSelected={onLocationSelected} />
+        <button className="community-icon-button" title="Center on my location" aria-label="Center on my location" disabled={locating} onClick={locate}>
+          {locating ? <span className="spinner" /> : <LocateFixed size={18} />}
+        </button>
+      </div>
+      <label className="rides-date-field"><CalendarDays size={18} /><span>Departure date<input type="date" value={date} onChange={event => {
+        setDate(event.target.value); if (!event.target.value) { setTimeRangeOpen(false); setTimeFrom(""); setTimeTo(""); }
+      }} /></span></label>
+      <label className="rides-time-toggle"><input type="checkbox" disabled={!date} checked={timeRangeOpen} onChange={event => setTimeRangeOpen(event.target.checked)} />Time range</label>
+      {timeRangeOpen && <div className="rides-time-fields">
+        <label className="rides-date-field"><span>From<input type="time" value={timeFrom} onChange={event => setTimeFrom(event.target.value)} /></span></label>
+        <label className="rides-date-field"><span>To<input type="time" value={timeTo} onChange={event => setTimeTo(event.target.value)} /></span></label>
+      </div>}
+    </section>
+    {locationError && <p className="community-error" role="alert">{locationError}</p>}
+    <div className="community-controls rides-map-status">
+      <span className="community-scope"><MapPin size={15} />{changed ? "Area or filters changed" : "Map area"}</span>
+      <span className="community-sort"><Clock3 size={15} />{date || "All upcoming dates"} / local ride times</span>
+    </div>
+    <section className="community-content community-map" aria-label="Explore rides by pickup location">
+      <div className="community-map-panel">
+        <RideMap posts={points} center={center} initialZoom={zoom} fullscreen={fullscreen} onBoundsChange={onBoundsChange} onCenterChange={onCenterChange} onSelectPost={selectRide} selectedPostId={selectedId} selectionVersion={selectionVersion} />
+        <div className="community-map-actions">
+          <button className="button button-primary" disabled={!bounds || busy || locating} onClick={() => void searchArea()}><Search size={16} />{busy ? "Searching..." : "Search this area"}</button>
+          <button className="community-icon-button" title="Center map on my location" aria-label="Center map on my location" disabled={locating} onClick={locate}>{locating ? <span className="spinner" /> : <LocateFixed size={19} />}</button>
+          <button className="community-icon-button" title={fullscreen ? "Exit full screen" : "Full screen map"} aria-label={fullscreen ? "Exit full screen" : "Full screen map"} onClick={() => setFullscreen(!fullscreen)}>{fullscreen ? <Minimize2 size={19} /> : <Maximize2 size={19} />}</button>
+        </div>
+      </div>
+      <aside className={`community-results${!resultsOpen ? " community-results-collapsed" : ""}`} aria-label="Rides in this area">
+        <div className="community-results-heading"><div><h2>Upcoming rides</h2><span aria-live="polite">{busy ? "Searching..." : `${rides.length}${more ? "+" : ""} ${rides.length === 1 && !more ? "request" : "requests"}`}</span></div>
+          <button className="community-icon-button community-sheet-toggle" aria-expanded={resultsOpen} aria-label={resultsOpen ? "Collapse ride results" : "Expand ride results"} onClick={() => setResultsOpen(!resultsOpen)}>{resultsOpen ? <ChevronDown size={20} /> : <ChevronUp size={20} />}</button>
+        </div>
+        <div className="community-result-body">
+          {error && <div className="community-error" role="alert"><p>{error}</p><button className="button button-secondary" disabled={busy} onClick={() => void searchArea()}>Try again</button></div>}
+          {busy ? <div className="community-state" role="status"><span className="spinner" /><p>Searching this area...</p></div> : !searched ? <div className="community-state"><MapPin size={30} /><h3>Where are you headed?</h3><button className="button button-secondary" disabled={!bounds || locating} onClick={() => void searchArea()}>Find nearby requests</button></div> : rides.length === 0 ? <div className="community-state"><Car size={30} /><h3>No upcoming rides here</h3><Link className="button button-secondary" href="/rides/new">Request a ride</Link></div> : <>
+            {rides.map(ride => <article className={`community-post rides-result${selectedId === ride.id ? " is-selected" : ""}`} key={ride.id}>
+              <div className="community-post-top"><span className="community-category-icon"><Car size={21} /></span><div className="community-post-context"><span>{ride.rider.name}</span><time dateTime={ride.pickup_start}>{rideDate(ride.pickup_start, ride.timezone)}</time></div><span className="post-type-pill">Open</span></div>
+              <h3><Link href={`/rides/${ride.id}`}>{ride.pickup.city} to {ride.dropoff.city}<ArrowUpRight size={18} /></Link></h3>
+              <dl className="rides-result-route"><div><dt>Pickup</dt><dd>{ride.pickup.location}</dd></div><div><dt>Drop-off</dt><dd>{ride.dropoff.location}</dd></div></dl>
+              <p className="rides-result-window"><Clock3 size={14} /><span>{rideDate(ride.pickup_start, ride.timezone)} - {rideDate(ride.pickup_end, ride.timezone)}<small>{ride.timezone}</small></span></p>
+              <div className="community-post-footer"><span title="Passengers" aria-label={`${ride.passengers} passengers`}><Users size={15} />{ride.passengers}</span><span title="Bags" aria-label={`${ride.bags} bags`}><Luggage size={15} />{ride.bags}</span><span>{ride.currency}</span><button className="community-icon-button" title="Show on map" aria-label={`Show ${ride.rider.name}'s request on map`} onClick={() => selectRide(ride.id)}><LocateFixed size={17} /></button><Link className="text-link" href={`/rides/${ride.id}`}>View ride<ArrowUpRight size={15} /></Link></div>
+            </article>)}
+            {more && <p className="field-hint">{RESULT_LIMIT}+ requests in this area</p>}
           </>}
-        </>}
+        </div>
       </aside>
     </section>
   </div>;
