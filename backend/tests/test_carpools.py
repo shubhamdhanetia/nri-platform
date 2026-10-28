@@ -129,6 +129,24 @@ class CarpoolAPITests(unittest.TestCase):
         data.update(updates)
         return self.client.post("/rides/carpools/trips/search", headers=self.headers(), json=data)
 
+    def test_destination_search_ignores_pickup_bounds_and_paginates(self):
+        self.create(dropoff_location_id="far")
+        self.create(seats=1)
+        matching = [self.create(pickup_location_id="far").json()["trip"]["id"] for _ in range(2)]
+        filters = {"dropoff_location_id": "dropoff", "radius_km": 10 * 1.609344, "passengers": 2,
+                   "departure_date": self.start.astimezone(ZoneInfo("America/Los_Angeles")).date().isoformat(),
+                   "limit": 1}
+        self.assertEqual(self.map_search(**filters).json()["trips"], [])
+        path = "/rides/carpools/trips"
+        first = self.client.get(path, headers=self.headers(), params=filters)
+        self.assertEqual(first.status_code, 200, first.text)
+        self.assertEqual([trip["id"] for trip in first.json()["trips"]], matching[:1])
+        self.assertTrue(first.json()["has_more"])
+        second = self.client.get(path, headers=self.headers(), params={**filters, "offset": 1})
+        self.assertEqual([trip["id"] for trip in second.json()["trips"]], matching[1:])
+        self.assertFalse(second.json()["has_more"])
+        self.assertEqual(self.client.get(path, headers=self.headers(1), params=filters).json()["trips"], [])
+
     def test_map_search_exact_edges_and_h3_candidates(self):
         trip_id = self.create().json()["trip"]["id"]
         tiny = {"north": 37.5501, "south": 37.5499, "west": -121.9801, "east": -121.9799}

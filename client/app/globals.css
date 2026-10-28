@@ -2375,6 +2375,10 @@ a {
 
 .community-page { --community-ink: #243a32; --community-accent: #226b55; min-width: 0; }
 .carpool-filter-fields { flex-basis: 100%; }
+.carpool-browse .community-location[hidden] { display: none; }
+.carpool-browse .carpool-scope-toggle { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: min(100%, 440px); }
+.carpool-browse .carpool-scope-toggle button { width: 100%; height: auto; min-height: 42px; padding: 6px 8px; }
+.carpool-scope-toggle svg { flex-shrink: 0; }
 .carpool-filter-fields select { border: 0; background: transparent; color: var(--foreground); font-size: 13px; min-height: 25px; }
 .carpool-filter-fields input[type="number"] { width: 80px; }
 .carpool-price { font-size: 12px; color: #586b5e; }
@@ -2502,6 +2506,16 @@ a {
 .community-map-panel .explore-map, .community-map-panel .explore-map-loading { width: 100%; height: min(680px, 75dvh); min-height: 440px; }
 .community-map-actions { position: absolute; top: 12px; left: 54px; right: 12px; z-index: 1000; display: flex; justify-content: space-between; gap: 8px; pointer-events: none; }
 .community-map-actions > * { pointer-events: auto; }
+.post-map-marker.destination-map-marker { background: #b33e45; border-color: #fff; }
+.post-map-marker.destination-map-marker svg { stroke: white; fill: none; }
+.post-map-marker.destination-map-marker.selected { background: #922d35; box-shadow: 0 0 0 5px #b33e4533; }
+.destination-marker-cluster > span { background: #b33e45; color: white; display: flex; align-items: center; justify-content: center; gap: 3px; }
+.destination-marker-cluster { background: #b33e4533; }
+.destination-marker-cluster:hover > span { background: #922d35; }
+.carpool-browse .rides-result { cursor: pointer; }
+.carpool-browse .community-map-actions { flex-wrap: wrap; justify-content: flex-end; }
+.carpool-browse .community-map-actions > * { flex-shrink: 0; }
+.carpool-browse .community-map-actions > .button { margin-right: auto; white-space: nowrap; }
 .community-map-actions .button { border-radius: 5px; gap: 6px; font-size: 11px; min-height: 36px; padding: 0 10px; box-shadow: 0 2px 6px #233a3226; }
 .community-map-actions .community-icon-button { background: white; box-shadow: 0 2px 6px #233a3226; }
 .community-map .community-post { padding: 18px 16px 13px; }
