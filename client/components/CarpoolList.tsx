@@ -61,7 +61,7 @@ export default function CarpoolList({ mine = false }: { mine?: boolean }) {
     <button className="button button-secondary" disabled={busy} onClick={() => void refresh(offset)}>Refresh carpools</button>
     {error && <p className="form-error" role="alert">{error}</p>}
     {busy ? <p role="status">Loading carpools...</p> : page && (
-      page.trips.length ? <div className="ride-grid">{page.trips.map(trip => <CarpoolCard key={trip.id} trip={trip} />)}</div> :
+      page.trips.length ? <div className="ride-grid">{page.trips.map(trip => <CarpoolCard key={trip.id} trip={trip} role={mine ? (trip.my_request_status ? "Passenger" : "Driver") : undefined} />)}</div> :
         <div className="state-card"><p>{mine ? "No carpools yet. Offer your planned trip or request seats on a community trip." : "No available carpools match. Try another date or area, or request a ride instead."}</p><Link className="text-link" href={mine ? "/rides/carpools" : "/rides/new"}>{mine ? "Find a carpool" : "Request a ride"}</Link></div>
     )}
     <div className="form-actions"><button className="button button-secondary" disabled={busy || offset === 0} onClick={() => void refresh(offset - 20)}>Previous carpools</button><button className="button button-secondary" disabled={busy || !page?.has_more} onClick={() => void refresh(offset + 20)}>Next carpools</button></div>

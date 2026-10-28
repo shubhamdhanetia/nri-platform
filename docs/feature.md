@@ -264,7 +264,13 @@ application.
   read. The global bell refreshes the unread count every 30 seconds, on focus,
   and after in-app mutations. The inbox itself has an explicit Refresh button.
 - My rides lists both carpool directions separately, including closed/historical
-  trips. In-app notifications cover rides and carpools. No email, SMS, push, chat,
+  trips. It separates **Carpools** from **Ride requests** with keyboard-accessible
+  tabs, defaulting to Carpools. The selected tab is remembered in session storage
+  when returning from trip details. Each section retains its own pagination,
+  loading/error/empty states, and creation actions; switching tabs preserves both
+  lists and page positions while the page remains mounted. Cards show your role
+  as **Driver** or **Passenger**. In-app notifications cover rides and carpools.
+  No email, SMS, push, chat,
   route optimization, intermediate-segment bookings, verification, reviews,
   reporting/blocking system, or live tracking is provided in this first version.
 
