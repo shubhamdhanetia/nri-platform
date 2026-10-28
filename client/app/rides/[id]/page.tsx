@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import RideLayout, { RideRoute } from "../../../components/RideLayout";
 import { apiRequest, type User } from "../../../lib/api";
-import { localDateTime, localToISO, rideDate, rideError, rideMoney, type RideDetail, type RideOffer } from "../../../lib/rides";
+import { localDateTime, localToISO, rideDate, rideError, rideMoney, type DriverProfile, type RideDetail, type RideOffer } from "../../../lib/rides";
 
 export default function RideDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -16,6 +16,7 @@ export default function RideDetailPage() {
 function RideContent({ id }: { id: number }) {
   const [data, setData] = useState<RideDetail | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<DriverProfile | null>(null);
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -25,11 +26,11 @@ function RideContent({ id }: { id: number }) {
   const [reason, setReason] = useState("");
   const [now, setNow] = useState(() => Date.now());
   const load = useCallback((signal?: AbortSignal) =>
-    Promise.all([apiRequest<RideDetail>(`/rides/requests/${id}`, { signal }), apiRequest<User>("/users/me", { signal })]), [id]);
+    Promise.all([apiRequest<RideDetail>(`/rides/requests/${id}`, { signal }), apiRequest<User>("/users/me", { signal }), apiRequest<DriverProfile | null>("/rides/driver-profile", { signal })]), [id]);
   useEffect(() => {
     const controller = new AbortController();
-    load(controller.signal).then(([detail, me]) => {
-      if (!controller.signal.aborted) { setData(detail); setUser(me); setNow(Date.now()); }
+    load(controller.signal).then(([detail, me, driver]) => {
+      if (!controller.signal.aborted) { setData(detail); setUser(me); setProfile(driver); setNow(Date.now()); }
     }).catch((err: unknown) => { if (!controller.signal.aborted) setError(rideError(err)); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
@@ -37,8 +38,8 @@ function RideContent({ id }: { id: number }) {
   async function refresh() {
     setLoading(true); setError(""); setChosen(null); setCancelMode(false);
     try {
-      const [detail, me] = await load();
-      setData(detail); setUser(me); setNow(Date.now());
+      const [detail, me, driver] = await load();
+      setData(detail); setUser(me); setProfile(driver); setNow(Date.now());
     } catch (err) { setError(rideError(err)); }
     finally { setLoading(false); }
   }
@@ -85,11 +86,12 @@ function RideContent({ id }: { id: number }) {
             {isOpen && item.status === "PENDING" && (owner ? <button className="button button-primary" disabled={busy} onClick={() => setChosen(item)}>Choose {item.driver.name}</button> : <button className="button button-secondary" disabled={busy} onClick={() => void act(`offers/${item.id}/withdraw`)}>Withdraw offer</button>)}
           </article>)}
           {chosen && <section className="ride-card ride-confirm" aria-label="Confirm chosen driver"><h2>Confirm {chosen.driver.name}?</h2><p>{rideDate(chosen.pickup_time, ride.timezone)} &middot; {rideMoney(chosen.amount, ride.currency)} contribution.</p><p>This closes all other offers and shares both contact numbers. No money is collected. Check the details before confirming.</p><div className="form-actions"><button className="button button-primary" disabled={busy} onClick={() => void act("confirm", { offer_id: chosen.id })}>Confirm ride</button><button className="button button-secondary" disabled={busy} onClick={() => setChosen(null)}>Keep comparing</button></div></section>}
-          {!owner && isOpen && (!ownOffer || ownOffer.status === "WITHDRAWN" || ownOffer.status === "EXPIRED") && <form className="ride-card" onSubmit={offer}><h2>Offer a ride</h2><p className="field-hint">Your driver profile must have enough passenger seats. This is a commitment if the rider selects you.</p><label className="form-field"><span>Pickup time in your timezone ({Intl.DateTimeFormat().resolvedOptions().timeZone})</span><input key={ride.id} name="time" type="datetime-local" defaultValue={localDateTime(ride.pickup_start)} min={localDateTime(ride.pickup_start)} max={localDateTime(ride.pickup_end)} required /></label><label className="form-field"><span>Proposed contribution ({ride.currency})</span><input name="amount" type="number" min="0" max="9999.99" step="0.01" defaultValue="0.00" required /><span className="field-hint">Total contribution for this trip, not per passenger. Use 0 for a free ride. Arrange any payment outside the platform and comply with local rules.</span></label><label className="form-field"><span>Message to rider</span><textarea name="message" maxLength={500} rows={3} required placeholder="Confirm luggage space and any pickup details. Do not share phone numbers here." /></label><button className="button button-primary" disabled={busy}>Send offer</button></form>}
+          {!owner && isOpen && !profile && <Link className="button button-primary" href={`/rides/driver?request=${id}`}>Register as a driver to offer</Link>}
+          {!owner && profile && isOpen && (!ownOffer || ownOffer.status === "WITHDRAWN" || ownOffer.status === "EXPIRED") && <form className="ride-card" onSubmit={offer}><h2>Offer a ride</h2><p className="field-hint">Your driver profile must have enough passenger seats. This is a commitment if the rider selects you.</p><label className="form-field"><span>Pickup time in your timezone ({Intl.DateTimeFormat().resolvedOptions().timeZone})</span><input key={ride.id} name="time" type="datetime-local" defaultValue={localDateTime(ride.pickup_start)} min={localDateTime(ride.pickup_start)} max={localDateTime(ride.pickup_end)} required /></label><label className="form-field"><span>Proposed contribution ({ride.currency})</span><input name="amount" type="number" min="0" max="9999.99" step="0.01" defaultValue="0.00" required /><span className="field-hint">Total contribution for this trip, not per passenger. Use 0 for a free ride. Arrange any payment outside the platform and comply with local rules.</span></label><label className="form-field"><span>Message to rider</span><textarea name="message" maxLength={500} rows={3} required placeholder="Confirm luggage space and any pickup details. Do not share phone numbers here." /></label><button className="button button-primary" disabled={busy}>Send offer</button></form>}
           {owner && isOpen && <button className="button button-secondary" disabled={busy} onClick={() => setCancelMode(true)}>Cancel request</button>}
         </>}
         {cancelMode && <form className="ride-card" onSubmit={e => { e.preventDefault(); void act(booking ? "booking/cancel" : "cancel", booking ? { reason } : undefined); }}><h2>Cancel this {booking ? "booking" : "request"}?</h2><p>No notifications are sent. If booked, contact the other member directly. This request will not reopen automatically.</p>{booking && <label className="form-field"><span>Reason for cancellation</span><textarea value={reason} onChange={e => setReason(e.target.value)} required maxLength={500} /></label>}<div className="form-actions"><button className="button button-primary" disabled={busy}>Confirm cancellation</button><button className="button button-secondary" type="button" disabled={busy} onClick={() => setCancelMode(false)}>Keep ride</button></div></form>}
-      </div><aside><div className="ride-card ride-aside"><h2>Community, not a taxi queue.</h2><p className="muted">A request is not a booking. A driver offers, then the rider chooses.</p><p className="muted">Both exact locations are shared with members who have a driver profile. Contact numbers are private until confirmation.</p><p className="muted">No live tracking, platform payments, or notifications. Use your agreed contact numbers to coordinate.</p></div></aside></div>
+      </div><aside><div className="ride-card ride-aside"><h2>Community, not a taxi queue.</h2><p className="muted">A request is not a booking. A driver offers, then the rider chooses.</p><p className="muted">Both exact locations are shared with all signed-in members. Contact numbers are private until confirmation.</p><p className="muted">No live tracking, platform payments, or notifications. Use your agreed contact numbers to coordinate.</p></div></aside></div>
     </>}
   </>;
 }

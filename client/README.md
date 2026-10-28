@@ -20,32 +20,31 @@ live tracking or platform payments in this version; refresh My rides to check
 updates. See [feature documentation](../docs/feature.md) for API, privacy,
 database setup and tests.
 
-Ride discovery uses the same clustered map as Explore posts. Find a pickup
-area, pan/zoom, optionally select a departure date and expand **Add time range**,
-then click **Search this area**. Markers show exact pickups inside the viewport;
+Ride discovery offers Community-style **Map** and **Feed** views, defaulting to
+Map. Requests load automatically after geolocation or pickup-area selection.
+Map searches use the visible viewport; **Search this area** refreshes after
+panning or zooming. Markers show exact pickups inside the viewport;
 destinations can be outside it. Searches return up to 50 rides, earliest first.
-Changing the map or filters requires another explicit search. Full-screen
-mode uses Explore's floating filter card over the full map and an overlaid
-results panel, with hiding/showing results and Escape to exit. Without a date,
+Changing the map or date/time filters requires another explicit search.
+**Apply filters** (or Enter in the date/time form) applies the date/time;
+**Reset filters** clears them and reloads without changing the selected area.
+Full-screen mode supports hiding/showing results and Escape to exit. Without a date,
 all future open requests match; a date alone searches the whole day. An optional
 same-day From/To range matches overlapping pickup windows. Dates and times use
 each ride's saved timezone, shown in the results. Drop-off addresses are still
 shown, but destination filters are not offered in this version.
 
-Below the map, **Browse all active requests** is an independent table with
-pickup/radius (5/10/25/50 miles, default 25 miles), date/time, and maximum-passenger filters.
-The client converts miles to decimal kilometers for the API without rounding.
-It initially loads all active requests, excluding your own; no GPS filter is
-applied. Apply/Clear filters and Refresh table affect only the table.
-Filters start collapsed; Show/Hide filters preserves selections without searching.
-An active-filter count stays visible, and Refresh table is always available.
-Previous/Next use server-side cursors, 20 results per page, without an exact
-total count. On narrow screens the table scrolls within its own container.
+Feed and Map share results and filters. **Show on map** selects a ride's pickup
+and switches to Map. The independent all-request table and its radius/passenger
+filters have been removed; its API remains available for compatibility.
+Browse cards show passengers and bags without a standalone currency label.
+Community also defaults to Map, while remembering an explicitly selected view
+within the current browser session.
 
 ## Local setup
 
-The header contains **Posts** and **Rides**. Rides opens **My rides**
-(`/rides/mine`); tabs are **My rides**, **Browse requests**, and **Driver profile**.
+The header contains **Posts** and **Rides**. Rides opens **Browse requests**
+(`/rides`); tabs are **Browse requests**, **My rides**, and **Driver profile**.
 Discovery stays at `/rides`, including driver-profile setup guidance.
 My rides keeps request creation prominent and offers a browse action when empty.
 The brand opens Posts; viewing or

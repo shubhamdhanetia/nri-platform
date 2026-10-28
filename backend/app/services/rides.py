@@ -23,7 +23,7 @@ def utc_naive(value: datetime) -> datetime:
 def require_driver(db: Session, user_id: int) -> DriverProfile:
     profile = repo.driver_profile(db, user_id)
     if profile is None:
-        raise HTTPException(403, "Complete your driver profile before browsing exact addresses or offering rides.")
+        raise HTTPException(403, "Complete your driver profile before offering rides.")
     return profile
 
 
@@ -71,7 +71,6 @@ def get_request(db: Session, request_id: int, user_id: int, *, lock: bool = Fals
     if ride.rider_id != user_id:
         booking = repo.booking_for_request(db, ride.id)
         if booking is None or booking.driver_id != user_id:
-            require_driver(db, user_id)
             has_offer = bool(repo.offers_for_request(db, ride.id, user_id))
             if (ride.status != "OPEN" or ride.pickup_end <= utc_now_naive()) and not has_offer:
                 raise HTTPException(404, "Ride request not found.")

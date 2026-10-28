@@ -39,8 +39,10 @@ class PostSearchBounds(BaseModel):
 
 
 class PostSearchRequest(BaseModel):
-    bounds: PostSearchBounds
+    bounds: PostSearchBounds | None = None
     limit: int = Field(default=50, ge=1, le=50)
+    offset: int = Field(default=0, ge=0)
+    query: str = Field(default="", max_length=200)
     category: PostCategory | None = None
     post_type: PostType | None = None
 

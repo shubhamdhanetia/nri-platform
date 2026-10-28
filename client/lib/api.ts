@@ -74,8 +74,10 @@ export interface PostSearchBounds {
 }
 
 export interface PostSearchRequest {
-  bounds: PostSearchBounds;
+  bounds?: PostSearchBounds | null;
   limit: number;
+  offset?: number;
+  query?: string;
   category?: PostCategory;
   post_type?: PostType;
 }

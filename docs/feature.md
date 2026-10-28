@@ -17,8 +17,8 @@ application.
 - Main navigation contains Posts and Rides. Posts uses the existing `/explore`
   map route and is the post-login and brand-link destination. Feed remains
   accessible at `/feed` without a top-level navigation link.
-- The main Rides link opens `/rides/mine`. Ride tabs are ordered My rides,
-  Browse requests, Driver profile. Discovery remains at `/rides`; members without
+- The main Rides link opens `/rides` (Browse requests). Ride tabs are ordered
+  Browse requests, My rides, Driver profile. Discovery remains at `/rides`; members without
   a driver profile see setup guidance there. My rides includes request creation
   and empty-state links to request a ride or browse requests.
 - Create a post is a page action in normal and fullscreen Posts views. Post
@@ -76,7 +76,8 @@ application.
 ### Explore map and location selection
 
 - Explore displays an OpenStreetMap-backed Leaflet map and a list of posts in
-  the searched map area.
+  the searched map area. Community defaults to Map; a view selected during the
+  current browser session is still remembered.
 - The map requests browser geolocation on first load and has a
   **Center on my location** action. If location access is unavailable or
   denied, the map remains at its default view and displays an explanatory
@@ -121,9 +122,17 @@ application.
 - Requests contain a future pickup window (at most two hours), an IANA timezone,
   passengers, bags, notes, a rider contact phone, and a cost-sharing currency.
   Creation uses the browser's timezone, explicitly displayed alongside inputs.
-- Drivers discover requests on an Explore-style Leaflet map. Search for a
-  pickup area, pan/zoom, and explicitly select **Search this area**. Only open
-  requests with exact pickups inside the viewport are returned. Pickup markers
+- Drivers discover requests through Community-style **Feed** and **Map** views,
+  defaulting to Map. Both share the same pickup-area search, departure date/time
+  filters, results, and ride-detail actions; there is no separate table view.
+  On geolocation success or pickup-area selection, requests load automatically.
+  In Map, this waits for the map to center and uses its actual visible bounds;
+  in Feed, it uses the selected area's initial bounds. **Search requests** in
+  Feed refreshes results. Map supports panning/zooming and **Search this area**.
+  Location selection uses the same initial area bounds as Community; map search
+  uses the visible viewport. Only open requests with exact pickups inside the
+  searched bounds are returned. Switching views preserves results and filters.
+  **Show on map** switches a feed card to Map and selects its pickup. Pickup markers
   cluster and overlapping markers can be spiderfied. Selecting a marker or
   **Show on map** highlights its result; popups link to ride details.
 - Discovery offers pickup area and an optional departure date. A date alone
@@ -132,6 +141,10 @@ application.
   including its time endpoints. Date-only searches exclude the following midnight.
   Dates and times use each request's saved timezone, explicitly explained in the
   filter card and shown in results. Without a date, all future open requests match.
+  **Apply filters** (or Enter in the date/time form) searches with the edited
+  date/time in either view. **Reset filters** clears the date and time range and
+  immediately reloads requests without moving or clearing the selected area.
+  Both actions use the visible viewport in Map or the selected area in Feed.
   Destination filters are deferred; drop-off addresses remain visible.
 - Location IDs are resolved server-side. H3 resolution-8 cells covering the
   viewport narrow database candidates using the pickup H3 expression index;
@@ -140,7 +153,8 @@ application.
   areas over 10,000 square kilometers or 20,000 covering cells are rejected.
 - Map search returns at most 50 rides, ordered by earliest pickup, with
   `has_more` prompting users to zoom in or add filters. Map/filter changes
-  display a refresh hint; they never silently issue another search. A
+  display a refresh hint; panning, zooming, and filter edits require an explicit
+  search. Geolocation and pickup-area selection trigger automatic searches. A
   full-screen map has collapsible results and Escape/Exit controls.
 - Browser geolocation can center the map; denied/unavailable access displays
   an error and users can still search for a city without location permission.
@@ -230,14 +244,12 @@ coordinates, and the address components used by posts and rides remain required.
 
 ### Rides
 
-#### Independent request table
+#### Legacy all-request search API
 
-Below pickup-map discovery, **Browse all active requests** loads independently.
-It shares the driver-profile gate and contact privacy. Its location autocomplete
-uses the map's current latitude/longitude as the same provider search bias
-(including geolocation, city selection, and panning), but its selected pickup,
-filters, results, and pagination stay independent. Selecting a table pickup
-does not move the map or search automatically.
+The independent request table has been removed from Browse requests. Feed and
+Map both use the area-scoped search described above, not all-request browsing.
+The table-search endpoint remains available for API compatibility and retains
+the driver-profile gate and contact privacy.
 `POST /rides/requests/table-search` accepts:
 
 ```json
@@ -254,15 +266,13 @@ does not move the map or search automatically.
 ```
 
 All filters are optional; the default is all active requests except the
-driver's own. The UI offers 5/10/25/50 miles, defaulting to 25 miles, effective only
-with a pickup selection. It converts miles to decimal kilometers without rounding
-(1 mile = 1.609344 km). The API keeps its 1–100 km range and 25 km default for
-compatibility. No destination filter is accepted. Date/time validation
+driver's own. The API keeps its 1–100 km range and 25 km default for
+compatibility. The former table-only radius and maximum-passenger controls are
+not part of the Feed/Map UI. No destination filter is accepted. Date/time validation
 matches map search; date-only searches the whole day in each ride's timezone.
 The response contains `rides`, `has_more`, and `next_cursor` (null on the last
 page). Send the returned `{pickup_start, id}` cursor for the next page, with
-the same filters. Results sort by pickup start then ID. The client stores prior
-cursors for Previous, and resets pagination on Apply, Clear, or Refresh.
+the same filters. Results sort by pickup start then ID.
 Pagination is live rather than a historical snapshot: newly closed requests
 disappear and returning to a previous page may show updated results.
 
