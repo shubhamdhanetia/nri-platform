@@ -4,13 +4,26 @@ from decimal import Decimal
 from typing import Annotated, Literal, Self
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, StringConstraints, field_serializer, field_validator, model_validator
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, StringConstraints, field_validator, model_validator
+
+from app.schemas.common import UTCResponse
 
 from app.schemas.post import PostAuthorResponse, PostLocationFields, PostSearchBounds
 
 ShortText = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=100)]
 Phone = Annotated[str, StringConstraints(strip_whitespace=True, min_length=8, max_length=30)]
 Currency = Literal["USD", "CAD", "INR", "GBP", "EUR", "AUD"]
+
+
+def validate_pickup_window(start: datetime, end: datetime, pickup_id: str, dropoff_id: str) -> None:
+    start = start.astimezone(timezone.utc)
+    end = end.astimezone(timezone.utc)
+    if start <= datetime.now(timezone.utc):
+        raise ValueError("Pickup must be in the future")
+    if end < start or (end - start).total_seconds() > 7200:
+        raise ValueError("Pickup window must be between zero and two hours")
+    if pickup_id == dropoff_id:
+        raise ValueError("Pickup and drop-off must be different places")
 
 
 class DriverProfileInput(BaseModel):
@@ -64,14 +77,7 @@ class RideRequestInput(BaseModel):
 
     @model_validator(mode="after")
     def validate_window(self) -> "RideRequestInput":
-        start = self.pickup_start.astimezone(timezone.utc)
-        end = self.pickup_end.astimezone(timezone.utc)
-        if start <= datetime.now(timezone.utc):
-            raise ValueError("Pickup must be in the future")
-        if end < start or (end - start).total_seconds() > 7200:
-            raise ValueError("Pickup window must be between zero and two hours")
-        if self.pickup_location_id == self.dropoff_location_id:
-            raise ValueError("Pickup and drop-off must be different places")
+        validate_pickup_window(self.pickup_start, self.pickup_end, self.pickup_location_id, self.dropoff_location_id)
         return self
 
 
@@ -87,14 +93,6 @@ class ConfirmationInput(BaseModel):
 
 class CancellationInput(BaseModel):
     reason: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=500)]
-
-
-class UTCResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    @field_serializer("pickup_start", "pickup_end", "pickup_time", "created_at", check_fields=False)
-    def serialize_datetime(self, value: datetime) -> str:
-        return value.replace(tzinfo=timezone.utc).isoformat()
 
 
 class RideRequestResponse(UTCResponse):

@@ -5,6 +5,7 @@ import Link from "next/link";
 import RideLayout, { RideCard } from "../../../components/RideLayout";
 import { apiRequest } from "../../../lib/api";
 import { rideError, type RideRequest } from "../../../lib/rides";
+import CarpoolList from "../../../components/CarpoolList";
 
 export default function MyRidesPage() {
   const [rides, setRides] = useState<RideRequest[]>([]);
@@ -30,11 +31,13 @@ export default function MyRidesPage() {
     } catch (err) { setError(rideError(err)); } finally { setBusy(false); }
   }
   return <RideLayout>
-    <section className="page-heading"><div><p className="eyebrow">Your journeys</p><h1>My rides</h1><p className="muted">Your requests and trips you have offered to drive. Open a ride for offers and booking details.</p></div><Link className="button button-primary" href="/rides/new">Request a ride</Link></section>
-    <p className="ride-notice">No notifications are sent. Refresh here to check for offers, confirmations, and cancellations.</p>
+    <section className="page-heading"><div><p className="eyebrow">Your journeys</p><h1>My rides</h1><p className="muted">Your carpools, ride requests, and trips you have offered to drive. Open a trip for requests and booking details.</p></div><Link className="button button-primary" href="/rides/new">Request a ride</Link></section>
+    <CarpoolList mine />
+    <h2>Ride requests and driver offers</h2>
+    <p className="ride-notice">Ride and carpool updates are in your <Link className="text-link" href="/notifications">notifications</Link>. Use the bell beside your profile from anywhere in the app, or refresh here for current trip details.</p>
     <button className="button button-secondary" disabled={busy} onClick={() => refresh(offset)}>Refresh rides</button>
     {error && <p className="form-error" role="alert">{error}</p>}
-    {busy ? <p role="status">Loading your rides...</p> : rides.length ? <div className="ride-grid">{rides.map(ride => <RideCard key={ride.id} ride={ride} />)}</div> : !error && <div className="state-card"><h2>No rides yet</h2><p>Request a ride, or help a community member by browsing requests.</p><div className="form-actions"><Link className="button button-primary" href="/rides/new">Request a ride</Link><Link className="button button-secondary" href="/rides">Browse requests</Link></div></div>}
+    {busy ? <p role="status">Loading your rides...</p> : rides.length ? <div className="ride-grid">{rides.map(ride => <RideCard key={ride.id} ride={ride} />)}</div> : !error && <div className="state-card"><h2>No ride requests yet</h2><p>Request a ride, or help a community member by browsing requests.</p><div className="form-actions"><Link className="button button-primary" href="/rides/new">Request a ride</Link><Link className="button button-secondary" href="/rides">Browse requests</Link></div></div>}
     <div className="form-actions"><button className="button button-secondary" disabled={busy || offset === 0} onClick={() => refresh(offset - 20)}>Previous</button><button className="button button-secondary" disabled={busy || !more} onClick={() => refresh(offset + 20)}>Next</button></div>
   </RideLayout>;
 }

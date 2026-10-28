@@ -14,6 +14,7 @@ from app.schemas.ride import (
     RideOfferResponse, RideRequestInput, RideRequestResponse,
 )
 from app.services.location_search import resolve_post_location
+from app.services import notifications
 
 
 def utc_naive(value: datetime) -> datetime:
@@ -82,6 +83,14 @@ def ensure_open(ride: RideRequest) -> None:
         raise HTTPException(409, "This request is no longer open. Refresh to see its current status.")
 
 
+def notify_member(db: Session, user_id: int, ride: RideRequest, event_type: str, message: str) -> None:
+    route = f"{ride.pickup['city']} to {ride.dropoff['city']}"
+    notifications.notify(
+        db, user_id=user_id, category="ride", event_type=event_type,
+        resource_id=ride.id, target_path=f"/rides/{ride.id}", message=f"{message} ({route})"[:500],
+    )
+
+
 def send_offer(db: Session, request_id: int, user_id: int, data: RideOfferInput) -> RideOffer:
     profile = require_driver(db, user_id)
     ride = get_request(db, request_id, user_id, lock=True)
@@ -109,6 +118,7 @@ def send_offer(db: Session, request_id: int, user_id: int, data: RideOfferInput)
     offer.status = "PENDING"
     offer.created_at = utc_now_naive()
     db.add(offer)
+    notify_member(db, ride.rider_id, ride, "ride.offer_received", "A driver offered to help with your ride. Review the offer.")
     db.commit()
     db.refresh(offer)
     return offer
@@ -125,6 +135,7 @@ def withdraw_offer(db: Session, request_id: int, offer_id: int, user_id: int) ->
     if offer.status != "PENDING":
         raise HTTPException(409, "Only a pending offer can be withdrawn.")
     offer.status = "WITHDRAWN"
+    notify_member(db, ride.rider_id, ride, "ride.offer_withdrawn", "A driver withdrew their offer.")
     db.commit()
 
 
@@ -154,6 +165,9 @@ def confirm(db: Session, request_id: int, offer_id: int, user_id: int) -> RideBo
     for candidate in repo.offers_for_request(db, ride.id):
         if candidate.status == "PENDING":
             candidate.status = "ACCEPTED" if candidate.id == offer.id else "NOT_SELECTED"
+            if candidate.id != offer.id:
+                notify_member(db, candidate.driver_id, ride, "ride.offer_not_selected", "The rider selected another driver. Your offer is now closed.")
+    notify_member(db, offer.driver_id, ride, "ride.booking_confirmed", "The rider accepted your offer. Your ride is confirmed; contact details are available.")
     db.commit()
     db.refresh(booking)
     return booking
@@ -170,6 +184,7 @@ def cancel_request(db: Session, request_id: int, user_id: int) -> None:
     for offer in repo.offers_for_request(db, ride.id):
         if offer.status == "PENDING":
             offer.status = "NOT_SELECTED"
+            notify_member(db, offer.driver_id, ride, "ride.request_cancelled", "The rider cancelled this ride request.")
     db.commit()
 
 
@@ -193,6 +208,13 @@ def change_booking(db: Session, request_id: int, user_id: int, *, reason: str | 
         booking.cancellation_reason = reason
         ride.status = "CANCELLED"
     booking.status = target
+    recipient = booking.driver_id if user_id == booking.rider_id else booking.rider_id
+    notify_member(
+        db, recipient, ride,
+        "ride.booking_cancelled" if reason is not None else "ride.booking_completed",
+        "Your confirmed ride was cancelled. Open the ride for the reason." if reason is not None
+        else "The rider marked your ride completed.",
+    )
     db.commit()
 
 

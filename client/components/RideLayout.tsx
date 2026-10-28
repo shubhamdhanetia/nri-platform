@@ -16,7 +16,7 @@ export default function RideLayout({ children }: { children: ReactNode }) {
   const path = usePathname();
   return <ProtectedPage>
     <nav className="ride-tabs" aria-label="Rides navigation">
-      {[["/rides", "Browse requests"], ["/rides/mine", "My rides"], ["/rides/driver", "Driver profile"]].map(([href, label]) =>
+      {[["/rides", "Browse requests"], ["/rides/carpools", "Find a carpool"], ["/rides/new", "Request a ride"], ["/rides/mine", "My rides"], ["/rides/driver", "Driver profile"]].map(([href, label]) =>
         <Link key={href} href={href} aria-current={path === href ? "page" : undefined}>{label}</Link>)}
     </nav>
     {children}

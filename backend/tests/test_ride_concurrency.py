@@ -17,6 +17,7 @@ from app.core.security import create_access_token
 from app.db.base import Base
 from app.db.dependencies import get_db
 from app.models.ride import DriverProfile, RideBooking, RideOffer, RideRequest
+from app.models.notification import Notification
 from app.models.user import User
 import app.models.post
 import app.models.saved_post
@@ -111,6 +112,15 @@ class PostgreSQLConcurrencyTests(unittest.TestCase):
                 )
                 self.assertEqual([a.status_code, b.status_code], [200, 200], (a.text, b.text))
                 self.assertEqual(a.json()["booking"]["id"], b.json()["booking"]["id"])
+                with Session(isolated) as db:
+                    self.assertEqual(db.scalar(select(func.count()).select_from(Notification).where(
+                        Notification.category == "ride", Notification.resource_id == ride_id,
+                        Notification.event_type == "ride.booking_confirmed",
+                    )), 1)
+                    self.assertEqual(db.scalar(select(func.count()).select_from(Notification).where(
+                        Notification.category == "ride", Notification.resource_id == ride_id,
+                        Notification.event_type == "ride.offer_not_selected",
+                    )), 1)
 
                 ride_id, offer_a, _ = seed()
                 locations(ride_id)

@@ -239,6 +239,6 @@ export default function RidesPage() {
         </div>
       </section>
     </section>
-    <p className="ride-notice">Community members are not vetted by this platform. Cost-sharing is agreed between members; no payments are collected here. No notifications are sent: check My rides and refresh for updates.</p>
+    <p className="ride-notice">Community members are not vetted by this platform. Cost-sharing is agreed between members; no payments are collected here. Check the notification bell for ride updates, or refresh My rides for current details.</p>
   </div></RideLayout>;
 }

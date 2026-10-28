@@ -18,7 +18,11 @@ application.
   map route and is the post-login and brand-link destination. Feed remains
   accessible at `/feed` without a top-level navigation link.
 - The main Rides link opens `/rides` (Browse requests). Ride tabs are ordered
-  Browse requests, My rides, Driver profile. Discovery remains at `/rides`; members without
+  Browse requests, Find a carpool, Request a ride, My rides, Driver profile.
+  Request a ride opens the existing creation form at `/rides/new`.
+  A notification bell beside the profile button opens the shared inbox at
+  `/notifications`; it is not a Rides-specific tab.
+  Discovery remains at `/rides`; members without
   a driver profile see setup guidance there. My rides includes request creation
   and empty-state links to request a ride or browse requests.
 - Create a post is a page action in normal and fullscreen Posts views. Post
@@ -196,10 +200,112 @@ application.
 - Expired requests/offers are derived at read time and are rejected on writes;
   no scheduler is needed. `/rides/mine` includes the rider's requests and
   requests the member offered to drive, with their offer and booking statuses.
-- **No notifications, private messaging, SMS verification, live tracking,
-  dispatch, or payment processing are included.** Members must refresh My
-  rides/detail pages and coordinate using the contact numbers after booking.
+- Ride lifecycle updates use the shared notification inbox. **No private
+  messaging, SMS verification, live tracking, dispatch, or payment processing
+  are included.** Members refresh detail pages for current state and coordinate
+  using the contact numbers after booking.
   Local licensing, insurance, and cost-sharing rules still apply.
+
+### Planned-trip carpools
+
+- Carpools are a driver-first flow alongside existing rider requests. A driver
+  publishes an already-planned journey, not an on-demand transport service.
+- Publishing requires a driver profile and explicit consent that full public
+  meeting-point addresses are visible to signed-in members. The server resolves
+  location IDs; phone numbers are not part of trip listings.
+- Each direction has its own future departure window (zero to two hours),
+  browser-derived IANA timezone, available seats (1-8, no more than the driver
+  profile's passenger capacity), bag allowance per person, fixed contribution
+  per passenger, currency, vehicle snapshot, and notes. No bargaining or
+  payment collection is offered. Supported currencies match ride requests.
+- An optional linked return is created atomically with the outbound trip.
+  Its route defaults to reversed meeting points in the UI, but can be changed;
+  its time, seats, luggage allowance, and contribution are independent.
+  Return departure must follow the outbound departure window.
+- Search accepts optional pickup/destination areas, a radius of 1-100 km
+  (default 25), a departure date in each trip's saved timezone, and seats needed.
+  Results exclude the viewer's own, full, cancelled, and departed trips.
+  Filtering happens before offset pagination; list responses include `has_more`.
+- Passengers request seats and total bags for one or both directions. Both
+  requests are created in a single transaction, or neither is created if one
+  direction is unavailable, already requested, or cannot accommodate the party.
+  Each direction is approved independently, and UI status explicitly distinguishes
+  pending requests from confirmed bookings.
+- Pending requests do not hold capacity. Approval locks the trip row and
+  rechecks remaining confirmed seats, preventing overbooking. Duplicate approval
+  is idempotent and does not send duplicate events. Each passenger account can
+  submit one request per direction; declined/cancelled requests remain historical,
+  and cannot be resubmitted in v1.
+- Drivers see passenger names, party sizes, luggage, and messages for their own
+  trips; passengers see only their own request. Neither phone is returned until
+  confirmation. Confirmation snapshots the driver's phone; the passenger phone
+  comes from the request. Confirmed contact details are available only to that
+  passenger and driver, and are hidden again after cancellation.
+- Driver approval/decline and participant cancellation are permission-checked.
+  Pending request cards show drivers **Accept request** and **Decline request**;
+  passengers see **Withdraw request** for their own pending request. Either
+  participant can **Cancel booking** after confirmation. Driver cards do not
+  show a redundant cancellation action for pending requests. Card action buttons
+  are stacked at full width so labels do not collapse into narrow text columns.
+  Cancellation requires a reason. Cancelling a confirmed seat request releases
+  capacity; driver trip cancellation cancels all pending/confirmed requests on
+  that direction. Linked directions are never implicitly cancelled.
+- Published terms are immutable. Changes require cancellation and a new trip,
+  so confirmed passengers are never silently moved to different terms.
+  New requests, approvals, and declines close when the earliest departure time
+  arrives; cancellations remain available until the departure window ends.
+  The response's `can_cancel` flag controls last-minute cancellation actions.
+  Pending requests then display `EXPIRED`; trip status
+  displays `DEPARTED`, without a scheduler. `FULL` is derived from confirmed seats.
+- Durable notifications are written in the same transaction as each new request,
+  approval, decline, or cancellation. The counterpart receives an inbox event;
+  cancelling an entire trip notifies every pending/confirmed passenger.
+  Inbox records are private to the recipient, paginated, and individually marked
+  read. The global bell refreshes the unread count every 30 seconds, on focus,
+  and after in-app mutations. The inbox itself has an explicit Refresh button.
+- My rides lists both carpool directions separately, including closed/historical
+  trips. In-app notifications cover rides and carpools. No email, SMS, push, chat,
+  route optimization, intermediate-segment bookings, verification, reviews,
+  reporting/blocking system, or live tracking is provided in this first version.
+
+### Shared notifications
+
+- `/notifications` is an authenticated, app-wide inbox, opened directly by the
+  bell beside the profile button. The badge shows unread count (visually capped
+  at `99+`, with the full count in its accessible name). Loading failures are
+  visible as an error indicator and accessible error text, not an empty count.
+- Events include a recipient, category, event type, resource ID, internal detail
+  path, message, read state, and UTC creation time. The model has no ride/carpool
+  foreign key, so future features can use the same service and inbox.
+- Feature services call `app.services.notifications.notify` within their
+  existing transaction; the helper does not commit. Business changes and
+  events succeed or roll back together. No public event-creation endpoint exists.
+- Inboxes, unread counts, and read actions are scoped to the signed-in member.
+  Reading another member's event returns 404. Marking an event read is idempotent.
+  Detail links still use each feature's authorization checks.
+- Events are newest first by creation time and ID. Read and unread events remain
+  in the same paginated history. Opening the inbox does not implicitly mark all
+  events read; each has a Mark as read action. The inbox has an explicit Refresh.
+- The global bell refreshes on mount, every 30 seconds, on browser focus, and
+  after local notification changes. Stale overlapping count responses cannot
+  overwrite newer results.
+- Rides notify the rider on new/resubmitted offers and withdrawals; selected
+  drivers on confirmation; other pending offer drivers when not selected;
+  pending offer drivers when a request is cancelled; and the other booking
+  participant when a confirmed ride is cancelled or marked completed.
+  Actors do not receive notifications about their own actions. Creating a ride
+  request does not broadcast to all drivers, and failed/idempotent operations
+  do not generate additional events.
+- Carpool recipients and lifecycle rules are unchanged, but their events now use
+  the shared storage and API. Notification messages do not include phone numbers
+  or private cancellation reasons; participants open the authorized detail view.
+- Startup creates the new `notifications` table and idempotently copies existing
+  `carpool_notifications` history, preserving recipients, messages, timestamps,
+  and read state. A unique legacy source ID prevents duplicate imports or read
+  state resets. PostgreSQL startup workers serialize the copy using a transaction
+  advisory lock. The legacy table is retained, no longer written by new actions.
+- This is in-app delivery only; there is no email, SMS, push, or real-time socket
+  delivery, and no notification integration for other features yet.
 
 ## Web application routes
 
@@ -213,11 +319,16 @@ application.
 | `/posts/[id]` | Post details, reactions, saves, and comments |
 | `/saved` | Current user's saved posts |
 | `/profile` | Current user's profile and posts |
+| `/notifications` | Shared private inbox for platform notifications |
 | `/rides` | Driver-only map discovery of open ride pickups and exact locations |
 | `/rides/new` | Request a scheduled ride |
 | `/rides/driver` | Register/update the current user's driver profile |
-| `/rides/mine` | Own rider requests and driver offers |
+| `/rides/mine` | Own carpools, seat requests, rider requests, and driver offers |
 | `/rides/[id]` | Request details, offers, confirmation and booking management |
+| `/rides/carpools` | Search driver-published planned trips |
+| `/rides/carpools/new` | Publish an outbound trip and optional linked return |
+| `/rides/carpools/[id]` | Trip details, seat requests, approvals, and cancellation |
+| `/rides/carpools/inbox` | Legacy redirect to `/notifications` |
 
 ## Backend API
 
@@ -320,7 +431,60 @@ booking participants receive phone numbers.
 | `POST` | `/rides/requests/{id}/booking/cancel` | Participant cancels with `{ "reason": "..." }` |
 | `POST` | `/rides/requests/{id}/booking/complete` | Rider marks the ride completed |
 
-Both list endpoints accept `offset` (default 0) and `limit` (default 20, maximum
+#### Carpool API
+
+All paths below are under `/rides/carpools` and require authentication.
+Browsing does not require a driver profile; publishing does.
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `POST` | `/trips` | Publish `{outbound, return_trip?, public_meeting_point_consent: true}` |
+| `GET` | `/trips` | Browse with optional `pickup_location_id`, `dropoff_location_id`, `departure_date`, `passengers`, `radius_km`, `offset`, `limit` |
+| `GET` | `/mine` | Own published trips and requested directions |
+| `GET` | `/trips/{id}` | Trip, linked direction, and permitted seat requests |
+| `POST` | `/trips/{id}/requests` | Request `{passengers, bags, rider_phone, message?, include_return?: false}` |
+| `POST` | `/trips/{id}/requests/{request_id}/accept` | Driver confirms seats |
+| `POST` | `/trips/{id}/requests/{request_id}/decline` | Driver declines a pending request |
+| `POST` | `/trips/{id}/requests/{request_id}/cancel` | Participant cancels with `{reason}` |
+| `POST` | `/trips/{id}/cancel` | Driver cancels one direction with `{reason}` |
+| `GET` | `/inbox` | Deprecated carpool-only adapter to shared notifications |
+| `POST` | `/inbox/{notification_id}/read` | Deprecated carpool-only read adapter |
+
+Each leg contains `pickup_location_id`, `dropoff_location_id`, `pickup_start`,
+`pickup_end`, `timezone`, `seats`, `bags_per_person`, `amount`, `currency`, and
+optional `notes`. Times require UTC offsets and amounts serialize as decimal
+strings. List/mine responses are `{trips, has_more}`; trip creation, detail,
+and trip/request mutations return `{trip, linked_trip, requests}`.
+Lists/inbox accept `offset` (default 0) and `limit` (default 20, maximum 50).
+Missing/inaccessible resources return 404, permission failures 403,
+lifecycle/capacity conflicts 409, and invalid input 422.
+
+Carpool storage adds `carpool_trips` and `carpool_seat_requests`, with events in
+the shared `notifications` table (`carpool_notifications` is retained for migration).
+The existing startup `Base.metadata.create_all`
+creates these new tables on backend restart; no existing columns are changed.
+PostgreSQL race tests use isolated schemas with `RIDE_TEST_POSTGRES=1`, covering
+last-seat approvals, duplicate approvals/requests, and cancellation races.
+
+#### Shared notification API
+
+All endpoints require authentication and operate only on the current member's
+notifications. New features publish through the internal notification service.
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/notifications` | Paginated `{notifications, unread_count, has_more}` |
+| `GET` | `/notifications/unread-count` | Lightweight `{unread_count}` for the global bell |
+| `POST` | `/notifications/{id}/read` | Idempotently mark an owned notification read |
+
+List pagination uses `offset` (default 0, nonnegative) and `limit` (default 20,
+1-50). Each notification contains `id`, `category`, `event_type`, `resource_id`,
+`target_path`, `message`, `is_read`, and UTC `created_at`. Unread count covers
+all the current member's notifications, not just the current page.
+The deprecated carpool endpoints return their original `trip_id`-based response
+shape, filtered to carpool events, with the shared notification IDs/read state.
+
+The original ride-request list endpoints accept `offset` (default 0) and `limit` (default 20, maximum
 50). Browse distance defaults to 25 km and accepts 1–100 km. API datetimes
 must include a UTC offset; stored UTC values are returned with explicit UTC
 offsets. Amounts use database decimals and serialize as decimal strings.

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { apiRequest, type User } from "../lib/api";
+import NotificationBell from "./NotificationBell";
 
 const links = [
   { href: "/explore", label: "Community" },
@@ -85,52 +86,55 @@ export default function AppNav() {
             </Link>
           ))}
         </nav>
-        <div className="account-menu" ref={accountMenuRef}>
-          <button
-            aria-expanded={isAccountMenuOpen}
-            aria-controls="account-menu-options"
-            aria-label="Account options"
-            className="account-menu-trigger"
-            onClick={() => setIsAccountMenuOpen((isOpen) => !isOpen)}
-            type="button"
-          >
-            {profilePicture && failedPicture !== profilePicture ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                alt=""
-                className="account-menu-avatar"
-                onError={() => setFailedPicture(profilePicture)}
-                src={profilePicture}
-              />
-            ) : (
-              <svg aria-hidden="true" viewBox="0 0 24 24">
-                <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5Z" />
-              </svg>
+        <div className="nav-account-actions">
+          <NotificationBell />
+          <div className="account-menu" ref={accountMenuRef}>
+            <button
+              aria-expanded={isAccountMenuOpen}
+              aria-controls="account-menu-options"
+              aria-label="Account options"
+              className="account-menu-trigger"
+              onClick={() => setIsAccountMenuOpen((isOpen) => !isOpen)}
+              type="button"
+            >
+              {profilePicture && failedPicture !== profilePicture ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  alt=""
+                  className="account-menu-avatar"
+                  onError={() => setFailedPicture(profilePicture)}
+                  src={profilePicture}
+                />
+              ) : (
+                <svg aria-hidden="true" viewBox="0 0 24 24">
+                  <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5Z" />
+                </svg>
+              )}
+            </button>
+            {isAccountMenuOpen && (
+              <div className="account-menu-dropdown" id="account-menu-options">
+                <Link
+                  aria-current={pathname.startsWith("/profile") ? "page" : undefined}
+                  className={pathname.startsWith("/profile") ? "account-menu-link active" : "account-menu-link"}
+                  href="/profile"
+                  onClick={() => setIsAccountMenuOpen(false)}
+                >
+                  My profile
+                </Link>
+                <Link
+                  aria-current={pathname.startsWith("/saved") ? "page" : undefined}
+                  className={pathname.startsWith("/saved") ? "account-menu-link active" : "account-menu-link"}
+                  href="/saved"
+                  onClick={() => setIsAccountMenuOpen(false)}
+                >
+                  Saved posts
+                </Link>
+                <button className="account-menu-link account-menu-logout" onClick={signOut} type="button">
+                  Log out
+                </button>
+              </div>
             )}
-          </button>
-          {isAccountMenuOpen && (
-            <div className="account-menu-dropdown" id="account-menu-options">
-              <Link
-                aria-current={pathname.startsWith("/profile") ? "page" : undefined}
-                className={pathname.startsWith("/profile") ? "account-menu-link active" : "account-menu-link"}
-                href="/profile"
-                onClick={() => setIsAccountMenuOpen(false)}
-              >
-                My profile
-              </Link>
-              <Link
-                aria-current={pathname.startsWith("/saved") ? "page" : undefined}
-                className={pathname.startsWith("/saved") ? "account-menu-link active" : "account-menu-link"}
-                href="/saved"
-                onClick={() => setIsAccountMenuOpen(false)}
-              >
-                Saved posts
-              </Link>
-              <button className="account-menu-link account-menu-logout" onClick={signOut} type="button">
-                Log out
-              </button>
-            </div>
-          )}
+          </div>
         </div>
       </div>
     </header>

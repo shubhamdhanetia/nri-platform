@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import RideLayout, { RideRoute } from "../../../components/RideLayout";
 import { apiRequest, type User } from "../../../lib/api";
+import { refreshNotifications } from "../../../lib/notifications";
 import { localDateTime, localToISO, rideDate, rideError, rideMoney, type DriverProfile, type RideDetail, type RideOffer } from "../../../lib/rides";
 
 export default function RideDetailPage() {
@@ -49,7 +50,8 @@ function RideContent({ id }: { id: number }) {
     try {
       const result = await apiRequest<RideDetail>(`/rides/requests/${id}/${path}`, { method: "POST", ...(body ? { body: JSON.stringify(body) } : {}) });
       setData(result); setChosen(null); setCancelMode(false); setNow(Date.now());
-      setSuccess("Ride updated. No notifications were sent. Share any changes with the other member directly.");
+      setSuccess("Ride updated. Affected members receive in-app notifications. Coordinate any urgent changes directly.");
+      refreshNotifications();
     } catch (err) { setError(rideError(err)); }
     finally { setBusy(false); }
   }
@@ -70,7 +72,7 @@ function RideContent({ id }: { id: number }) {
     {error && <p className="form-error" role="alert">{error}</p>}
     {success && <p className="ride-notice" role="status">{success}</p>}
     {loading ? <p role="status">Loading ride...</p> : data && ride && user && <>
-      <section className="page-heading"><div><p className="eyebrow">{owner ? "Your ride request" : `${ride.rider.name}'s ride request`}</p><h1>{booking?.status === "CONFIRMED" ? "Your ride is confirmed." : "Let's get there together."}</h1><p className="muted">Check this page for updates. No notifications are sent.</p></div><span className="ride-badge">{booking?.status ?? ride.status}</span></section>
+      <section className="page-heading"><div><p className="eyebrow">{owner ? "Your ride request" : `${ride.rider.name}'s ride request`}</p><h1>{booking?.status === "CONFIRMED" ? "Your ride is confirmed." : "Let's get there together."}</h1><p className="muted">Check the notification bell for updates. Refresh this page for current ride details.</p></div><span className="ride-badge">{booking?.status ?? ride.status}</span></section>
       <div className="ride-columns"><div>
         <div className="ride-card"><h2>The route</h2><RideRoute ride={ride} /><p><strong>{rideDate(ride.pickup_start, ride.timezone)} - {rideDate(ride.pickup_end, ride.timezone)}</strong></p><p className="muted">Pickup window in {ride.timezone}</p><div className="ride-meta"><span>{ride.passengers} passenger(s)</span><span>{ride.bags} bag(s)</span><span>Offers in {ride.currency}</span></div>{ride.notes && <p className="ride-message">{ride.notes}</p>}</div>
         {booking ? <div className="ride-card"><h2>{booking.status === "CONFIRMED" ? "The agreed plan" : `Booking ${booking.status.toLowerCase()}`}</h2><p><strong>Pickup: {rideDate(booking.pickup_time, ride.timezone)}</strong></p><p>{booking.vehicle} / {rideMoney(booking.amount, booking.currency)} agreed contribution</p><p className="field-hint">No payment collected by the platform. Booking details and phone numbers are snapshots taken at confirmation.</p>
@@ -90,8 +92,8 @@ function RideContent({ id }: { id: number }) {
           {!owner && profile && isOpen && (!ownOffer || ownOffer.status === "WITHDRAWN" || ownOffer.status === "EXPIRED") && <form className="ride-card" onSubmit={offer}><h2>Offer a ride</h2><p className="field-hint">Your driver profile must have enough passenger seats. This is a commitment if the rider selects you.</p><label className="form-field"><span>Pickup time in your timezone ({Intl.DateTimeFormat().resolvedOptions().timeZone})</span><input key={ride.id} name="time" type="datetime-local" defaultValue={localDateTime(ride.pickup_start)} min={localDateTime(ride.pickup_start)} max={localDateTime(ride.pickup_end)} required /></label><label className="form-field"><span>Proposed contribution ({ride.currency})</span><input name="amount" type="number" min="0" max="9999.99" step="0.01" defaultValue="0.00" required /><span className="field-hint">Total contribution for this trip, not per passenger. Use 0 for a free ride. Arrange any payment outside the platform and comply with local rules.</span></label><label className="form-field"><span>Message to rider</span><textarea name="message" maxLength={500} rows={3} required placeholder="Confirm luggage space and any pickup details. Do not share phone numbers here." /></label><button className="button button-primary" disabled={busy}>Send offer</button></form>}
           {owner && isOpen && <button className="button button-secondary" disabled={busy} onClick={() => setCancelMode(true)}>Cancel request</button>}
         </>}
-        {cancelMode && <form className="ride-card" onSubmit={e => { e.preventDefault(); void act(booking ? "booking/cancel" : "cancel", booking ? { reason } : undefined); }}><h2>Cancel this {booking ? "booking" : "request"}?</h2><p>No notifications are sent. If booked, contact the other member directly. This request will not reopen automatically.</p>{booking && <label className="form-field"><span>Reason for cancellation</span><textarea value={reason} onChange={e => setReason(e.target.value)} required maxLength={500} /></label>}<div className="form-actions"><button className="button button-primary" disabled={busy}>Confirm cancellation</button><button className="button button-secondary" type="button" disabled={busy} onClick={() => setCancelMode(false)}>Keep ride</button></div></form>}
-      </div><aside><div className="ride-card ride-aside"><h2>Community, not a taxi queue.</h2><p className="muted">A request is not a booking. A driver offers, then the rider chooses.</p><p className="muted">Both exact locations are shared with all signed-in members. Contact numbers are private until confirmation.</p><p className="muted">No live tracking, platform payments, or notifications. Use your agreed contact numbers to coordinate.</p></div></aside></div>
+        {cancelMode && <form className="ride-card" onSubmit={e => { e.preventDefault(); void act(booking ? "booking/cancel" : "cancel", booking ? { reason } : undefined); }}><h2>Cancel this {booking ? "booking" : "request"}?</h2><p>Affected members receive an in-app notification. If booked, contact the other member directly for urgent changes. This request will not reopen automatically.</p>{booking && <label className="form-field"><span>Reason for cancellation</span><textarea value={reason} onChange={e => setReason(e.target.value)} required maxLength={500} /></label>}<div className="form-actions"><button className="button button-primary" disabled={busy}>Confirm cancellation</button><button className="button button-secondary" type="button" disabled={busy} onClick={() => setCancelMode(false)}>Keep ride</button></div></form>}
+      </div><aside><div className="ride-card ride-aside"><h2>Community, not a taxi queue.</h2><p className="muted">A request is not a booking. A driver offers, then the rider chooses.</p><p className="muted">Both exact locations are shared with all signed-in members. Contact numbers are private until confirmation.</p><p className="muted">Updates appear in your notifications. No live tracking or platform payments. Use your agreed contact numbers to coordinate.</p></div></aside></div>
     </>}
   </>;
 }

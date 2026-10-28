@@ -12,12 +12,20 @@ The client is a Next.js app that supports the MVP community flow:
 - `/rides/driver` — register a vehicle, passenger capacity and private contact number
 - `/rides/mine` — check own requests, offers and booking statuses
 - `/rides/[id]` — send/review cost-sharing offers, confirm, cancel or complete a ride
+- `/rides/carpools` — find driver-published planned trips
+- `/rides/carpools/new` — offer an outbound trip and optional independent return
+- `/rides/carpools/[id]` — request seats, review approvals and manage cancellations
+- `/notifications` — shared private inbox for ride and carpool updates
 
 Ride addresses are visible to signed-in members with a driver profile after
 explicit rider consent. Phone numbers are unverified and shared only with
-booking participants after confirmation. There are no notifications, messaging,
-live tracking or platform payments in this version; refresh My rides to check
-updates. See [feature documentation](../docs/feature.md) for API, privacy,
+booking participants after confirmation. The notification bell beside the profile
+button opens a shared inbox with unread indicators and links to the relevant
+ride or carpool. Messages can be marked read individually. The bell refreshes
+every 30 seconds, on focus, and after notification changes; the inbox has an
+explicit Refresh action. There is no email/SMS/push delivery, messaging,
+live tracking or platform payments in this version.
+See [feature documentation](../docs/feature.md) for API, privacy,
 database setup and tests.
 
 Ride discovery offers Community-style **Map** and **Feed** views, defaulting to
@@ -51,7 +59,9 @@ the category column widened to `VARCHAR(15)` and the `post_category` check updat
 to include `MEDICAL_SUPPORT`; `create_all` does not alter existing tables.
 
 The header contains **Posts** and **Rides**. Rides opens **Browse requests**
-(`/rides`); tabs are **Browse requests**, **My rides**, and **Driver profile**.
+(`/rides`); tabs are **Browse requests**, **Find a carpool**, **Request a ride**,
+**My rides**, and **Driver profile**. Notifications are global, not a Rides tab.
+The former `/rides/carpools/inbox` page redirects to `/notifications`.
 Discovery stays at `/rides`, including driver-profile setup guidance.
 My rides keeps request creation prominent and offers a browse action when empty.
 The brand opens Posts; viewing or

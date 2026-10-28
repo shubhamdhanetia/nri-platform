@@ -34,6 +34,10 @@
 .ride-check { display:flex; gap:12px; font-size:13px; line-height:1.7; align-items:flex-start; }
 .ride-check input { margin-top:5px; width:18px; height:18px; flex-shrink:0; }
 .ride-confirm { border:2px solid #226b55; }
+.carpool-fields { border:0; padding:0; margin:0; min-width:0; }
+.carpool-fields legend { font:normal 27px Georgia,serif; margin-bottom:18px; }
+.form-actions.carpool-request-actions { flex-direction:column; align-items:stretch; }
+.carpool-request-actions .button { width:100%; min-width:0; flex-shrink:0; white-space:normal; overflow-wrap:normal; word-break:normal; padding:10px 17px; }
 .ride-map-search .explore-category-filter input { background:#fcfdfb; border:1px solid #dfe5df; border-radius:8px; height:38px; min-width:0; padding:0 10px; flex:1; font:inherit; }
 .ride-map-search .explore-post-card { overflow-wrap:anywhere; }
 .ride-map-search .explore-map-toolbar > .explore-location-search { flex-basis:100%; }
@@ -377,6 +381,19 @@ a {
   flex-shrink: 0;
   position: relative;
 }
+
+.nav-account-actions { display:flex; align-items:center; gap:12px; flex-shrink:0; }
+.notification-bell { position:relative; display:flex; align-items:center; justify-content:center; width:42px; height:42px; border:1px solid var(--line); border-radius:50%; color:#526159; background:#f0f3ef; }
+.notification-bell:hover,.notification-bell[aria-current="page"] { color:var(--green); background:#e3eee5; }
+.notification-bell:focus-visible { outline:2px solid var(--green); outline-offset:3px; }
+.notification-badge { position:absolute; top:-5px; right:-6px; min-width:19px; padding:2px 4px; border-radius:10px; background:#226b55; color:white; font-size:10px; font-weight:700; text-align:center; }
+.notification-bell-error { position:absolute; top:-3px; right:-3px; color:#a1443a; background:white; border-radius:50%; }
+.notification-card { padding:24px; margin:18px 0; border:1px solid var(--line); border-radius:13px; background:var(--card); overflow-wrap:anywhere; }
+.notification-unread { border-left:4px solid var(--green); }
+.notification-card p { line-height:1.7; }
+.notification-meta { display:flex; align-items:center; flex-wrap:wrap; gap:12px; color:var(--muted); font-size:12px; }
+.notification-meta time { margin-left:auto; }
+.notification-category { text-transform:capitalize; color:var(--green); font-weight:700; }
 
 .account-menu-trigger {
   align-items: center;
@@ -2142,6 +2159,8 @@ a {
     height: 38px;
     width: 38px;
   }
+
+  .notification-bell { height:38px; width:38px; }
 
   .page-container {
     padding: 37px 18px 64px;
