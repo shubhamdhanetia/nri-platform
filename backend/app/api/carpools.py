@@ -9,11 +9,10 @@ from app.db.dependencies import get_db
 from app.models.user import User
 from app.repositories import carpool_repository as repo
 from app.schemas.carpool import (
-    CarpoolCreateInput, CarpoolDetailResponse, CarpoolInboxResponse,
-    CarpoolNotificationResponse, CarpoolPageResponse, SeatRequestInput,
+    CarpoolCreateInput, CarpoolDetailResponse, CarpoolPageResponse, SeatRequestInput,
 )
 from app.schemas.ride import CancellationInput
-from app.services import carpools, notifications
+from app.services import carpools
 
 router = APIRouter()
 DB = Annotated[Session, Depends(get_db)]
@@ -44,27 +43,6 @@ def mine(db: DB, user: Member, offset: int = Query(0, ge=0), limit: int = Query(
     return CarpoolPageResponse(
         trips=[carpools.trip_response(db, trip, user.id) for trip in rows[:limit]],
         has_more=len(rows) > limit,
-    )
-
-
-@router.get("/inbox", response_model=CarpoolInboxResponse, deprecated=True)
-def inbox(db: DB, user: Member, offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=50)):
-    page = notifications.inbox(db, user.id, offset, limit, category="carpool")
-    return CarpoolInboxResponse(
-        notifications=[CarpoolNotificationResponse(
-            id=row.id, trip_id=row.resource_id, message=row.message,
-            is_read=row.is_read, created_at=row.created_at,
-        ) for row in page.notifications],
-        unread_count=page.unread_count, has_more=page.has_more,
-    )
-
-
-@router.post("/inbox/{notification_id}/read", response_model=CarpoolNotificationResponse, deprecated=True)
-def read_notification(notification_id: int, db: DB, user: Member):
-    row = notifications.mark_read(db, notification_id, user.id, category="carpool")
-    return CarpoolNotificationResponse(
-        id=row.id, trip_id=row.resource_id, message=row.message,
-        is_read=row.is_read, created_at=row.created_at,
     )
 
 

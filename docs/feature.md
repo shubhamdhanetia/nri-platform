@@ -453,15 +453,13 @@ Browsing does not require a driver profile; publishing does.
 | `POST` | `/trips/{id}/requests/{request_id}/decline` | Driver declines a pending request |
 | `POST` | `/trips/{id}/requests/{request_id}/cancel` | Participant cancels with `{reason}` |
 | `POST` | `/trips/{id}/cancel` | Driver cancels one direction with `{reason}` |
-| `GET` | `/inbox` | Deprecated carpool-only adapter to shared notifications |
-| `POST` | `/inbox/{notification_id}/read` | Deprecated carpool-only read adapter |
 
 Each leg contains `pickup_location_id`, `dropoff_location_id`, `pickup_start`,
 `pickup_end`, `timezone`, `seats`, `bags_per_person`, `amount`, `currency`, and
 optional `notes`. Times require UTC offsets and amounts serialize as decimal
 strings. List/mine responses are `{trips, has_more}`; trip creation, detail,
 and trip/request mutations return `{trip, linked_trip, requests}`.
-Lists/inbox accept `offset` (default 0) and `limit` (default 20, maximum 50).
+Lists accept `offset` (default 0) and `limit` (default 20, maximum 50).
 Missing/inaccessible resources return 404, permission failures 403,
 lifecycle/capacity conflicts 409, and invalid input 422.
 
@@ -487,8 +485,8 @@ List pagination uses `offset` (default 0, nonnegative) and `limit` (default 20,
 1-50). Each notification contains `id`, `category`, `event_type`, `resource_id`,
 `target_path`, `message`, `is_read`, and UTC `created_at`. Unread count covers
 all the current member's notifications, not just the current page.
-The deprecated carpool endpoints return their original `trip_id`-based response
-shape, filtered to carpool events, with the shared notification IDs/read state.
+Carpool and ride events both use this shared API. The former carpool-only inbox
+API endpoints have been removed.
 
 The original ride-request list endpoints accept `offset` (default 0) and `limit` (default 20, maximum
 50). Browse distance defaults to 25 km and accepts 1–100 km. API datetimes

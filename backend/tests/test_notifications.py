@@ -152,7 +152,16 @@ class NotificationAPITests(unittest.TestCase):
             self.assertEqual(self.client.post(path, headers=self.fixture.headers()).status_code, 200)
         self.assertEqual(self.event_types(2).count("ride.booking_completed"), 1)
 
-    def test_carpool_and_ride_events_share_one_inbox_and_legacy_api(self):
+    def test_legacy_carpool_inbox_endpoints_are_removed(self):
+        paths = self.client.get("/openapi.json").json()["paths"]
+        self.assertNotIn("/rides/carpools/inbox", paths)
+        self.assertNotIn("/rides/carpools/inbox/{notification_id}/read", paths)
+        self.assertIn("/notifications", paths)
+        self.assertIn("/notifications/{notification_id}/read", paths)
+        self.assertEqual(self.client.get("/rides/carpools/inbox", headers=self.fixture.headers()).status_code, 404)
+        self.assertEqual(self.client.post("/rides/carpools/inbox/1/read", headers=self.fixture.headers()).status_code, 404)
+
+    def test_carpool_and_ride_events_share_one_inbox(self):
         ride_id, _ = self.fixture.seed_offer()
         trip_id = self.carpool()
         response = self.client.post(f"/rides/carpools/trips/{trip_id}/requests", headers=self.fixture.headers(1), json={
@@ -167,14 +176,12 @@ class NotificationAPITests(unittest.TestCase):
         carpool = next(row for row in inbox["notifications"] if row["category"] == "carpool")
         self.assertEqual(carpool["event_type"], "carpool.request_confirmed")
         self.assertEqual(carpool["target_path"], f"/rides/carpools/{trip_id}")
-        legacy = self.client.get("/rides/carpools/inbox", headers=self.fixture.headers()).json()
-        self.assertEqual(len(legacy["notifications"]), 1)
-        self.assertEqual(legacy["notifications"][0]["id"], carpool["id"])
-        self.client.post(f"/notifications/{carpool['id']}/read", headers=self.fixture.headers())
-        self.assertEqual(self.client.get("/rides/carpools/inbox", headers=self.fixture.headers()).json()["unread_count"], 0)
+        self.assertEqual(self.client.post(f"/notifications/{carpool['id']}/read", headers=self.fixture.headers()).status_code, 200)
+        self.assertEqual(self.inbox()["unread_count"], inbox["unread_count"] - 1)
         ride_event = next(row for row in inbox["notifications"] if row["category"] == "ride")
         self.assertEqual(ride_event["resource_id"], ride_id)
-        self.assertEqual(self.client.post(f"/rides/carpools/inbox/{ride_event['id']}/read", headers=self.fixture.headers()).status_code, 404)
+        self.assertEqual(self.client.post(f"/notifications/{ride_event['id']}/read", headers=self.fixture.headers()).status_code, 200)
+        self.assertEqual(self.inbox()["unread_count"], 0)
 
     def test_carpool_decline_and_cancellation_events(self):
         for action in ("decline", "cancel", "trip-cancel"):

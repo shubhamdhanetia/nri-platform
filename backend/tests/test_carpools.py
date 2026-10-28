@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
 from app.api.carpools import router
+from app.api.notifications import router as notifications_router
 from app.api.rides import router as rides_router
 from app.core.security import create_access_token
 from app.db.base import Base
@@ -35,6 +36,7 @@ class CarpoolAPITests(unittest.TestCase):
         app = FastAPI()
         app.include_router(router, prefix="/rides/carpools")
         app.include_router(rides_router, prefix="/rides")
+        app.include_router(notifications_router, prefix="/notifications")
 
         def test_db():
             with Session(self.engine, autoflush=False) as db:
@@ -96,7 +98,7 @@ class CarpoolAPITests(unittest.TestCase):
     def test_auth_and_driver_required(self):
         self.assertEqual(self.client.get("/rides/carpools/trips").status_code, 401)
         self.assertEqual(self.client.get("/rides/carpools/mine").status_code, 401)
-        self.assertEqual(self.client.get("/rides/carpools/inbox").status_code, 401)
+        self.assertEqual(self.client.get("/notifications").status_code, 401)
         self.assertEqual(self.client.post("/rides/carpools/trips", headers=self.headers(2), json={
             "outbound": self.leg(), "public_meeting_point_consent": True,
         }).status_code, 403)
@@ -197,14 +199,14 @@ class CarpoolAPITests(unittest.TestCase):
         self.assertTrue(all(row["status"] == "CANCELLED" for row in response.json()["requests"]))
         self.assertEqual(self.detail(return_id).json()["requests"][0]["status"], "PENDING")
         self.assertEqual(self.request(trip_id, user_id=4).status_code, 409)
-        before = self.client.get("/rides/carpools/inbox", headers=self.headers(2)).json()["unread_count"]
+        before = self.client.get("/notifications", headers=self.headers(2)).json()["unread_count"]
         self.client.post(path, headers=self.headers(1), json={"reason": "Again"})
-        inbox = self.client.get("/rides/carpools/inbox", headers=self.headers(2)).json()
+        inbox = self.client.get("/notifications", headers=self.headers(2)).json()
         self.assertEqual(inbox["unread_count"], before)
         notification_id = inbox["notifications"][0]["id"]
-        self.assertEqual(self.client.post(f"/rides/carpools/inbox/{notification_id}/read", headers=self.headers(3)).status_code, 404)
-        self.assertEqual(self.client.post(f"/rides/carpools/inbox/{notification_id}/read", headers=self.headers(2)).status_code, 200)
-        self.assertEqual(self.client.get("/rides/carpools/inbox", headers=self.headers(2)).json()["unread_count"], before - 1)
+        self.assertEqual(self.client.post(f"/notifications/{notification_id}/read", headers=self.headers(3)).status_code, 404)
+        self.assertEqual(self.client.post(f"/notifications/{notification_id}/read", headers=self.headers(2)).status_code, 200)
+        self.assertEqual(self.client.get("/notifications", headers=self.headers(2)).json()["unread_count"], before - 1)
 
     def test_search_filters_pagination_and_my_trips(self):
         first = self.create().json()["trip"]

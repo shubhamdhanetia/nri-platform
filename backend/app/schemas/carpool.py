@@ -110,17 +110,3 @@ class CarpoolDetailResponse(BaseModel):
 class CarpoolPageResponse(BaseModel):
     trips: list[CarpoolTripResponse]
     has_more: bool
-
-
-class CarpoolNotificationResponse(UTCResponse):
-    id: int
-    trip_id: int
-    message: str
-    is_read: bool
-    created_at: datetime
-
-
-class CarpoolInboxResponse(BaseModel):
-    notifications: list[CarpoolNotificationResponse]
-    unread_count: int
-    has_more: bool
