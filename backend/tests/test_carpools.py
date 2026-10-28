@@ -147,6 +147,24 @@ class CarpoolAPITests(unittest.TestCase):
         self.assertFalse(second.json()["has_more"])
         self.assertEqual(self.client.get(path, headers=self.headers(1), params=filters).json()["trips"], [])
 
+    def test_destination_map_search_filters_and_paginates(self):
+        self.create(dropoff_location_id="far")
+        self.create(seats=1)
+        self.create(pickup_start=(self.start + timedelta(days=1)).isoformat(),
+                    pickup_end=(self.start + timedelta(days=1, minutes=30)).isoformat())
+        matching = [self.create(pickup_location_id="far").json()["trip"]["id"] for _ in range(2)]
+        filters = {"scope": "destination", "bounds": {"north": 37.63, "south": 37.61, "west": -122.39, "east": -122.37},
+                   "passengers": 2, "limit": 1,
+                   "departure_date": self.start.astimezone(ZoneInfo("America/Los_Angeles")).date().isoformat()}
+        first = self.map_search(**filters)
+        self.assertEqual(first.status_code, 200, first.text)
+        self.assertEqual([trip["id"] for trip in first.json()["trips"]], matching[:1])
+        self.assertTrue(first.json()["has_more"])
+        second = self.map_search(**filters, offset=1).json()
+        self.assertEqual([trip["id"] for trip in second["trips"]], matching[1:])
+        self.assertFalse(second["has_more"])
+        self.assertEqual(self.map_search(**{**filters, "scope": "pickup"}).json()["trips"], [])
+
     def test_map_search_exact_edges_and_h3_candidates(self):
         trip_id = self.create().json()["trip"]["id"]
         tiny = {"north": 37.5501, "south": 37.5499, "west": -121.9801, "east": -121.9799}
@@ -163,6 +181,37 @@ class CarpoolAPITests(unittest.TestCase):
             trip.pickup = {**trip.pickup, "h3_cell_id": place("far").h3_cell_id}
             db.commit()
         self.assertEqual(self.map_search(bounds=edge).json()["trips"], [])
+
+    def test_destination_map_exact_edges_and_h3_candidates(self):
+        trip_id = self.create(pickup_location_id="far").json()["trip"]["id"]
+        tiny = {"north": 37.6201, "south": 37.6199, "west": -122.3801, "east": -122.3799}
+        self.assertEqual(len(self.map_search(scope="destination", bounds=tiny).json()["trips"]), 1)
+        with Session(self.engine) as db:
+            trip = db.get(CarpoolTrip, trip_id)
+            trip.dropoff = {**trip.dropoff, "latitude": 37.621, "h3_cell_id": h3.latlng_to_cell(37.621, -122.38, 8)}
+            db.commit()
+        self.assertEqual(self.map_search(scope="destination", bounds=tiny).json()["trips"], [])
+        edge = {"north": 37.621, "south": 37.62, "west": -122.38, "east": -122.37}
+        self.assertEqual(len(self.map_search(scope="destination", bounds=edge).json()["trips"]), 1)
+        with Session(self.engine) as db:
+            trip = db.get(CarpoolTrip, trip_id)
+            trip.dropoff = {**trip.dropoff, "h3_cell_id": place("far").h3_cell_id}
+            db.commit()
+        self.assertEqual(self.map_search(scope="destination", bounds=edge).json()["trips"], [])
+
+    def test_destination_map_antimeridian_and_validation(self):
+        trip_ids = [self.create().json()["trip"]["id"] for _ in range(3)]
+        with Session(self.engine) as db:
+            for trip_id, longitude in zip(trip_ids, (179.9, -179.9, 0)):
+                trip = db.get(CarpoolTrip, trip_id)
+                trip.dropoff = {**trip.dropoff, "latitude": 0.0, "longitude": longitude,
+                                "h3_cell_id": h3.latlng_to_cell(0, longitude, 8)}
+            db.commit()
+        response = self.map_search(scope="destination", bounds={"north": 0.05, "south": -0.05, "west": 179.8, "east": -179.8})
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual([trip["id"] for trip in response.json()["trips"]], trip_ids[:2])
+        self.assertEqual(self.map_search(scope="invalid").status_code, 422)
+        self.assertEqual(self.map_search(scope="destination", bounds={"north": 60, "south": -60, "west": -120, "east": 120}).status_code, 422)
 
     def test_map_search_antimeridian(self):
         trip_ids = [self.create().json()["trip"]["id"] for _ in range(3)]

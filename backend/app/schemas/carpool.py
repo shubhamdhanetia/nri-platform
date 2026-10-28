@@ -114,6 +114,7 @@ class CarpoolPageResponse(BaseModel):
 
 class CarpoolMapSearchInput(BaseModel):
     bounds: PostSearchBounds
+    scope: Literal["pickup", "destination"] = "pickup"
     pickup_location_id: LocationID | None = None
     dropoff_location_id: LocationID | None = None
     departure_date: date | None = None

@@ -31,8 +31,8 @@ class LocationAddressComponents(BaseModel):
     COUNTRY_CODE: str
     FIRST_LEVEL_SUBDIVISION_CODE: str
     HOUSE_NUMBER: str | None = None
-    POSTAL_CODE: str
-    STREET_NAME: str
+    POSTAL_CODE: str | None = None
+    STREET_NAME: str | None = None
 
 
 class LocationDetailsData(BaseModel):

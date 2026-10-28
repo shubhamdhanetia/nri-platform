@@ -24,12 +24,13 @@ import app.models.carpool
 import app.models.notification
 from app.db.notification_migration import migrate_carpool_notifications
 from app.models.ride import ride_browse_index, ride_pickup_h3_index
-from app.models.carpool import carpool_pickup_h3_index
+from app.models.carpool import carpool_dropoff_h3_index, carpool_pickup_h3_index
 
 Base.metadata.create_all(bind=engine)
 ride_pickup_h3_index.create(bind=engine, checkfirst=True)
 ride_browse_index.create(bind=engine, checkfirst=True)
 carpool_pickup_h3_index.create(bind=engine, checkfirst=True)
+carpool_dropoff_h3_index.create(bind=engine, checkfirst=True)
 migrate_carpool_notifications(engine)
 
 app = FastAPI(title="NRI Platform")

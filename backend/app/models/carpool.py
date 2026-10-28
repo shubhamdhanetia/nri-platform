@@ -42,6 +42,7 @@ class CarpoolTrip(Base):
 
 
 carpool_pickup_h3_index = Index("ix_carpool_trips_pickup_h3", CarpoolTrip.pickup["h3_cell_id"].as_string())
+carpool_dropoff_h3_index = Index("ix_carpool_trips_dropoff_h3", CarpoolTrip.dropoff["h3_cell_id"].as_string())
 
 
 class CarpoolSeatRequest(Base):

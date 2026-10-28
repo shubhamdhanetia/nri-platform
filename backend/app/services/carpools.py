@@ -217,6 +217,7 @@ def browse(
     pickup_location_id: str | None, dropoff_location_id: str | None,
     departure_date: date | None, passengers: int, radius_km: float,
     bounds: PostSearchBounds | None = None,
+    scope: Literal["pickup", "destination"] = "pickup",
 ) -> CarpoolPageResponse:
     cells = h3_cells_for_bounds(bounds) if bounds is not None else None
     pickup = resolve_post_location(pickup_location_id) if pickup_location_id else None
@@ -226,10 +227,11 @@ def browse(
         CarpoolTrip.driver_id != user_id, CarpoolTrip.seats >= passengers,
     ).order_by(CarpoolTrip.pickup_start, CarpoolTrip.id)
     if bounds is not None:
-        latitude = CarpoolTrip.pickup["latitude"].as_float()
-        longitude = CarpoolTrip.pickup["longitude"].as_float()
+        location = CarpoolTrip.dropoff if scope == "destination" else CarpoolTrip.pickup
+        latitude = location["latitude"].as_float()
+        longitude = location["longitude"].as_float()
         query = query.where(
-            CarpoolTrip.pickup["h3_cell_id"].as_string().in_(cells or set()),
+            location["h3_cell_id"].as_string().in_(cells or set()),
             latitude >= bounds.south, latitude <= bounds.north,
         )
         if bounds.east < bounds.west:

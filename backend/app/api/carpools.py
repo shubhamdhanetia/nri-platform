@@ -42,7 +42,7 @@ def search_map(data: CarpoolMapSearchInput, db: DB, user: Member):
     return carpools.browse(
         db, user.id, data.offset, data.limit, data.pickup_location_id,
         data.dropoff_location_id, data.departure_date, data.passengers, data.radius_km,
-        bounds=data.bounds,
+        bounds=data.bounds, scope=data.scope,
     )
 
 

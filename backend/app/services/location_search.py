@@ -100,7 +100,7 @@ def resolve_post_location(location_id: str) -> PostLocationFields:
         location_id=details.id,
         location=details.fullAddress,
         country_code=details.addressComponents.COUNTRY_CODE,
-        postal_code=details.addressComponents.POSTAL_CODE,
+        postal_code=details.addressComponents.POSTAL_CODE or "",
         state=details.addressComponents.FIRST_LEVEL_SUBDIVISION_CODE,
         latitude=details.lat,
         longitude=details.long,
