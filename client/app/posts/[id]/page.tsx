@@ -7,6 +7,8 @@ import ProtectedPage from "../../../components/ProtectedPage";
 import CommentActions from "../../../components/CommentActions";
 import PostReactions from "../../../components/PostReactions";
 import SavePostButton from "../../../components/SavePostButton";
+import MedicalSupportNotice from "../../../components/MedicalSupportNotice";
+import RideCommunityNotice from "../../../components/RideCommunityNotice";
 import {
   apiRequest,
   POST_CATEGORY_LABELS,
@@ -216,6 +218,8 @@ function PostDetailsContent({ postId }: { postId: number }) {
               <span className="post-location"><span aria-hidden="true">⌖</span> {post.location}</span>
             </div>
             <h1>{post.title}</h1>
+            {post.category === "MEDICAL_SUPPORT" && <MedicalSupportNotice />}
+            {post.category === "RIDES" && <RideCommunityNotice compact />}
             <p className="post-detail-description">{post.description}</p>
             <div className="post-detail-author">
               {post.author.picture ? (

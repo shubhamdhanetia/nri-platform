@@ -43,6 +43,8 @@ export default function ExploreLocationSearch({
   const [detailsError, setDetailsError] = useState("");
   const detailsRequestVersion = useRef(0);
 
+  useEffect(() => () => { detailsRequestVersion.current += 1; }, []);
+
   useEffect(() => {
     const normalizedQuery = query.trim();
     if (normalizedQuery.length < 2 || hasSelection || selectedPlace) {

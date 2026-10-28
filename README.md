@@ -68,12 +68,56 @@ cursor pagination (20 rows per page), indexed H3 candidates, and an exact
 distance check rather than downloading every request or using offset pagination.
 Members can track requests, offers, cancellations, and completion in **My rides**.
 
+### Planned-trip carpools
+
+- **Find a carpool** in Rides searches driver-published journeys by pickup area,
+  destination area, departure date, and seats needed.
+- **Offer a carpool** publishes a future departure window, public meeting
+  points, available passenger seats, luggage allowance, and a fixed contribution
+  per passenger. A completed driver profile is required.
+- Add an optional linked return trip with its own meeting points, date, seats,
+  and contribution. Passengers can request either direction or both; each
+  direction requires its own driver approval.
+- Pending requests do not reserve seats. Approval reserves seats atomically
+  and shares phone numbers only with the driver and that passenger.
+- Cancelling a booking restores seats; cancelling a trip cancels its pending
+  and confirmed requests, without changing the linked direction.
+- **My rides** includes carpools, and the shared **Notifications** inbox stores
+  requests, approvals, declines, and cancellations with unread indicators.
+- Published terms cannot be edited: cancel and republish changed trips.
+  Requests and approvals close when the departure window starts; last-minute
+  cancellations remain available until the window ends.
+  Contributions are paid outside the app; there is no bargaining or payment
+  processing.
+
 > **Privacy and scope:** exact ride addresses are visible to signed-in members
 > with a completed driver profile after the rider's consent, even before a
 > booking is confirmed. Phone numbers are shared only with booking participants
 > after confirmation. Drivers and phone numbers are not verified or vetted.
-> This version does not provide payments, chat, notifications, live tracking,
-> or destination search filters. Use a public meeting point when appropriate.
+> Carpools require consent to publishing public meeting points to signed-in
+> members. Ride and carpool notifications are in-app only.
+> This version does not provide payments,
+> chat, email/SMS/push notifications, or live tracking. Destination-area search
+> is available for carpools. Use a public meeting point when appropriate.
+
+### Shared notifications
+
+- A **notification bell beside the profile button** opens `/notifications`
+  from any authenticated page, with an unread badge and explicit load-error state.
+- One private, paginated inbox combines ride and carpool updates. Each event
+  links to its relevant detail page and can be marked read individually.
+- Ride events include new/resubmitted offers, offer withdrawal, booking
+  confirmation, offers not selected, request/booking cancellation, and completion.
+  New requests are not broadcast to every driver.
+- Notifications are saved in the same transaction as the action that triggers
+  them. Repeated idempotent confirmations/cancellations do not duplicate events.
+- The generic model, API, and notification helper can support future platform
+  features without creating a separate inbox or notification table for each.
+- Existing carpool notifications migrate automatically on backend restart,
+  preserving their messages, recipients, timestamps, and read states.
+  The former carpool inbox page redirects to the shared inbox.
+- The bell refreshes every 30 seconds, on focus, and after notification changes.
+  The inbox has an explicit Refresh action. No email, SMS, or push is sent.
 
 ## Screenshots
 
@@ -132,6 +176,7 @@ FastAPI routers and authentication dependencies
 PostgreSQL
   Users, posts, comments, reactions, saves
   Driver profiles, ride requests, offers, bookings
+  Carpool trips, seat requests, shared notifications
 ```
 
 - **Map search:** H3 covering cells narrow database candidates; exact
@@ -139,6 +184,8 @@ PostgreSQL
   results and indicate when more match.
 - **Booking consistency:** request-row locking and unique constraints protect
   confirmation against competing offers and withdrawal races.
+  Carpool mutations lock the trip row to serialize approvals and cancellations;
+  requesting both directions locks both rows in ID order within one transaction.
 - **Time handling:** ride timestamps are normalized to UTC and stored in
   timezone-less columns by convention, with an IANA timezone saved on the
   request. Currently, that timezone comes from the rider's browser, not the

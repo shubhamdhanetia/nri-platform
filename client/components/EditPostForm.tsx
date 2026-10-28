@@ -12,6 +12,8 @@ import {
   type PostType,
 } from "../lib/api";
 import LocationAutocomplete from "./LocationAutocomplete";
+import MedicalSupportNotice from "./MedicalSupportNotice";
+import RideCommunityNotice from "./RideCommunityNotice";
 
 function isPostCategory(value: string): value is PostCategory {
   return POST_CATEGORIES.some((category) => category === value);
@@ -134,6 +136,8 @@ export default function EditPostForm({
               ))}
             </select>
           </label>
+          {category === "MEDICAL_SUPPORT" && <MedicalSupportNotice />}
+          {category === "RIDES" && <RideCommunityNotice />}
           <LocationAutocomplete
             initialSelection={{
               locationId: post.location_id,

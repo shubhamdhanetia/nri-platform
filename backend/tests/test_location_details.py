@@ -67,7 +67,7 @@ class LocationDetailsTests(unittest.TestCase):
         self.assertEqual(self.mock_provider.call_args.args[1], LocationDetailsRequest(id="sample-location").model_dump())
 
     def test_invalid_provider_responses_still_return_502(self):
-        for field in ("lat", "fullAddress", "id"):
+        for field in ("lat", "long", "fullAddress", "id"):
             with self.subTest(missing_field=field):
                 payload = deepcopy(self.payload)
                 del payload["data"][field]
@@ -75,3 +75,29 @@ class LocationDetailsTests(unittest.TestCase):
                 response = self.client.post("/locations/details", json={"id": "sample-location"})
                 self.assertEqual(response.status_code, 502)
                 self.assertEqual(response.json()["detail"], "Location provider returned an invalid response")
+
+    def test_city_details_and_resolution_without_street_or_postal_code(self):
+        self.payload["data"].update({
+            "addressComponents": {"CITY": "San Diego", "COUNTRY_CODE": "US", "FIRST_LEVEL_SUBDIVISION_CODE": "CA"},
+            "addressLine1": "San Diego", "addressLine2": "CA", "categories": ["geography"],
+            "fullAddress": "San Diego, CA, USA", "id": "ChIJSx6SrQ9T2YARed8V_f0hOg0",
+            "lat": 32.715738, "long": -117.1610838, "provider": "google_places", "title": "San Diego",
+        })
+        for value in ("missing", None, "present"):
+            with self.subTest(address_details=value):
+                components = self.payload["data"]["addressComponents"]
+                if value != "missing":
+                    components["POSTAL_CODE"] = "92101" if value == "present" else None
+                    components["STREET_NAME"] = "Sample Street" if value == "present" else None
+                location_id = self.payload["data"]["id"]
+                response = self.client.post("/locations/details", json={"id": location_id})
+                self.assertEqual(response.status_code, 200, response.text)
+                data = response.json()["data"]
+                self.assertEqual(data["addressComponents"]["POSTAL_CODE"], components.get("POSTAL_CODE"))
+                self.assertEqual(data["addressComponents"]["STREET_NAME"], components.get("STREET_NAME"))
+                location = resolve_post_location(location_id)
+                self.assertEqual(location.location_id, location_id)
+                self.assertEqual(location.city, "San Diego")
+                self.assertEqual(location.location, "San Diego, CA, USA")
+                self.assertEqual(location.postal_code, "92101" if value == "present" else "")
+                self.assertEqual(location.h3_cell_id, h3.latlng_to_cell(32.715738, -117.1610838, 8))

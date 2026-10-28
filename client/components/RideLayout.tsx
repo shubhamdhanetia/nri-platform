@@ -16,16 +16,17 @@ export default function RideLayout({ children }: { children: ReactNode }) {
   const path = usePathname();
   return <ProtectedPage>
     <nav className="ride-tabs" aria-label="Rides navigation">
-      {[["/rides", "Browse requests"], ["/rides/mine", "My rides"], ["/rides/driver", "Driver profile"]].map(([href, label]) =>
+      {[["/rides", "Ride requests"], ["/rides/carpools", "Find a carpool"], ["/rides/new", "Request a ride"], ["/rides/carpools/new", "Offer a carpool"], ["/rides/mine", "My rides"], ["/rides/driver", "Driver profile"]].map(([href, label]) =>
         <Link key={href} href={href} aria-current={path === href ? "page" : undefined}>{label}</Link>)}
     </nav>
     {children}
   </ProtectedPage>;
 }
 
-export function RideCard({ ride }: { ride: RideRequest }) {
+export function RideCard({ ride, role }: { ride: RideRequest; role?: "Driver" | "Passenger" }) {
   return <article className="ride-card">
     <div className="ride-between"><strong>{ride.rider.name}</strong><span className="ride-badge">{ride.booking_status ?? ride.status}</span></div>
+    {role && <p className="field-hint">Your role: <span className="ride-badge">{role}</span></p>}
     {ride.my_offer_status && <p className="field-hint">Your driver offer: {ride.my_offer_status.toLowerCase().replaceAll("_", " ")}</p>}
     <RideRoute ride={ride} />
     <div className="ride-meta"><span>{rideDate(ride.pickup_start, ride.timezone)}</span><span>{ride.passengers} passenger(s)</span><span>{ride.bags} bag(s)</span></div>

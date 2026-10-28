@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ProtectedPage from "../../components/ProtectedPage";
 import LocationAutocomplete from "../../components/LocationAutocomplete";
+import MedicalSupportNotice from "../../components/MedicalSupportNotice";
+import RideCommunityNotice from "../../components/RideCommunityNotice";
 import {
   apiRequest,
   POST_CATEGORIES,
@@ -133,13 +134,8 @@ export default function CreatePostPage() {
             </select>
           </label>
         </div>
-        {category === "RIDES" && (
-          <p className="ride-notice">
-            Planning a scheduled ride? <Link href="/rides/new">Request a ride</Link> or{" "}
-            <Link href="/rides">browse ride requests</Link> to arrange driver offers and confirmation.
-            This community post does not create a ride booking.
-          </p>
-        )}
+        {category === "MEDICAL_SUPPORT" && <MedicalSupportNotice />}
+        {category === "RIDES" && <RideCommunityNotice />}
         <label className="form-field post-visibility-field">
           <span>Who can see this post?</span>
           <select

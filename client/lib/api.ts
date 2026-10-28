@@ -14,6 +14,7 @@ export const POST_CATEGORIES = [
   "EVENTS",
   "IMMIGRATION",
   "MARKETPLACE",
+  "MEDICAL_SUPPORT",
   "GENERAL",
 ] as const;
 
@@ -31,6 +32,7 @@ export const POST_CATEGORY_LABELS: Record<PostCategory, string> = {
   EVENTS: "Events",
   IMMIGRATION: "Immigration & visa",
   MARKETPLACE: "Marketplace",
+  MEDICAL_SUPPORT: "Medical support",
   GENERAL: "General",
 };
 

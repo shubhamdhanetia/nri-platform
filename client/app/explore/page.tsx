@@ -19,6 +19,7 @@ import {
   ChevronUp,
   Globe2,
   House,
+  HeartPulse,
   List,
   LocateFixed,
   Map as MapIcon,
@@ -42,6 +43,8 @@ import PostReactions from "../../components/PostReactions";
 import EditPostButton from "../../components/EditPostButton";
 import DeletePostButton from "../../components/DeletePostButton";
 import PostVisibilityButton from "../../components/PostVisibilityButton";
+import MedicalSupportNotice from "../../components/MedicalSupportNotice";
+import RideCommunityNotice from "../../components/RideCommunityNotice";
 import { locationSearchBounds } from "../../lib/map";
 import {
   apiRequest,
@@ -75,6 +78,7 @@ const CATEGORY_ICONS = {
   EVENTS: CalendarDays,
   IMMIGRATION: Globe2,
   MARKETPLACE: ShoppingBag,
+  MEDICAL_SUPPORT: HeartPulse,
   GENERAL: MessagesSquare,
 };
 const STORAGE_KEY = "community-view-v1";
@@ -553,6 +557,8 @@ export default function CommunityPage() {
           })}
         </div>
 
+        {preferences.category === "MEDICAL_SUPPORT" && <MedicalSupportNotice />}
+        {preferences.category === "RIDES" && <RideCommunityNotice />}
         <div className="community-controls">
           <div className="community-scope">
             <Globe2 size={15} />

@@ -1,8 +1,23 @@
 @import "tailwindcss";
 
+.medical-support-notice { padding: 16px 18px; margin: 16px 0; border: 1px solid #d5e3db; border-radius: 8px; background: #edf4ef; color: #243a32; font-size: 13px; line-height: 1.6; }
+.medical-support-notice p { margin: 8px 0 0; }
+.edit-fields-grid > .medical-support-notice { grid-column: 1 / -1; }
+.ride-community-notice { display: flex; align-items: flex-start; gap: 12px; padding: 16px 18px; margin: 16px 0; border: 1px solid #d5e3db; border-radius: 8px; background: #edf4ef; color: #243a32; font-size: 13px; line-height: 1.6; min-width: 0; }
+.ride-community-notice > svg { flex-shrink: 0; margin-top: 2px; color: #226b55; }
+.ride-community-notice > div { min-width: 0; }
+.ride-community-notice p { margin: 6px 0 0; }
+.ride-community-notice-links { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 10px; }
+.ride-community-notice-links a { display: inline-flex; align-items: center; gap: 4px; }
+.edit-fields-grid > .ride-community-notice { grid-column: 1 / -1; }
+
 .ride-tabs { display:flex; gap:25px; border-bottom:1px solid #e0e6dc; margin-bottom:28px; overflow-x:auto; }
 .ride-tabs a { padding:15px 0; white-space:nowrap; color:#64736b; font-weight:600; }
 .ride-tabs a[aria-current="page"] { color:#226b55; box-shadow:inset 0 -2px #226b55; }
+.my-rides-tabs { display:flex; gap:8px; margin-bottom:24px; border-bottom:1px solid var(--line); }
+.my-rides-tabs button { padding:14px 18px; border:0; border-bottom:2px solid transparent; background:transparent; color:var(--muted); font:inherit; font-weight:600; cursor:pointer; }
+.my-rides-tabs button[aria-selected="true"] { border-bottom-color:var(--green); color:var(--green); }
+.my-rides-tabs button:focus-visible { outline:2px solid var(--green); outline-offset:-2px; }
 .ride-card { padding:25px; border:1px solid #e6eae5; border-radius:13px; background:white; margin:18px 0; overflow-wrap:anywhere; }
 .ride-card h2 { font:normal 27px Georgia,serif; margin:0 0 18px; }
 .ride-card h3 { margin:0 0 10px; }
@@ -23,6 +38,10 @@
 .ride-check { display:flex; gap:12px; font-size:13px; line-height:1.7; align-items:flex-start; }
 .ride-check input { margin-top:5px; width:18px; height:18px; flex-shrink:0; }
 .ride-confirm { border:2px solid #226b55; }
+.carpool-fields { border:0; padding:0; margin:0; min-width:0; }
+.carpool-fields legend { font:normal 27px Georgia,serif; margin-bottom:18px; }
+.form-actions.carpool-request-actions { flex-direction:column; align-items:stretch; }
+.carpool-request-actions .button { width:100%; min-width:0; flex-shrink:0; white-space:normal; overflow-wrap:normal; word-break:normal; padding:10px 17px; }
 .ride-map-search .explore-category-filter input { background:#fcfdfb; border:1px solid #dfe5df; border-radius:8px; height:38px; min-width:0; padding:0 10px; flex:1; font:inherit; }
 .ride-map-search .explore-post-card { overflow-wrap:anywhere; }
 .ride-map-search .explore-map-toolbar > .explore-location-search { flex-basis:100%; }
@@ -366,6 +385,19 @@ a {
   flex-shrink: 0;
   position: relative;
 }
+
+.nav-account-actions { display:flex; align-items:center; gap:12px; flex-shrink:0; }
+.notification-bell { position:relative; display:flex; align-items:center; justify-content:center; width:42px; height:42px; border:1px solid var(--line); border-radius:50%; color:#526159; background:#f0f3ef; }
+.notification-bell:hover,.notification-bell[aria-current="page"] { color:var(--green); background:#e3eee5; }
+.notification-bell:focus-visible { outline:2px solid var(--green); outline-offset:3px; }
+.notification-badge { position:absolute; top:-5px; right:-6px; min-width:19px; padding:2px 4px; border-radius:10px; background:#226b55; color:white; font-size:10px; font-weight:700; text-align:center; }
+.notification-bell-error { position:absolute; top:-3px; right:-3px; color:#a1443a; background:white; border-radius:50%; }
+.notification-card { padding:24px; margin:18px 0; border:1px solid var(--line); border-radius:13px; background:var(--card); overflow-wrap:anywhere; }
+.notification-unread { border-left:4px solid var(--green); }
+.notification-card p { line-height:1.7; }
+.notification-meta { display:flex; align-items:center; flex-wrap:wrap; gap:12px; color:var(--muted); font-size:12px; }
+.notification-meta time { margin-left:auto; }
+.notification-category { text-transform:capitalize; color:var(--green); font-weight:700; }
 
 .account-menu-trigger {
   align-items: center;
@@ -2132,6 +2164,8 @@ a {
     width: 38px;
   }
 
+  .notification-bell { height:38px; width:38px; }
+
   .page-container {
     padding: 37px 18px 64px;
   }
@@ -2340,6 +2374,16 @@ a {
 }
 
 .community-page { --community-ink: #243a32; --community-accent: #226b55; min-width: 0; }
+.carpool-filter-fields { flex-basis: 100%; }
+.carpool-browse .community-location[hidden] { display: none; }
+.carpool-browse .carpool-scope-toggle { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: min(100%, 440px); }
+.carpool-browse .carpool-scope-toggle button { width: 100%; height: auto; min-height: 42px; padding: 6px 8px; }
+.carpool-scope-toggle svg { flex-shrink: 0; }
+.carpool-filter-fields select { border: 0; background: transparent; color: var(--foreground); font-size: 13px; min-height: 25px; }
+.carpool-filter-fields input[type="number"] { width: 80px; }
+.carpool-price { font-size: 12px; color: #586b5e; }
+.carpool-price strong { font-size: 18px; color: var(--green); }
+.carpool-pagination { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 20px; font-size: 12px; }
 .rides-discovery { display: flex; align-items: stretch; flex-wrap: wrap; gap: 12px; }
 .rides-discovery > .community-location { flex: 1 1 280px; }
 .rides-filter-form { display: flex; flex-wrap: wrap; align-items: stretch; gap: 12px; min-width: 0; }
@@ -2462,6 +2506,16 @@ a {
 .community-map-panel .explore-map, .community-map-panel .explore-map-loading { width: 100%; height: min(680px, 75dvh); min-height: 440px; }
 .community-map-actions { position: absolute; top: 12px; left: 54px; right: 12px; z-index: 1000; display: flex; justify-content: space-between; gap: 8px; pointer-events: none; }
 .community-map-actions > * { pointer-events: auto; }
+.post-map-marker.destination-map-marker { background: #b33e45; border-color: #fff; }
+.post-map-marker.destination-map-marker svg { stroke: white; fill: none; }
+.post-map-marker.destination-map-marker.selected { background: #922d35; box-shadow: 0 0 0 5px #b33e4533; }
+.destination-marker-cluster > span { background: #b33e45; color: white; display: flex; align-items: center; justify-content: center; gap: 3px; }
+.destination-marker-cluster { background: #b33e4533; }
+.destination-marker-cluster:hover > span { background: #922d35; }
+.carpool-browse .rides-result { cursor: pointer; }
+.carpool-browse .community-map-actions { flex-wrap: wrap; justify-content: flex-end; }
+.carpool-browse .community-map-actions > * { flex-shrink: 0; }
+.carpool-browse .community-map-actions > .button { margin-right: auto; white-space: nowrap; }
 .community-map-actions .button { border-radius: 5px; gap: 6px; font-size: 11px; min-height: 36px; padding: 0 10px; box-shadow: 0 2px 6px #233a3226; }
 .community-map-actions .community-icon-button { background: white; box-shadow: 0 2px 6px #233a3226; }
 .community-map .community-post { padding: 18px 16px 13px; }
