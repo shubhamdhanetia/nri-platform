@@ -43,6 +43,13 @@ within the current browser session.
 
 ## Local setup
 
+The **Medical support** community category includes a notice on creation, editing,
+filtered discovery, and post details: use local emergency services for urgent care
+and avoid sharing private medical information. Its API value is `MEDICAL_SUPPORT`.
+New databases include it through the post model. Existing local databases need
+the category column widened to `VARCHAR(15)` and the `post_category` check updated
+to include `MEDICAL_SUPPORT`; `create_all` does not alter existing tables.
+
 The header contains **Posts** and **Rides**. Rides opens **Browse requests**
 (`/rides`); tabs are **Browse requests**, **My rides**, and **Driver profile**.
 Discovery stays at `/rides`, including driver-profile setup guidance.

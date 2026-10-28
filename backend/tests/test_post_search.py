@@ -15,6 +15,7 @@ from app.db.base import Base
 from app.db.dependencies import get_db
 from app.models.post import Post, PostCategory, PostType
 from app.models.user import User
+from app.schemas.post import PostLocationFields
 from app.services.post_search import h3_cells_for_bounds
 
 
@@ -103,3 +104,33 @@ class PostSearchTests(unittest.TestCase):
                         {"bounds": {"north": 80, "south": -80, "east": 180, "west": -180}}):
             with self.subTest(payload=payload):
                 self.assertEqual(self.client.post("/posts/search", json=payload).status_code, 422)
+
+    def test_medical_support_category_can_be_created_updated_and_searched(self):
+        location = {
+            "location_id": "test", "location": "Fremont, CA", "city": "Fremont",
+            "country_code": "US", "postal_code": "94538", "state": "CA",
+            "latitude": 37.55, "longitude": -121.98,
+            "h3_cell_id": h3.latlng_to_cell(37.55, -121.98, 8),
+        }
+        payload = {
+            "title": "Community caregiver resources", "description": "Local support resources",
+            "category": "MEDICAL_SUPPORT", "post_type": "REQUEST", "location_id": "test",
+        }
+        with patch("app.api.posts.resolve_post_location", return_value=PostLocationFields(**location)):
+            created = self.client.post("/posts", json=payload)
+            self.assertEqual(created.status_code, 200, created.text)
+            post_id = created.json()["id"]
+            self.assertEqual(created.json()["category"], "MEDICAL_SUPPORT")
+            for category in ("GENERAL", "MEDICAL_SUPPORT"):
+                updated = self.client.put(
+                    f"/posts/{post_id}", json={**payload, "category": category},
+                )
+                self.assertEqual(updated.status_code, 200, updated.text)
+                self.assertEqual(updated.json()["category"], category)
+        self.seed(post_id + 1)
+        self.seed(post_id + 2, category=PostCategory.MEDICAL_SUPPORT, is_private=True)
+        for bounds in (None, self.bounds):
+            with self.subTest(bounds=bounds):
+                result = self.search(bounds=bounds, category="MEDICAL_SUPPORT")
+                self.assertEqual([post["id"] for post in result["posts"]], [post_id])
+                self.assertEqual(result["posts"][0]["category"], "MEDICAL_SUPPORT")

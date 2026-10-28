@@ -1,5 +1,16 @@
 @import "tailwindcss";
 
+.medical-support-notice { padding: 16px 18px; margin: 16px 0; border: 1px solid #d5e3db; border-radius: 8px; background: #edf4ef; color: #243a32; font-size: 13px; line-height: 1.6; }
+.medical-support-notice p { margin: 8px 0 0; }
+.edit-fields-grid > .medical-support-notice { grid-column: 1 / -1; }
+.ride-community-notice { display: flex; align-items: flex-start; gap: 12px; padding: 16px 18px; margin: 16px 0; border: 1px solid #d5e3db; border-radius: 8px; background: #edf4ef; color: #243a32; font-size: 13px; line-height: 1.6; min-width: 0; }
+.ride-community-notice > svg { flex-shrink: 0; margin-top: 2px; color: #226b55; }
+.ride-community-notice > div { min-width: 0; }
+.ride-community-notice p { margin: 6px 0 0; }
+.ride-community-notice-links { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 10px; }
+.ride-community-notice-links a { display: inline-flex; align-items: center; gap: 4px; }
+.edit-fields-grid > .ride-community-notice { grid-column: 1 / -1; }
+
 .ride-tabs { display:flex; gap:25px; border-bottom:1px solid #e0e6dc; margin-bottom:28px; overflow-x:auto; }
 .ride-tabs a { padding:15px 0; white-space:nowrap; color:#64736b; font-weight:600; }
 .ride-tabs a[aria-current="page"] { color:#226b55; box-shadow:inset 0 -2px #226b55; }

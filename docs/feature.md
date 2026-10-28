@@ -31,7 +31,14 @@ application.
 - Create a post with a title, description, category, post type, and a selected
   location. Posts are Public by default; authors may choose Only me.
 - Categories: Housing, Rides, Jobs, Food, Events, Immigration & visa,
-  Marketplace, and General.
+  Marketplace, Medical support (`MEDICAL_SUPPORT`), and General.
+- Medical support is for blood-donor requests, caregiver help, and community
+  resources, not emergency response. Creation, editing, category-filtered discovery,
+  and post details display an emergency-services and privacy notice. Users should
+  call local emergency services for immediate danger or urgent medical care.
+  Posts are not monitored for emergencies and responses are not guaranteed.
+  Avoid private medical records, identifying patient details, or another person's
+  health information.
 - Post types: Offering, Looking for, and Discussion.
 - Browse the community feed, open post details, and see the author, location,
   comments, and reaction counts.
@@ -106,7 +113,11 @@ application.
 - `/rides` is a separate ride board, not an extension of post comments.
   Members may request rides without registering as drivers.
   Existing posts in the Rides category remain community content, not bookings;
-  selecting that category during post creation links to the structured ride flow.
+  selecting that category in Community (Feed or Map), post creation, or editing
+  displays a neutral "Ride discussions, not ride requests" notice. Post details
+  show a compact version. The notice explains that posts/comments do not create
+  ride requests or bookings, and links to Browse ride requests and Request a ride.
+  It is not repeated on individual browse cards.
 - Request creation selects **both exact pickup and drop-off** through the same
   location autocomplete/provider used by posts. The server resolves both IDs;
   client-supplied coordinates and address strings are not trusted.
