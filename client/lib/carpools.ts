@@ -50,3 +50,10 @@ export interface CarpoolPage {
   trips: CarpoolTrip[];
   has_more: boolean;
 }
+
+export interface CarpoolSearchFilters {
+  dropoff_location_id?: string;
+  departure_date?: string;
+  passengers: number;
+  radius_km?: number;
+}

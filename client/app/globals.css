@@ -2374,6 +2374,12 @@ a {
 }
 
 .community-page { --community-ink: #243a32; --community-accent: #226b55; min-width: 0; }
+.carpool-filter-fields { flex-basis: 100%; }
+.carpool-filter-fields select { border: 0; background: transparent; color: var(--foreground); font-size: 13px; min-height: 25px; }
+.carpool-filter-fields input[type="number"] { width: 80px; }
+.carpool-price { font-size: 12px; color: #586b5e; }
+.carpool-price strong { font-size: 18px; color: var(--green); }
+.carpool-pagination { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 20px; font-size: 12px; }
 .rides-discovery { display: flex; align-items: stretch; flex-wrap: wrap; gap: 12px; }
 .rides-discovery > .community-location { flex: 1 1 280px; }
 .rides-filter-form { display: flex; flex-wrap: wrap; align-items: stretch; gap: 12px; min-width: 0; }

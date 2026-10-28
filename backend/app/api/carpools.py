@@ -9,7 +9,7 @@ from app.db.dependencies import get_db
 from app.models.user import User
 from app.repositories import carpool_repository as repo
 from app.schemas.carpool import (
-    CarpoolCreateInput, CarpoolDetailResponse, CarpoolPageResponse, SeatRequestInput,
+    CarpoolCreateInput, CarpoolDetailResponse, CarpoolMapSearchInput, CarpoolPageResponse, SeatRequestInput,
 )
 from app.schemas.ride import CancellationInput
 from app.services import carpools
@@ -32,9 +32,18 @@ def browse(
     pickup_location_id: str | None = Query(None, min_length=1, max_length=200),
     dropoff_location_id: str | None = Query(None, min_length=1, max_length=200),
     departure_date: date | None = None,
-    passengers: int = Query(1, ge=1, le=8), radius_km: int = Query(25, ge=1, le=100),
+    passengers: int = Query(1, ge=1, le=8), radius_km: float = Query(25, ge=1, le=100, allow_inf_nan=False),
 ):
     return carpools.browse(db, user.id, offset, limit, pickup_location_id, dropoff_location_id, departure_date, passengers, radius_km)
+
+
+@router.post("/trips/search", response_model=CarpoolPageResponse)
+def search_map(data: CarpoolMapSearchInput, db: DB, user: Member):
+    return carpools.browse(
+        db, user.id, data.offset, data.limit, data.pickup_location_id,
+        data.dropoff_location_id, data.departure_date, data.passengers, data.radius_km,
+        bounds=data.bounds,
+    )
 
 
 @router.get("/mine", response_model=CarpoolPageResponse)

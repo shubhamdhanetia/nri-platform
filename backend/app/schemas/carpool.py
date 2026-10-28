@@ -1,10 +1,10 @@
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Annotated, Literal, Self
 
 from pydantic import AwareDatetime, BaseModel, Field, StringConstraints, field_validator, model_validator
 
-from app.schemas.post import PostAuthorResponse, PostLocationFields
+from app.schemas.post import PostAuthorResponse, PostLocationFields, PostSearchBounds
 from app.schemas.common import UTCResponse
 from app.schemas.ride import Currency, DriverProfileInput, Phone, RideRequestInput, validate_pickup_window
 
@@ -110,3 +110,14 @@ class CarpoolDetailResponse(BaseModel):
 class CarpoolPageResponse(BaseModel):
     trips: list[CarpoolTripResponse]
     has_more: bool
+
+
+class CarpoolMapSearchInput(BaseModel):
+    bounds: PostSearchBounds
+    pickup_location_id: LocationID | None = None
+    dropoff_location_id: LocationID | None = None
+    departure_date: date | None = None
+    passengers: int = Field(default=1, ge=1, le=8)
+    radius_km: float = Field(default=25, ge=1, le=100, allow_inf_nan=False)
+    offset: int = Field(default=0, ge=0)
+    limit: int = Field(default=20, ge=1, le=50)

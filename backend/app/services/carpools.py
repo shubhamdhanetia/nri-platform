@@ -3,7 +3,7 @@ from typing import Literal
 from zoneinfo import ZoneInfo
 
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.core.ride_time import utc_now_naive
@@ -15,8 +15,9 @@ from app.schemas.carpool import (
     CarpoolCreateInput, CarpoolDetailResponse, CarpoolLegInput, CarpoolPageResponse,
     CarpoolTripResponse, SeatRequestInput, SeatRequestResponse, SeatResponseStatus, TripResponseStatus,
 )
-from app.schemas.post import PostAuthorResponse
+from app.schemas.post import PostAuthorResponse, PostSearchBounds
 from app.services.location_search import resolve_post_location
+from app.services.post_search import h3_cells_for_bounds
 from app.services.rides import require_driver, utc_naive
 from app.services import notifications
 
@@ -214,14 +215,27 @@ def cancel_trip(db: Session, trip_id: int, user_id: int, reason: str) -> None:
 def browse(
     db: Session, user_id: int, offset: int, limit: int,
     pickup_location_id: str | None, dropoff_location_id: str | None,
-    departure_date: date | None, passengers: int, radius_km: int,
+    departure_date: date | None, passengers: int, radius_km: float,
+    bounds: PostSearchBounds | None = None,
 ) -> CarpoolPageResponse:
+    cells = h3_cells_for_bounds(bounds) if bounds is not None else None
     pickup = resolve_post_location(pickup_location_id) if pickup_location_id else None
     dropoff = resolve_post_location(dropoff_location_id) if dropoff_location_id else None
     query = select(CarpoolTrip).where(
         CarpoolTrip.status == "OPEN", CarpoolTrip.pickup_start > utc_now_naive(),
         CarpoolTrip.driver_id != user_id, CarpoolTrip.seats >= passengers,
     ).order_by(CarpoolTrip.pickup_start, CarpoolTrip.id)
+    if bounds is not None:
+        latitude = CarpoolTrip.pickup["latitude"].as_float()
+        longitude = CarpoolTrip.pickup["longitude"].as_float()
+        query = query.where(
+            CarpoolTrip.pickup["h3_cell_id"].as_string().in_(cells or set()),
+            latitude >= bounds.south, latitude <= bounds.north,
+        )
+        if bounds.east < bounds.west:
+            query = query.where(or_(longitude >= bounds.west, longitude <= bounds.east))
+        else:
+            query = query.where(longitude >= bounds.west, longitude <= bounds.east)
     matches = []
     skipped = 0
     for trip in db.scalars(query.execution_options(yield_per=100)):

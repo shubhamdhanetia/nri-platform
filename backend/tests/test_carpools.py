@@ -1,7 +1,10 @@
 import unittest
 from datetime import datetime, timedelta, timezone
+from math import degrees
 from unittest.mock import patch
+from zoneinfo import ZoneInfo
 
+import h3
 from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, event, select
@@ -102,6 +105,100 @@ class CarpoolAPITests(unittest.TestCase):
         self.assertEqual(self.client.post("/rides/carpools/trips", headers=self.headers(2), json={
             "outbound": self.leg(), "public_meeting_point_consent": True,
         }).status_code, 403)
+
+    def test_map_search_bounds_and_area_limit(self):
+        trip_id = self.create().json()["trip"]["id"]
+        pickup = place("pickup")
+        bounds = {
+            "south": pickup.latitude - 0.01, "north": pickup.latitude + 0.01,
+            "west": pickup.longitude - 0.01, "east": pickup.longitude + 0.01,
+        }
+        path = "/rides/carpools/trips/search"
+        self.assertEqual(self.client.post(path, json={"bounds": bounds}).status_code, 401)
+        response = self.client.post(path, headers=self.headers(), json={"bounds": bounds})
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual([trip["id"] for trip in response.json()["trips"]], [trip_id])
+        self.assertFalse(response.json()["has_more"])
+        empty = {"south": 0, "north": 0.01, "west": 0, "east": 0.01}
+        self.assertEqual(self.client.post(path, headers=self.headers(), json={"bounds": empty}).json()["trips"], [])
+        oversized = {"south": -60, "north": 60, "west": -120, "east": 120}
+        self.assertEqual(self.client.post(path, headers=self.headers(), json={"bounds": oversized}).status_code, 422)
+
+    def map_search(self, **updates):
+        data = {"bounds": {"north": 37.56, "south": 37.54, "west": -121.99, "east": -121.97}}
+        data.update(updates)
+        return self.client.post("/rides/carpools/trips/search", headers=self.headers(), json=data)
+
+    def test_map_search_exact_edges_and_h3_candidates(self):
+        trip_id = self.create().json()["trip"]["id"]
+        tiny = {"north": 37.5501, "south": 37.5499, "west": -121.9801, "east": -121.9799}
+        self.assertEqual(len(self.map_search(bounds=tiny).json()["trips"]), 1)
+        with Session(self.engine) as db:
+            trip = db.get(CarpoolTrip, trip_id)
+            trip.pickup = {**trip.pickup, "latitude": 37.551, "h3_cell_id": h3.latlng_to_cell(37.551, -121.98, 8)}
+            db.commit()
+        self.assertEqual(self.map_search(bounds=tiny).json()["trips"], [])
+        edge = {"north": 37.551, "south": 37.55, "west": -121.98, "east": -121.97}
+        self.assertEqual(len(self.map_search(bounds=edge).json()["trips"]), 1)
+        with Session(self.engine) as db:
+            trip = db.get(CarpoolTrip, trip_id)
+            trip.pickup = {**trip.pickup, "h3_cell_id": place("far").h3_cell_id}
+            db.commit()
+        self.assertEqual(self.map_search(bounds=edge).json()["trips"], [])
+
+    def test_map_search_antimeridian(self):
+        trip_ids = [self.create().json()["trip"]["id"] for _ in range(3)]
+        with Session(self.engine) as db:
+            for trip_id, longitude in zip(trip_ids, (179.9, -179.9, 0)):
+                trip = db.get(CarpoolTrip, trip_id)
+                trip.pickup = {**trip.pickup, "latitude": 0.0, "longitude": longitude,
+                               "h3_cell_id": h3.latlng_to_cell(0, longitude, 8)}
+            db.commit()
+        response = self.map_search(bounds={"north": 0.05, "south": -0.05, "west": 179.8, "east": -179.8})
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual([trip["id"] for trip in response.json()["trips"]], trip_ids[:2])
+
+    def test_map_search_filters_before_pagination(self):
+        reserved = self.create(seats=3).json()["trip"]["id"]
+        request_id = self.request(reserved, passengers=2).json()["requests"][0]["id"]
+        self.assertEqual(self.act(reserved, request_id, "accept").status_code, 200)
+        self.create(dropoff_location_id="far")
+        self.create(pickup_start=(self.start + timedelta(days=1)).isoformat(),
+                    pickup_end=(self.start + timedelta(days=1, minutes=30)).isoformat())
+        matching = [self.create().json()["trip"]["id"] for _ in range(2)]
+        filters = {"departure_date": self.start.astimezone(ZoneInfo("America/Los_Angeles")).date().isoformat(),
+                   "passengers": 2, "dropoff_location_id": "dropoff", "radius_km": 10, "limit": 1}
+        first = self.map_search(**filters)
+        self.assertEqual(first.status_code, 200, first.text)
+        self.assertEqual([trip["id"] for trip in first.json()["trips"]], matching[:1])
+        self.assertTrue(first.json()["has_more"])
+        second = self.map_search(**filters, offset=1).json()
+        self.assertEqual([trip["id"] for trip in second["trips"]], matching[1:])
+        self.assertFalse(second["has_more"])
+        self.assertEqual(self.map_search(**filters, pickup_location_id="far").json()["trips"], [])
+        own = self.client.post("/rides/carpools/trips/search", headers=self.headers(1), json={
+            "bounds": {"north": 37.56, "south": 37.54, "west": -121.99, "east": -121.97},
+        })
+        self.assertEqual(own.json()["trips"], [])
+
+    def test_map_search_mile_radius_conversion(self):
+        trip_ids = [self.create().json()["trip"]["id"] for _ in range(2)]
+        destination = place("dropoff")
+        with Session(self.engine) as db:
+            for trip_id, miles in zip(trip_ids, (24.99, 25.01)):
+                trip = db.get(CarpoolTrip, trip_id)
+                trip.dropoff = {**trip.dropoff, "latitude": destination.latitude + degrees(miles * 1.609344 / 6371)}
+            db.commit()
+        response = self.map_search(dropoff_location_id="dropoff", radius_km=25 * 1.609344)
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual([trip["id"] for trip in response.json()["trips"]], trip_ids[:1])
+        self.assertEqual(self.map_search(radius_km=50 * 1.609344).status_code, 200)
+
+    def test_map_search_input_validation(self):
+        for update in ({"bounds": None}, {"limit": 51}, {"offset": -1}, {"passengers": 0},
+                       {"radius_km": 101}, {"departure_date": "invalid"},
+                       {"bounds": {"north": 0, "south": 1, "west": 0, "east": 1}}):
+            self.assertEqual(self.map_search(**update).status_code, 422)
 
     def test_linked_return_is_independent_and_private(self):
         created = self.create(returning=True)

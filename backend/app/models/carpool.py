@@ -2,7 +2,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Literal
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, JSON, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, JSON, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.ride_time import utc_now_naive
@@ -39,6 +39,9 @@ class CarpoolTrip(Base):
     status: Mapped[Literal["OPEN", "CANCELLED"]] = mapped_column(String(12), default="OPEN", index=True)
     cancellation_reason: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now_naive)
+
+
+carpool_pickup_h3_index = Index("ix_carpool_trips_pickup_h3", CarpoolTrip.pickup["h3_cell_id"].as_string())
 
 
 class CarpoolSeatRequest(Base):
