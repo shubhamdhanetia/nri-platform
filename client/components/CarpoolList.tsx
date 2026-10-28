@@ -196,6 +196,14 @@ export default function CarpoolList({ mine = false }: { mine?: boolean }) {
   const onPickupSelected = useCallback((selection: LocationSelection | null) => {
     if (scopeRef.current === "pickup") setPickup(selection);
   }, []);
+  const onDestinationLocationSelected = useCallback((next: [number, number]) => {
+    if (scopeRef.current !== "destination") return;
+    locationVersion.current += 1;
+    viewport.current = { center: next, zoom: 11 };
+    setCenter(next); setSearchCenter(next); setZoom(11);
+    setMapVersion(version => version + 1); setMapBounds(null);
+    setSelectedId(null); setLocationError(""); setLocating(false);
+  }, []);
   const onDestinationSelected = useCallback((selection: LocationSelection | null) => {
     setDropoff(selection);
     setDestinationMap(false);
@@ -264,7 +272,7 @@ export default function CarpoolList({ mine = false }: { mine?: boolean }) {
     </div>
     <form ref={filterForm} className="rides-discovery" aria-label="Carpool filters" onSubmit={search} onChange={interruptLocation}>
       <div className="community-location" hidden={scope === "destination"}><MapPin size={18} /><ExploreLocationSearch key={`pickup-${filterVersion}-${pickupVersion}`} label="Pickup area (optional)" center={searchCenter} onLocationSelected={onLocationSelected} onSelectionChange={onPickupSelected} onQueryChange={setPickupQuery} /></div>
-      <div className="community-location"><MapPin size={18} /><ExploreLocationSearch key={`dropoff-${filterVersion}-${dropoffVersion}`} label={scope === "destination" ? "Destination area" : "Destination area (optional)"} center={searchCenter} onSelectionChange={onDestinationSelected} onQueryChange={setDropoffQuery} /></div>
+      <div className="community-location"><MapPin size={18} /><ExploreLocationSearch key={`dropoff-${filterVersion}-${dropoffVersion}`} label={scope === "destination" ? "Destination area" : "Destination area (optional)"} center={searchCenter} onLocationSelected={onDestinationLocationSelected} onSelectionChange={onDestinationSelected} onQueryChange={setDropoffQuery} /></div>
       <div className="rides-filter-form carpool-filter-fields">
         <label className="rides-date-field"><CalendarDays size={18} /><span>Departure date<input type="date" value={date} onChange={event => setDate(event.target.value)} /></span></label>
         <label className="rides-date-field"><Users size={18} /><span>Seats needed<input type="number" min={1} max={8} required value={passengers} onChange={event => setPassengers(event.target.value)} /></span></label>
@@ -280,7 +288,7 @@ export default function CarpoolList({ mine = false }: { mine?: boolean }) {
     <div className="rides-search-summary"><p className="field-hint">Page {offset / 20 + 1} / local trip times / contribution per person, per direction</p><button className="community-icon-button" aria-label="Refresh carpools" title="Refresh carpools" disabled={resultsLoading || !page} onClick={() => void refresh(offset)}><RefreshCw size={18} /></button></div>
     <div className={`community-content community-${view} rides-${view}`}>
       {view === "map" && <div className="community-map-panel">
-        <CarpoolMap key={mapVersion} posts={busy || autoSearchPending || error ? [] : points} fitPosts={appliedScope === "destination" && !appliedMap} center={center} initialZoom={zoom} fullscreen={fullscreen} selectedPostId={selectedId} selectionVersion={selectionVersion} onSelectPost={selectMapTrip} onClearSelection={clearMapSelection} onBoundsChange={setMapBounds} onCenterChange={setSearchCenter} onViewportChange={onViewportChange} />
+        <CarpoolMap key={mapVersion} posts={busy || autoSearchPending || error ? [] : points} center={center} initialZoom={zoom} fullscreen={fullscreen} selectedPostId={selectedId} selectionVersion={selectionVersion} onSelectPost={selectMapTrip} onClearSelection={clearMapSelection} onBoundsChange={setMapBounds} onCenterChange={setSearchCenter} onViewportChange={onViewportChange} />
         <div className="community-map-actions">
           <button className="button button-primary" title={scope === "destination" ? "Search destinations here" : "Search pickups here"} disabled={resultsLoading || !mapBounds} onClick={searchMapArea}><Search size={16} />{busy ? "Searching..." : scope === "destination" ? "Search destinations here" : "Search pickups here"}</button>
           <button className="community-icon-button" title="Center map on my location" aria-label="Center map on my location" disabled={locating} onClick={locate}>{locating ? <span className="spinner" /> : <LocateFixed size={19} />}</button>

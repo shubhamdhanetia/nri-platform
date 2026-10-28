@@ -65,16 +65,3 @@ class CarpoolSeatRequest(Base):
     status: Mapped[SeatStatus] = mapped_column(String(12), default="PENDING")
     cancellation_reason: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now_naive)
-
-
-class CarpoolNotification(Base):
-    """Legacy storage retained for the idempotent shared-notification migration."""
-
-    __tablename__ = "carpool_notifications"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
-    trip_id: Mapped[int] = mapped_column(ForeignKey("carpool_trips.id"))
-    message: Mapped[str] = mapped_column(String(500))
-    is_read: Mapped[bool] = mapped_column(default=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now_naive)

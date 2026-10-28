@@ -23,4 +23,3 @@ class Notification(Base):
     message: Mapped[str] = mapped_column(String(500))
     is_read: Mapped[bool] = mapped_column(default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now_naive)
-    legacy_carpool_id: Mapped[int | None] = mapped_column(unique=True)
