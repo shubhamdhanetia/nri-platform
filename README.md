@@ -212,9 +212,16 @@ client/
   components/        Shared forms, navigation, and map UI
   lib/               API helper and domain types/utilities
 docs/
+  deployment.md      Step-by-step hosted deployment and release operations
   feature.md         Detailed features, API, architecture, and setup notes
   screenshots/       README UI captures
 ```
+
+## Deployment
+
+See the [detailed deployment guide](docs/deployment.md) for the Vercel + Render +
+Neon architecture, first-time setup, Google OAuth configuration, migrations,
+future releases, verification, and recovery.
 
 ## Local setup
 
@@ -385,8 +392,9 @@ npm run dev
 Open **http://localhost:3000**. Interactive API documentation is available at
 **http://localhost:8000/docs** while the backend is running.
 
-The backend currently allows `http://localhost:3000` through CORS. Update the
-allowlist and Google OAuth origins if you use another host or deploy the app.
+The backend defaults to `http://localhost:3000` through CORS. Set the
+`CORS_ORIGINS` JSON array and update Google OAuth origins when using another
+host or deploying the app.
 
 ### Checks
 
