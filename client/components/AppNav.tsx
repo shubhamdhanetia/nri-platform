@@ -122,6 +122,14 @@ export default function AppNav() {
                   My profile
                 </Link>
                 <Link
+                  aria-current={pathname === "/my-posts" ? "page" : undefined}
+                  className={pathname === "/my-posts" ? "account-menu-link active" : "account-menu-link"}
+                  href="/my-posts"
+                  onClick={() => setIsAccountMenuOpen(false)}
+                >
+                  My posts
+                </Link>
+                <Link
                   aria-current={pathname.startsWith("/saved") ? "page" : undefined}
                   className={pathname.startsWith("/saved") ? "account-menu-link active" : "account-menu-link"}
                   href="/saved"
