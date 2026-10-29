@@ -1,3 +1,5 @@
+from uuid import UUID, uuid4
+
 from datetime import datetime
 
 from sqlalchemy import DateTime, ForeignKey, UniqueConstraint
@@ -12,12 +14,12 @@ class SavedPost(Base):
         UniqueConstraint("post_id", "user_id", name="uq_saved_posts_post_user"),
     )
 
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    post_id: Mapped[int] = mapped_column(
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4, index=True)
+    post_id: Mapped[UUID] = mapped_column(
         ForeignKey("posts.id", ondelete="CASCADE"),
         index=True,
     )
-    user_id: Mapped[int] = mapped_column(
+    user_id: Mapped[UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"),
         index=True,
     )

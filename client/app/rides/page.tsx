@@ -40,7 +40,7 @@ export default function RidesPage() {
   const [autoSearchPending, setAutoSearchPending] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [resultsOpen, setResultsOpen] = useState(true);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectionVersion, setSelectionVersion] = useState(0);
   const locationVersion = useRef(0);
   const locationStarted = useRef(false);
@@ -61,7 +61,7 @@ export default function RidesPage() {
     setBounds(locationSearchBounds(next)); setLocating(false); setSelectedId(null);
     setAutoSearchPending(true);
   }, []);
-  const selectRide = useCallback((id: number) => {
+  const selectRide = useCallback((id: string) => {
     setView("map"); setResultsOpen(true);
     setSelectedId(id); setSelectionVersion(version => version + 1);
   }, []);

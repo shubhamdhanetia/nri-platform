@@ -56,7 +56,7 @@ export default function SavedPostsPage() {
     }
   }, []);
 
-  function removeSavedPost(postId: number, isSaved: boolean) {
+  function removeSavedPost(postId: string, isSaved: boolean) {
     if (!isSaved) {
       setPosts((currentPosts) => currentPosts.filter((post) => post.id !== postId));
     }

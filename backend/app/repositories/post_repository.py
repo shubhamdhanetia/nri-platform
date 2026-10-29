@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from datetime import datetime, timezone
 
 from sqlalchemy import or_
@@ -23,7 +25,7 @@ def create_post(
     post_type: PostType,
     is_private: bool,
     location: PostLocationFields,
-    user_id: int
+    user_id: UUID
 ):
     post = Post(
         title=title,
@@ -44,8 +46,8 @@ def create_post(
 
 def update_post(
     db: Session,
-    post_id: int,
-    user_id: int,
+    post_id: UUID,
+    user_id: UUID,
     title: str,
     description: str,
     category: PostCategory,
@@ -82,8 +84,8 @@ def update_post(
 
 def set_post_visibility(
     db: Session,
-    post_id: int,
-    user_id: int,
+    post_id: UUID,
+    user_id: UUID,
     is_private: bool,
 ) -> Post | None:
     post = (
@@ -165,7 +167,7 @@ def get_posts_in_bounds(
     )
 
 
-def get_post_by_id(db: Session, post_id: int) -> Post | None:
+def get_post_by_id(db: Session, post_id: UUID) -> Post | None:
     return (
         db.query(Post)
         .options(joinedload(Post.author))
@@ -176,7 +178,7 @@ def get_post_by_id(db: Session, post_id: int) -> Post | None:
 
 def get_posts_by_user(
     db: Session,
-    user_id: int
+    user_id: UUID
 ):
     return (
         db.query(Post)
@@ -185,7 +187,7 @@ def get_posts_by_user(
     )
 
 
-def get_saved_posts(db: Session, user_id: int) -> list[Post]:
+def get_saved_posts(db: Session, user_id: UUID) -> list[Post]:
     return (
         db.query(Post)
         .join(SavedPost, SavedPost.post_id == Post.id)
@@ -200,9 +202,9 @@ def get_saved_posts(db: Session, user_id: int) -> list[Post]:
 
 def get_user_saved_post_ids(
     db: Session,
-    user_id: int,
-    post_ids: list[int],
-) -> set[int]:
+    user_id: UUID,
+    post_ids: list[UUID],
+) -> set[UUID]:
     if not post_ids:
         return set()
 
@@ -217,7 +219,7 @@ def get_user_saved_post_ids(
     return {post_id for (post_id,) in saved_post_ids}
 
 
-def save_post(db: Session, post_id: int, user_id: int) -> Post | None:
+def save_post(db: Session, post_id: UUID, user_id: UUID) -> Post | None:
     post = db.query(Post).filter(Post.id == post_id).first()
     if post is None:
         return None
@@ -250,7 +252,7 @@ def save_post(db: Session, post_id: int, user_id: int) -> Post | None:
     return post
 
 
-def unsave_post(db: Session, post_id: int, user_id: int) -> Post | None:
+def unsave_post(db: Session, post_id: UUID, user_id: UUID) -> Post | None:
     post = db.query(Post).filter(Post.id == post_id).first()
     if post is None:
         return None
@@ -272,8 +274,8 @@ def unsave_post(db: Session, post_id: int, user_id: int) -> Post | None:
 
 def delete_post(
     db: Session,
-    post_id: int,
-    user_id: int
+    post_id: UUID,
+    user_id: UUID
 ) -> bool:
     post = (
         db.query(Post)
@@ -293,9 +295,9 @@ def delete_post(
 
 def get_user_post_reactions(
     db: Session,
-    user_id: int,
-    post_ids: list[int],
-) -> dict[int, PostReactionType]:
+    user_id: UUID,
+    post_ids: list[UUID],
+) -> dict[UUID, PostReactionType]:
     if not post_ids:
         return {}
 
@@ -312,8 +314,8 @@ def get_user_post_reactions(
 
 def set_post_reaction(
     db: Session,
-    post_id: int,
-    user_id: int,
+    post_id: UUID,
+    user_id: UUID,
     reaction_type: PostReactionType,
 ) -> Post | None:
     post = (
@@ -352,8 +354,8 @@ def set_post_reaction(
 
 def remove_post_reaction(
     db: Session,
-    post_id: int,
-    user_id: int,
+    post_id: UUID,
+    user_id: UUID,
 ) -> Post | None:
     post = (
         db.query(Post)

@@ -7,8 +7,8 @@ export default function DeletePostButton({
   postId,
   onDeleted,
 }: {
-  postId: number;
-  onDeleted: (postId: number) => void;
+  postId: string;
+  onDeleted: (postId: string) => void;
 }) {
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");

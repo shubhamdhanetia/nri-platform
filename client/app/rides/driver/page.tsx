@@ -4,7 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import RideLayout from "../../../components/RideLayout";
-import { apiRequest } from "../../../lib/api";
+import { apiRequest, isUuid } from "../../../lib/api";
 import { rideError, type DriverProfile } from "../../../lib/rides";
 
 export default function DriverPage() {
@@ -33,7 +33,7 @@ export default function DriverPage() {
       const result = await apiRequest<DriverProfile>("/rides/driver-profile", { method: "PUT", body: JSON.stringify({ vehicle, passenger_capacity: Number(capacity), phone, eligibility_acknowledged: acknowledged }) });
       setProfile(result); setSuccess("Driver profile saved. You can now offer rides.");
       const request = new URLSearchParams(window.location.search).get("request");
-      if (request && /^[1-9]\d*$/.test(request) && Number.isSafeInteger(Number(request))) {
+      if (request && isUuid(request)) {
         router.push(`/rides/${request}`);
       }
     } catch (err) { setError(rideError(err)); } finally { setBusy(false); }

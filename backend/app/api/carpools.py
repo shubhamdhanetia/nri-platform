@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from datetime import date
 from typing import Annotated
 
@@ -56,35 +58,35 @@ def mine(db: DB, user: Member, offset: int = Query(0, ge=0), limit: int = Query(
 
 
 @router.get("/trips/{trip_id}", response_model=CarpoolDetailResponse)
-def detail(trip_id: int, db: DB, user: Member):
+def detail(trip_id: UUID, db: DB, user: Member):
     return carpools.detail(db, trip_id, user.id)
 
 
 @router.post("/trips/{trip_id}/requests", response_model=CarpoolDetailResponse, status_code=201)
-def request_seats(trip_id: int, data: SeatRequestInput, db: DB, user: Member):
+def request_seats(trip_id: UUID, data: SeatRequestInput, db: DB, user: Member):
     carpools.request_seats(db, trip_id, user.id, data)
     return carpools.detail(db, trip_id, user.id)
 
 
 @router.post("/trips/{trip_id}/requests/{request_id}/accept", response_model=CarpoolDetailResponse)
-def accept(trip_id: int, request_id: int, db: DB, user: Member):
+def accept(trip_id: UUID, request_id: UUID, db: DB, user: Member):
     carpools.change_request(db, trip_id, request_id, user.id, "accept")
     return carpools.detail(db, trip_id, user.id)
 
 
 @router.post("/trips/{trip_id}/requests/{request_id}/decline", response_model=CarpoolDetailResponse)
-def decline(trip_id: int, request_id: int, db: DB, user: Member):
+def decline(trip_id: UUID, request_id: UUID, db: DB, user: Member):
     carpools.change_request(db, trip_id, request_id, user.id, "decline")
     return carpools.detail(db, trip_id, user.id)
 
 
 @router.post("/trips/{trip_id}/requests/{request_id}/cancel", response_model=CarpoolDetailResponse)
-def cancel_request(trip_id: int, request_id: int, data: CancellationInput, db: DB, user: Member):
+def cancel_request(trip_id: UUID, request_id: UUID, data: CancellationInput, db: DB, user: Member):
     carpools.change_request(db, trip_id, request_id, user.id, "cancel", data.reason)
     return carpools.detail(db, trip_id, user.id)
 
 
 @router.post("/trips/{trip_id}/cancel", response_model=CarpoolDetailResponse)
-def cancel_trip(trip_id: int, data: CancellationInput, db: DB, user: Member):
+def cancel_trip(trip_id: UUID, data: CancellationInput, db: DB, user: Member):
     carpools.cancel_trip(db, trip_id, user.id, data.reason)
     return carpools.detail(db, trip_id, user.id)

@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from datetime import datetime
 
 from pydantic import BaseModel, Field, model_validator
@@ -69,12 +71,12 @@ class PostReactionRequest(BaseModel):
 
 
 class PostSaveResponse(BaseModel):
-    post_id: int
+    post_id: UUID
     is_saved: bool
 
 
 class PostResponse(BaseModel):
-    id: int
+    id: UUID
     created_at: datetime
     updated_at: datetime | None = None
     title: str
@@ -91,7 +93,7 @@ class PostResponse(BaseModel):
     latitude: float
     longitude: float
     h3_cell_id: str
-    user_id: int
+    user_id: UUID
     comment_count: int = 0
     like_count: int = 0
     dislike_count: int = 0
@@ -103,14 +105,14 @@ class PostResponse(BaseModel):
 
 
 class PostReactionSummary(BaseModel):
-    post_id: int
+    post_id: UUID
     like_count: int
     dislike_count: int
     my_reaction: PostReactionType | None = None
 
 
 class PostAuthorResponse(BaseModel):
-    id: int
+    id: UUID
     name: str
     picture: str | None = None
 

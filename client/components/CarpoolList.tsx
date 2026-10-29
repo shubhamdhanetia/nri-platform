@@ -37,7 +37,7 @@ export default function CarpoolList({ mine = false }: { mine?: boolean }) {
   const [view, setView] = useState<"feed" | "map">("map");
   const [fullscreen, setFullscreen] = useState(false);
   const [resultsOpen, setResultsOpen] = useState(true);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectionVersion, setSelectionVersion] = useState(0);
   const [center, setCenter] = useState<[number, number]>(DEFAULT_CENTER);
   const [zoom, setZoom] = useState(2);
@@ -237,12 +237,12 @@ export default function CarpoolList({ mine = false }: { mine?: boolean }) {
     if (!fullscreen) changeView("map");
     setFullscreen(!fullscreen);
   }
-  const selectTrip = useCallback((id: number) => {
+  const selectTrip = useCallback((id: string) => {
     locationVersion.current += 1;
     setLocating(false);
     setView("map"); setResultsOpen(true); setSelectedId(id); setSelectionVersion(version => version + 1);
   }, []);
-  const selectMapTrip = useCallback((id: number) => { setSelectedId(id); }, []);
+  const selectMapTrip = useCallback((id: string) => { setSelectedId(id); }, []);
   const clearMapSelection = useCallback(() => { setSelectedId(null); }, []);
   const points = useMemo(() => (page?.trips ?? []).map(trip => ({
     id: trip.id, latitude: trip.pickup.latitude, longitude: trip.pickup.longitude,

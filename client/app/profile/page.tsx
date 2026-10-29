@@ -66,7 +66,7 @@ export default function ProfilePage() {
     }
   }
 
-  function removePost(postId: number) {
+  function removePost(postId: string) {
     setPosts((currentPosts) => currentPosts.filter((post) => post.id !== postId));
   }
 

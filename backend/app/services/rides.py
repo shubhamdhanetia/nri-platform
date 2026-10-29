@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from datetime import datetime, timezone
 
 from fastapi import HTTPException
@@ -21,14 +23,14 @@ def utc_naive(value: datetime) -> datetime:
     return value.astimezone(timezone.utc).replace(tzinfo=None)
 
 
-def require_driver(db: Session, user_id: int) -> DriverProfile:
+def require_driver(db: Session, user_id: UUID) -> DriverProfile:
     profile = repo.driver_profile(db, user_id)
     if profile is None:
         raise HTTPException(403, "Complete your driver profile before offering rides.")
     return profile
 
 
-def save_driver(db: Session, user_id: int, data: DriverProfileInput) -> DriverProfile:
+def save_driver(db: Session, user_id: UUID, data: DriverProfileInput) -> DriverProfile:
     # Lock the existing parent so two initial profile saves cannot race to insert.
     db.scalar(select(User).where(User.id == user_id).with_for_update())
     profile = repo.driver_profile(db, user_id)
@@ -44,7 +46,7 @@ def save_driver(db: Session, user_id: int, data: DriverProfileInput) -> DriverPr
     return profile
 
 
-def create_request(db: Session, user_id: int, data: RideRequestInput) -> RideRequest:
+def create_request(db: Session, user_id: UUID, data: RideRequestInput) -> RideRequest:
     pickup = resolve_post_location(data.pickup_location_id)
     dropoff = resolve_post_location(data.dropoff_location_id)
     if pickup.location_id == dropoff.location_id or (
@@ -65,7 +67,7 @@ def create_request(db: Session, user_id: int, data: RideRequestInput) -> RideReq
     return ride
 
 
-def get_request(db: Session, request_id: int, user_id: int, *, lock: bool = False) -> RideRequest:
+def get_request(db: Session, request_id: UUID, user_id: UUID, *, lock: bool = False) -> RideRequest:
     ride = repo.request_by_id(db, request_id, lock=lock)
     if ride is None:
         raise HTTPException(404, "Ride request not found.")
@@ -83,7 +85,7 @@ def ensure_open(ride: RideRequest) -> None:
         raise HTTPException(409, "This request is no longer open. Refresh to see its current status.")
 
 
-def notify_member(db: Session, user_id: int, ride: RideRequest, event_type: str, message: str) -> None:
+def notify_member(db: Session, user_id: UUID, ride: RideRequest, event_type: str, message: str) -> None:
     route = f"{ride.pickup['city']} to {ride.dropoff['city']}"
     notifications.notify(
         db, user_id=user_id, category="ride", event_type=event_type,
@@ -91,7 +93,7 @@ def notify_member(db: Session, user_id: int, ride: RideRequest, event_type: str,
     )
 
 
-def send_offer(db: Session, request_id: int, user_id: int, data: RideOfferInput) -> RideOffer:
+def send_offer(db: Session, request_id: UUID, user_id: UUID, data: RideOfferInput) -> RideOffer:
     profile = require_driver(db, user_id)
     ride = get_request(db, request_id, user_id, lock=True)
     if ride.rider_id == user_id:
@@ -124,7 +126,7 @@ def send_offer(db: Session, request_id: int, user_id: int, data: RideOfferInput)
     return offer
 
 
-def withdraw_offer(db: Session, request_id: int, offer_id: int, user_id: int) -> None:
+def withdraw_offer(db: Session, request_id: UUID, offer_id: UUID, user_id: UUID) -> None:
     ride = get_request(db, request_id, user_id, lock=True)
     offer = db.get(RideOffer, offer_id)
     if offer is None or offer.request_id != ride.id or offer.driver_id != user_id:
@@ -139,7 +141,7 @@ def withdraw_offer(db: Session, request_id: int, offer_id: int, user_id: int) ->
     db.commit()
 
 
-def confirm(db: Session, request_id: int, offer_id: int, user_id: int) -> RideBooking:
+def confirm(db: Session, request_id: UUID, offer_id: UUID, user_id: UUID) -> RideBooking:
     ride = get_request(db, request_id, user_id, lock=True)
     if ride.rider_id != user_id:
         raise HTTPException(403, "Only the rider can choose a driver.")
@@ -173,7 +175,7 @@ def confirm(db: Session, request_id: int, offer_id: int, user_id: int) -> RideBo
     return booking
 
 
-def cancel_request(db: Session, request_id: int, user_id: int) -> None:
+def cancel_request(db: Session, request_id: UUID, user_id: UUID) -> None:
     ride = get_request(db, request_id, user_id, lock=True)
     if ride.rider_id != user_id:
         raise HTTPException(403, "Only the rider can cancel the request.")
@@ -188,7 +190,7 @@ def cancel_request(db: Session, request_id: int, user_id: int) -> None:
     db.commit()
 
 
-def change_booking(db: Session, request_id: int, user_id: int, *, reason: str | None = None) -> None:
+def change_booking(db: Session, request_id: UUID, user_id: UUID, *, reason: str | None = None) -> None:
     ride = get_request(db, request_id, user_id, lock=True)
     booking = repo.booking_for_request(db, request_id)
     if booking is None or user_id not in (booking.rider_id, booking.driver_id):
@@ -218,14 +220,14 @@ def change_booking(db: Session, request_id: int, user_id: int, *, reason: str | 
     db.commit()
 
 
-def author(db: Session, user_id: int) -> PostAuthorResponse:
+def author(db: Session, user_id: UUID) -> PostAuthorResponse:
     user = db.get(User, user_id)
     if user is None:
         raise HTTPException(404, "Ride member not found.")
     return PostAuthorResponse.model_validate(user)
 
 
-def request_response(db: Session, ride: RideRequest, viewer_id: int | None = None) -> RideRequestResponse:
+def request_response(db: Session, ride: RideRequest, viewer_id: UUID | None = None) -> RideRequestResponse:
     result = RideRequestResponse.model_validate({
         **{column.name: getattr(ride, column.name) for column in RideRequest.__table__.columns},
         "rider": author(db, ride.rider_id),
@@ -259,7 +261,7 @@ def booking_response(db: Session, booking: RideBooking) -> RideBookingResponse:
     })
 
 
-def detail(db: Session, ride: RideRequest, user_id: int) -> RideDetailResponse:
+def detail(db: Session, ride: RideRequest, user_id: UUID) -> RideDetailResponse:
     booking = repo.booking_for_request(db, ride.id)
     offers = repo.offers_for_request(db, ride.id, None if ride.rider_id == user_id else user_id)
     participant = booking is not None and user_id in (booking.rider_id, booking.driver_id)

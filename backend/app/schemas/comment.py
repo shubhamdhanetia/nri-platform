@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from datetime import datetime
 
 from pydantic import BaseModel, Field, field_validator
@@ -22,10 +24,10 @@ class UpdateCommentRequest(CreateCommentRequest):
 
 
 class CommentResponse(BaseModel):
-    id: int
+    id: UUID
     content: str
-    user_id: int
-    post_id: int
+    user_id: UUID
+    post_id: UUID
     created_at: datetime
     updated_at: datetime | None = None
     author: PostAuthorResponse

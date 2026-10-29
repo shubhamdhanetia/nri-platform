@@ -7,9 +7,9 @@ import type { Post, PostSearchBounds } from "../lib/api";
 export default function ExploreMap(props: {
   posts: Post[];
   fullscreen: boolean;
-  selectedPostId: number | null;
+  selectedPostId: string | null;
   selectionVersion: number;
-  onSelectPost: (postId: number) => void;
+  onSelectPost: (postId: string) => void;
   onBoundsChange: (bounds: PostSearchBounds) => void;
   onCenterChange: (center: [number, number]) => void;
   onViewportChange?: (center: [number, number], zoom: number) => void;

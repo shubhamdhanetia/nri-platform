@@ -1,3 +1,5 @@
+from uuid import UUID
+
 import unittest
 from datetime import timedelta
 from unittest.mock import patch
@@ -56,9 +58,9 @@ class NotificationAPITests(unittest.TestCase):
         self.assertEqual(self.client.post("/notifications/1/read").status_code, 401)
         with Session(self.engine) as db:
             for index in range(3):
-                notify(db, user_id=1, category="future-feature", event_type="future.updated",
-                       resource_id=index + 1, target_path="/profile", message=f"Update {index}")
-            notify(db, user_id=2, category="ride", event_type="ride.test", resource_id=1,
+                notify(db, user_id=UUID(int=1), category="future-feature", event_type="future.updated",
+                       resource_id=UUID(int=index + 1), target_path="/profile", message=f"Update {index}")
+            notify(db, user_id=UUID(int=2), category="ride", event_type="ride.test", resource_id=UUID(int=1),
                    target_path="/rides/1", message="Private update for another member")
             db.commit()
         first = self.inbox(query="?limit=2")
@@ -76,7 +78,7 @@ class NotificationAPITests(unittest.TestCase):
         self.assertEqual(self.client.post(path, headers=self.fixture.headers(2)).status_code, 404)
         self.assertEqual(self.client.post(path, headers=self.fixture.headers(1)).status_code, 200)
         self.assertEqual(self.client.post(path, headers=self.fixture.headers(1)).status_code, 200)
-        self.assertEqual(self.client.post("/notifications/99999/read", headers=self.fixture.headers(1)).status_code, 404)
+        self.assertEqual(self.client.post(f"/notifications/{UUID(int=99999)}/read", headers=self.fixture.headers(1)).status_code, 404)
         self.assertEqual(self.inbox()["unread_count"], 2)
         self.assertEqual(self.inbox(2)["unread_count"], 1)
         self.assertEqual(self.client.get("/notifications/unread-count", headers=self.fixture.headers()).json(), {"unread_count": 2})
@@ -223,5 +225,5 @@ class NotificationAPITests(unittest.TestCase):
         with Session(self.engine) as db:
             for target in ("https://example.test", "//example.test", "/\\example.test"):
                 with self.assertRaises(ValueError):
-                    notify(db, user_id=1, category="test", event_type="test", resource_id=1,
+                    notify(db, user_id=UUID(int=1), category="test", event_type="test", resource_id=UUID(int=1),
                            target_path=target, message="Test")

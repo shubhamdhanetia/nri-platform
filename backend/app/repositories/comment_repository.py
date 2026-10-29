@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session, joinedload
@@ -9,8 +11,8 @@ from app.models.comment import Comment
 def create_comment(
     db: Session,
     content: str,
-    user_id: int,
-    post_id: int
+    user_id: UUID,
+    post_id: UUID
 ) -> Comment:
     comment = Comment(
         content=content,
@@ -23,7 +25,7 @@ def create_comment(
     return comment
 
 
-def get_comments_by_post(db: Session, post_id: int) -> list[Comment]:
+def get_comments_by_post(db: Session, post_id: UUID) -> list[Comment]:
     return (
         db.query(Comment)
         .options(joinedload(Comment.author))
@@ -35,9 +37,9 @@ def get_comments_by_post(db: Session, post_id: int) -> list[Comment]:
 
 def update_comment(
     db: Session,
-    comment_id: int,
-    post_id: int,
-    user_id: int,
+    comment_id: UUID,
+    post_id: UUID,
+    user_id: UUID,
     content: str
 ) -> Comment | None:
     comment = (
@@ -64,9 +66,9 @@ def update_comment(
 
 def delete_comment(
     db: Session,
-    comment_id: int,
-    post_id: int,
-    user_id: int
+    comment_id: UUID,
+    post_id: UUID,
+    user_id: UUID
 ) -> bool:
     comment = (
         db.query(Comment)

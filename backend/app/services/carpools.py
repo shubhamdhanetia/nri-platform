@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from datetime import date, timezone
 from typing import Literal
 from zoneinfo import ZoneInfo
@@ -22,7 +24,7 @@ from app.services.rides import require_driver, utc_naive
 from app.services import notifications
 
 
-def get_trip(db: Session, trip_id: int, *, lock: bool = False) -> CarpoolTrip:
+def get_trip(db: Session, trip_id: UUID, *, lock: bool = False) -> CarpoolTrip:
     trip = repo.trip_by_id(db, trip_id, lock=lock)
     if trip is None:
         raise HTTPException(404, "Carpool trip not found.")
@@ -39,7 +41,7 @@ def ensure_cancellable(trip: CarpoolTrip) -> None:
         raise HTTPException(409, "This trip is cancelled or its departure window has ended.")
 
 
-def notify(db: Session, user_id: int, trip: CarpoolTrip, event_type: str, message: str) -> None:
+def notify(db: Session, user_id: UUID, trip: CarpoolTrip, event_type: str, message: str) -> None:
     route = f"{trip.pickup['city']} to {trip.dropoff['city']}"
     notifications.notify(
         db, user_id=user_id, category="carpool", event_type=event_type,
@@ -47,10 +49,10 @@ def notify(db: Session, user_id: int, trip: CarpoolTrip, event_type: str, messag
     )
 
 
-def create_trip(db: Session, user_id: int, data: CarpoolCreateInput) -> CarpoolTrip:
+def create_trip(db: Session, user_id: UUID, data: CarpoolCreateInput) -> CarpoolTrip:
     profile = require_driver(db, user_id)
 
-    def leg(value: CarpoolLegInput, outbound_id: int | None = None) -> CarpoolTrip:
+    def leg(value: CarpoolLegInput, outbound_id: UUID | None = None) -> CarpoolTrip:
         if value.seats > profile.passenger_capacity:
             raise HTTPException(422, "Available seats exceed your driver profile's passenger capacity.")
         pickup = resolve_post_location(value.pickup_location_id)
@@ -81,7 +83,7 @@ def create_trip(db: Session, user_id: int, data: CarpoolCreateInput) -> CarpoolT
     return outbound
 
 
-def trip_response(db: Session, trip: CarpoolTrip, user_id: int) -> CarpoolTripResponse:
+def trip_response(db: Session, trip: CarpoolTrip, user_id: UUID) -> CarpoolTripResponse:
     linked = repo.linked_trip(db, trip)
     own = repo.seat_requests(db, trip.id, user_id)
     available = repo.available_seats(db, trip)
@@ -108,7 +110,7 @@ def request_status(request: CarpoolSeatRequest, trip: CarpoolTrip) -> SeatRespon
     return request.status
 
 
-def detail(db: Session, trip_id: int, user_id: int) -> CarpoolDetailResponse:
+def detail(db: Session, trip_id: UUID, user_id: UUID) -> CarpoolDetailResponse:
     trip = get_trip(db, trip_id)
     owner = trip.driver_id == user_id
     linked = repo.linked_trip(db, trip)
@@ -130,7 +132,7 @@ def detail(db: Session, trip_id: int, user_id: int) -> CarpoolDetailResponse:
     )
 
 
-def request_seats(db: Session, trip_id: int, user_id: int, data: SeatRequestInput) -> None:
+def request_seats(db: Session, trip_id: UUID, user_id: UUID, data: SeatRequestInput) -> None:
     trip = get_trip(db, trip_id)
     linked = repo.linked_trip(db, trip) if data.include_return else None
     if data.include_return and linked is None:
@@ -157,7 +159,7 @@ def request_seats(db: Session, trip_id: int, user_id: int, data: SeatRequestInpu
 
 
 def change_request(
-    db: Session, trip_id: int, request_id: int, user_id: int,
+    db: Session, trip_id: UUID, request_id: UUID, user_id: UUID,
     action: Literal["accept", "decline", "cancel"], reason: str | None = None,
 ) -> None:
     trip = get_trip(db, trip_id, lock=True)
@@ -195,7 +197,7 @@ def change_request(
     db.commit()
 
 
-def cancel_trip(db: Session, trip_id: int, user_id: int, reason: str) -> None:
+def cancel_trip(db: Session, trip_id: UUID, user_id: UUID, reason: str) -> None:
     trip = get_trip(db, trip_id, lock=True)
     if trip.driver_id != user_id:
         raise HTTPException(403, "Only the driver can cancel this trip.")
@@ -213,7 +215,7 @@ def cancel_trip(db: Session, trip_id: int, user_id: int, reason: str) -> None:
 
 
 def browse(
-    db: Session, user_id: int, offset: int, limit: int,
+    db: Session, user_id: UUID, offset: int, limit: int,
     pickup_location_id: str | None, dropoff_location_id: str | None,
     departure_date: date | None, passengers: int, radius_km: float,
     bounds: PostSearchBounds | None = None,

@@ -1,8 +1,8 @@
 export interface AppNotification {
-  id: number;
+  id: string;
   category: string;
   event_type: string;
-  resource_id: number;
+  resource_id: string;
   target_path: string;
   message: string;
   is_read: boolean;

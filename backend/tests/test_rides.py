@@ -3,6 +3,7 @@ import h3
 from datetime import datetime, timedelta, timezone
 from math import degrees
 from unittest.mock import patch
+from uuid import UUID
 
 from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
@@ -42,7 +43,7 @@ class RideAPITests(unittest.TestCase):
         Base.metadata.create_all(self.engine)
         with Session(self.engine) as db:
             for user_id in range(1, 5):
-                db.add(User(id=user_id, name=f"Member {user_id}", email=f"member{user_id}@example.test", provider="test", provider_id=str(user_id)))
+                db.add(User(id=UUID(int=user_id), name=f"Member {user_id}", email=f"member{user_id}@example.test", provider="test", provider_id=str(user_id)))
             db.commit()
         app = FastAPI()
         app.include_router(router, prefix="/rides")
@@ -68,7 +69,7 @@ class RideAPITests(unittest.TestCase):
         self.engine.dispose()
 
     def headers(self, user_id=1):
-        return {"Authorization": f"Bearer {create_access_token(user_id)}"}
+        return {"Authorization": f"Bearer {create_access_token(UUID(int=user_id))}"}
 
     def create(self, **updates):
         payload = {
@@ -106,6 +107,30 @@ class RideAPITests(unittest.TestCase):
         self.assertEqual(self.client.get("/rides/requests").status_code, 401)
         self.assertEqual(self.client.get("/rides/mine").status_code, 401)
         self.assertEqual(self.client.get("/rides/driver-profile").status_code, 401)
+
+    def test_uuid_identifiers_and_invalid_token_subjects(self):
+        for table in Base.metadata.tables.values():
+            for column in table.columns:
+                if column.primary_key or column.foreign_keys or column.name == "resource_id":
+                    with self.subTest(table=table.name, column=column.name):
+                        self.assertIs(column.type.python_type, UUID)
+                if column.name == "id":
+                    self.assertEqual(column.default.arg(None).version, 4)
+        ride_id, offer_id = self.seed_offer()
+        response = self.confirm(ride_id, offer_id)
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(UUID(ride_id).version, 4)
+        self.assertEqual(UUID(offer_id).version, 4)
+        self.assertEqual(UUID(response.json()["booking"]["id"]).version, 4)
+        self.assertEqual(response.json()["request"]["rider_id"], str(UUID(int=1)))
+        for invalid_id in ("1", "not-a-uuid"):
+            self.assertEqual(self.client.get(f"/rides/requests/{invalid_id}", headers=self.headers()).status_code, 422)
+            self.assertEqual(self.confirm(ride_id, invalid_id).status_code, 422)
+        for payload in ({}, {"sub": "1"}, {"sub": "not-a-uuid"}, {"sub": None}):
+            with patch("app.api.dependencies.verify_token", return_value=payload):
+                response = self.client.get("/rides/mine", headers=self.headers())
+                self.assertEqual(response.status_code, 401, response.text)
+                self.assertEqual(response.headers["www-authenticate"], "Bearer")
 
     def test_member_browsing_and_location_resolution(self):
         ride = self.create()
@@ -225,7 +250,7 @@ class RideAPITests(unittest.TestCase):
     def test_confirm_rechecks_driver_eligibility(self):
         ride_id, offer_id = self.seed_offer()
         with Session(self.engine) as db:
-            profile = db.get(DriverProfile, 2)
+            profile = db.get(DriverProfile, UUID(int=2))
             db.delete(profile)
             db.commit()
         self.assertEqual(self.confirm(ride_id, offer_id).status_code, 403)
@@ -241,10 +266,10 @@ class RideAPITests(unittest.TestCase):
     def test_expired_offer_can_be_resubmitted_while_window_open(self):
         ride_id, offer_id = self.seed_offer()
         with Session(self.engine) as db:
-            ride = db.get(RideRequest, ride_id)
+            ride = db.get(RideRequest, UUID(ride_id))
             ride.pickup_start = datetime.utcnow() - timedelta(minutes=5)
             ride.pickup_end = datetime.utcnow() + timedelta(minutes=25)
-            offer = db.get(RideOffer, offer_id)
+            offer = db.get(RideOffer, UUID(offer_id))
             offer.pickup_time = datetime.utcnow() - timedelta(minutes=1)
             db.commit()
         detail = self.client.get(f"/rides/requests/{ride_id}", headers=self.headers(2)).json()
@@ -285,7 +310,7 @@ class RideAPITests(unittest.TestCase):
         self.assertEqual(self.client.post(path, headers=self.headers(2)).status_code, 403)
         self.assertEqual(self.client.post(path, headers=self.headers()).status_code, 409)
         with Session(self.engine) as db:
-            ride = db.get(RideRequest, ride_id)
+            ride = db.get(RideRequest, UUID(ride_id))
             ride.pickup_start = datetime.utcnow() - timedelta(hours=2)
             ride.pickup_end = datetime.utcnow() - timedelta(hours=1)
             db.commit()
@@ -299,7 +324,7 @@ class RideAPITests(unittest.TestCase):
     def test_expiration_excludes_browse_and_blocks_confirmation(self):
         ride_id, offer_id = self.seed_offer()
         with Session(self.engine) as db:
-            ride = db.get(RideRequest, ride_id)
+            ride = db.get(RideRequest, UUID(ride_id))
             ride.pickup_start = datetime.utcnow() - timedelta(hours=2)
             ride.pickup_end = datetime.utcnow() - timedelta(hours=1)
             db.commit()
@@ -364,12 +389,11 @@ class RideAPITests(unittest.TestCase):
 
     def test_map_search_filters_before_result_limit_and_has_more(self):
         self.create(dropoff_location_id="far")
-        first_matching = self.create().json()["id"]
-        self.create()
+        matching = sorted(self.create().json()["id"] for _ in range(2))
         self.driver()
         response = self.map_search(dropoff_location_id="dropoff", radius_km=10, limit=1)
         self.assertEqual(response.status_code, 200, response.text)
-        self.assertEqual([ride["id"] for ride in response.json()["rides"]], [first_matching])
+        self.assertEqual([ride["id"] for ride in response.json()["rides"]], matching[:1])
         self.assertTrue(response.json()["has_more"])
         self.assertEqual(len(self.map_search(dropoff_location_id="dropoff", radius_km=10).json()["rides"]), 2)
         self.assertEqual(self.map_search(departure_date="2020-01-01").json()["rides"], [])
@@ -461,7 +485,7 @@ class RideAPITests(unittest.TestCase):
         bounds = {"north": 37.5501, "south": 37.5499, "west": -121.9801, "east": -121.9799}
         self.assertEqual(len(self.map_search(bounds=bounds).json()["rides"]), 1)
         with Session(self.engine) as db:
-            ride = db.get(RideRequest, ride_id)
+            ride = db.get(RideRequest, UUID(ride_id))
             # Keep a candidate H3 cell but move coordinates outside the tiny viewport.
             pickup = dict(ride.pickup)
             pickup["latitude"] = 37.551
@@ -479,7 +503,7 @@ class RideAPITests(unittest.TestCase):
         self.client.post(f"/rides/requests/{cancelled_id}/cancel", headers=self.headers())
         expired_id = self.create().json()["id"]
         with Session(self.engine) as db:
-            ride = db.get(RideRequest, expired_id)
+            ride = db.get(RideRequest, UUID(expired_id))
             ride.pickup_start = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=2)
             ride.pickup_end = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=1)
             db.commit()
@@ -490,14 +514,14 @@ class RideAPITests(unittest.TestCase):
         self.driver()
         with Session(self.engine) as db:
             for ride_id, longitude in zip(ids, (179.9, -179.9, 0)):
-                ride = db.get(RideRequest, ride_id)
+                ride = db.get(RideRequest, UUID(ride_id))
                 pickup = dict(ride.pickup)
                 pickup.update(latitude=0.0, longitude=longitude, h3_cell_id=h3.latlng_to_cell(0, longitude, 8))
                 ride.pickup = pickup
             db.commit()
         response = self.map_search(bounds={"north": 0.05, "south": -0.05, "west": 179.8, "east": -179.8})
         self.assertEqual(response.status_code, 200, response.text)
-        self.assertEqual([ride["id"] for ride in response.json()["rides"]], ids[:2])
+        self.assertEqual([ride["id"] for ride in response.json()["rides"]], sorted(ids[:2]))
 
     def test_map_destination_radius_enforces_25_km(self):
         ids = [self.create().json()["id"] for _ in range(2)]
@@ -505,7 +529,7 @@ class RideAPITests(unittest.TestCase):
         destination = place("dropoff")
         with Session(self.engine) as db:
             for ride_id, distance in zip(ids, (24.99, 25.01)):
-                ride = db.get(RideRequest, ride_id)
+                ride = db.get(RideRequest, UUID(ride_id))
                 dropoff = dict(ride.dropoff)
                 dropoff["latitude"] = destination.latitude + degrees(distance / 6371)
                 ride.dropoff = dropoff

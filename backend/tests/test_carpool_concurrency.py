@@ -3,7 +3,7 @@ import unittest
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from threading import Barrier
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -45,30 +45,30 @@ class CarpoolConcurrencyTests(unittest.TestCase):
             app.dependency_overrides[get_db] = test_db
             with Session(isolated) as db:
                 for user_id in (1, 2, 3):
-                    db.add(User(id=user_id, name=f"Member {user_id}", email=f"{user_id}@example.test", provider="test", provider_id=str(user_id)))
+                    db.add(User(id=UUID(int=user_id), name=f"Member {user_id}", email=f"{user_id}@example.test", provider="test", provider_id=str(user_id)))
                 db.commit()
-                db.add(DriverProfile(user_id=1, vehicle="Test car", passenger_capacity=3, phone="+14155550101", acknowledgement_at=datetime.now(timezone.utc).replace(tzinfo=None)))
+                db.add(DriverProfile(user_id=UUID(int=1), vehicle="Test car", passenger_capacity=3, phone="+14155550101", acknowledgement_at=datetime.now(timezone.utc).replace(tzinfo=None)))
                 db.commit()
 
             def seed():
                 with Session(isolated) as db:
                     start = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(days=1)
                     trip = CarpoolTrip(
-                        driver_id=1, pickup=place("pickup").model_dump(), dropoff=place("dropoff").model_dump(),
+                        driver_id=UUID(int=1), pickup=place("pickup").model_dump(), dropoff=place("dropoff").model_dump(),
                         pickup_start=start, pickup_end=start + timedelta(minutes=30), timezone="UTC",
                         seats=1, bags_per_person=1, amount=40, currency="USD", vehicle="Test car", notes="",
                     )
                     db.add(trip)
                     db.flush()
                     requests = [CarpoolSeatRequest(
-                        trip_id=trip.id, rider_id=rider_id, passengers=1, bags=0, message="", rider_phone=f"+1415555010{rider_id}",
+                        trip_id=trip.id, rider_id=UUID(int=rider_id), passengers=1, bags=0, message="", rider_phone=f"+1415555010{rider_id}",
                     ) for rider_id in (2, 3)]
                     db.add_all(requests)
                     db.commit()
                     return trip.id, requests[0].id, requests[1].id
 
             def headers(user_id):
-                return {"Authorization": f"Bearer {create_access_token(user_id)}"}
+                return {"Authorization": f"Bearer {create_access_token(UUID(int=user_id))}"}
 
             def race(first, second):
                 barrier = Barrier(2)

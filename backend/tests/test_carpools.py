@@ -1,3 +1,5 @@
+from uuid import UUID
+
 import unittest
 from datetime import datetime, timedelta, timezone
 from math import degrees
@@ -34,7 +36,7 @@ class CarpoolAPITests(unittest.TestCase):
         Base.metadata.create_all(self.engine)
         with Session(self.engine) as db:
             for user_id in range(1, 5):
-                db.add(User(id=user_id, name=f"Member {user_id}", email=f"member{user_id}@example.test", provider="test", provider_id=str(user_id)))
+                db.add(User(id=UUID(int=user_id), name=f"Member {user_id}", email=f"member{user_id}@example.test", provider="test", provider_id=str(user_id)))
             db.commit()
         app = FastAPI()
         app.include_router(router, prefix="/rides/carpools")
@@ -61,7 +63,7 @@ class CarpoolAPITests(unittest.TestCase):
         self.engine.dispose()
 
     def headers(self, user_id=2):
-        return {"Authorization": f"Bearer {create_access_token(user_id)}"}
+        return {"Authorization": f"Bearer {create_access_token(UUID(int=user_id))}"}
 
     def leg(self, **updates):
         value = {
@@ -132,7 +134,7 @@ class CarpoolAPITests(unittest.TestCase):
     def test_destination_search_ignores_pickup_bounds_and_paginates(self):
         self.create(dropoff_location_id="far")
         self.create(seats=1)
-        matching = [self.create(pickup_location_id="far").json()["trip"]["id"] for _ in range(2)]
+        matching = sorted(self.create(pickup_location_id="far").json()["trip"]["id"] for _ in range(2))
         filters = {"dropoff_location_id": "dropoff", "radius_km": 10 * 1.609344, "passengers": 2,
                    "departure_date": self.start.astimezone(ZoneInfo("America/Los_Angeles")).date().isoformat(),
                    "limit": 1}
@@ -152,7 +154,7 @@ class CarpoolAPITests(unittest.TestCase):
         self.create(seats=1)
         self.create(pickup_start=(self.start + timedelta(days=1)).isoformat(),
                     pickup_end=(self.start + timedelta(days=1, minutes=30)).isoformat())
-        matching = [self.create(pickup_location_id="far").json()["trip"]["id"] for _ in range(2)]
+        matching = sorted(self.create(pickup_location_id="far").json()["trip"]["id"] for _ in range(2))
         filters = {"scope": "destination", "bounds": {"north": 37.63, "south": 37.61, "west": -122.39, "east": -122.37},
                    "passengers": 2, "limit": 1,
                    "departure_date": self.start.astimezone(ZoneInfo("America/Los_Angeles")).date().isoformat()}
@@ -170,14 +172,14 @@ class CarpoolAPITests(unittest.TestCase):
         tiny = {"north": 37.5501, "south": 37.5499, "west": -121.9801, "east": -121.9799}
         self.assertEqual(len(self.map_search(bounds=tiny).json()["trips"]), 1)
         with Session(self.engine) as db:
-            trip = db.get(CarpoolTrip, trip_id)
+            trip = db.get(CarpoolTrip, UUID(trip_id))
             trip.pickup = {**trip.pickup, "latitude": 37.551, "h3_cell_id": h3.latlng_to_cell(37.551, -121.98, 8)}
             db.commit()
         self.assertEqual(self.map_search(bounds=tiny).json()["trips"], [])
         edge = {"north": 37.551, "south": 37.55, "west": -121.98, "east": -121.97}
         self.assertEqual(len(self.map_search(bounds=edge).json()["trips"]), 1)
         with Session(self.engine) as db:
-            trip = db.get(CarpoolTrip, trip_id)
+            trip = db.get(CarpoolTrip, UUID(trip_id))
             trip.pickup = {**trip.pickup, "h3_cell_id": place("far").h3_cell_id}
             db.commit()
         self.assertEqual(self.map_search(bounds=edge).json()["trips"], [])
@@ -187,14 +189,14 @@ class CarpoolAPITests(unittest.TestCase):
         tiny = {"north": 37.6201, "south": 37.6199, "west": -122.3801, "east": -122.3799}
         self.assertEqual(len(self.map_search(scope="destination", bounds=tiny).json()["trips"]), 1)
         with Session(self.engine) as db:
-            trip = db.get(CarpoolTrip, trip_id)
+            trip = db.get(CarpoolTrip, UUID(trip_id))
             trip.dropoff = {**trip.dropoff, "latitude": 37.621, "h3_cell_id": h3.latlng_to_cell(37.621, -122.38, 8)}
             db.commit()
         self.assertEqual(self.map_search(scope="destination", bounds=tiny).json()["trips"], [])
         edge = {"north": 37.621, "south": 37.62, "west": -122.38, "east": -122.37}
         self.assertEqual(len(self.map_search(scope="destination", bounds=edge).json()["trips"]), 1)
         with Session(self.engine) as db:
-            trip = db.get(CarpoolTrip, trip_id)
+            trip = db.get(CarpoolTrip, UUID(trip_id))
             trip.dropoff = {**trip.dropoff, "h3_cell_id": place("far").h3_cell_id}
             db.commit()
         self.assertEqual(self.map_search(scope="destination", bounds=edge).json()["trips"], [])
@@ -203,13 +205,13 @@ class CarpoolAPITests(unittest.TestCase):
         trip_ids = [self.create().json()["trip"]["id"] for _ in range(3)]
         with Session(self.engine) as db:
             for trip_id, longitude in zip(trip_ids, (179.9, -179.9, 0)):
-                trip = db.get(CarpoolTrip, trip_id)
+                trip = db.get(CarpoolTrip, UUID(trip_id))
                 trip.dropoff = {**trip.dropoff, "latitude": 0.0, "longitude": longitude,
                                 "h3_cell_id": h3.latlng_to_cell(0, longitude, 8)}
             db.commit()
         response = self.map_search(scope="destination", bounds={"north": 0.05, "south": -0.05, "west": 179.8, "east": -179.8})
         self.assertEqual(response.status_code, 200, response.text)
-        self.assertEqual([trip["id"] for trip in response.json()["trips"]], trip_ids[:2])
+        self.assertEqual([trip["id"] for trip in response.json()["trips"]], sorted(trip_ids[:2]))
         self.assertEqual(self.map_search(scope="invalid").status_code, 422)
         self.assertEqual(self.map_search(scope="destination", bounds={"north": 60, "south": -60, "west": -120, "east": 120}).status_code, 422)
 
@@ -217,13 +219,13 @@ class CarpoolAPITests(unittest.TestCase):
         trip_ids = [self.create().json()["trip"]["id"] for _ in range(3)]
         with Session(self.engine) as db:
             for trip_id, longitude in zip(trip_ids, (179.9, -179.9, 0)):
-                trip = db.get(CarpoolTrip, trip_id)
+                trip = db.get(CarpoolTrip, UUID(trip_id))
                 trip.pickup = {**trip.pickup, "latitude": 0.0, "longitude": longitude,
                                "h3_cell_id": h3.latlng_to_cell(0, longitude, 8)}
             db.commit()
         response = self.map_search(bounds={"north": 0.05, "south": -0.05, "west": 179.8, "east": -179.8})
         self.assertEqual(response.status_code, 200, response.text)
-        self.assertEqual([trip["id"] for trip in response.json()["trips"]], trip_ids[:2])
+        self.assertEqual([trip["id"] for trip in response.json()["trips"]], sorted(trip_ids[:2]))
 
     def test_map_search_filters_before_pagination(self):
         reserved = self.create(seats=3).json()["trip"]["id"]
@@ -232,7 +234,7 @@ class CarpoolAPITests(unittest.TestCase):
         self.create(dropoff_location_id="far")
         self.create(pickup_start=(self.start + timedelta(days=1)).isoformat(),
                     pickup_end=(self.start + timedelta(days=1, minutes=30)).isoformat())
-        matching = [self.create().json()["trip"]["id"] for _ in range(2)]
+        matching = sorted(self.create().json()["trip"]["id"] for _ in range(2))
         filters = {"departure_date": self.start.astimezone(ZoneInfo("America/Los_Angeles")).date().isoformat(),
                    "passengers": 2, "dropoff_location_id": "dropoff", "radius_km": 10, "limit": 1}
         first = self.map_search(**filters)
@@ -253,7 +255,7 @@ class CarpoolAPITests(unittest.TestCase):
         destination = place("dropoff")
         with Session(self.engine) as db:
             for trip_id, miles in zip(trip_ids, (24.99, 25.01)):
-                trip = db.get(CarpoolTrip, trip_id)
+                trip = db.get(CarpoolTrip, UUID(trip_id))
                 trip.dropoff = {**trip.dropoff, "latitude": destination.latitude + degrees(miles * 1.609344 / 6371)}
             db.commit()
         response = self.map_search(dropoff_location_id="dropoff", radius_km=25 * 1.609344)
@@ -325,7 +327,7 @@ class CarpoolAPITests(unittest.TestCase):
         self.assertEqual(self.request(trip_id, user_id=1).status_code, 403)
         self.assertEqual(self.request(trip_id).status_code, 201)
         self.assertEqual(self.request(trip_id).status_code, 409)
-        self.assertEqual(self.detail(9999).status_code, 404)
+        self.assertEqual(self.detail(UUID(int=9999)).status_code, 404)
 
     def test_atomic_both_direction_request_and_creation(self):
         trip = self.create(returning=True).json()["trip"]
@@ -374,15 +376,16 @@ class CarpoolAPITests(unittest.TestCase):
 
     def test_search_filters_pagination_and_my_trips(self):
         first = self.create().json()["trip"]
-        self.create()
+        second = self.create().json()["trip"]
+        ordered_ids = sorted([first["id"], second["id"]])
         route = "/rides/carpools/trips"
         self.assertEqual(self.client.get(route, headers=self.headers(1)).json()["trips"], [])
         page = self.client.get(route + "?limit=1", headers=self.headers()).json()
         self.assertTrue(page["has_more"])
-        self.assertEqual(page["trips"][0]["id"], first["id"])
+        self.assertEqual(page["trips"][0]["id"], ordered_ids[0])
         next_page = self.client.get(route + "?limit=1&offset=1", headers=self.headers()).json()
         self.assertFalse(next_page["has_more"])
-        self.assertNotEqual(next_page["trips"][0]["id"], first["id"])
+        self.assertEqual(next_page["trips"][0]["id"], ordered_ids[1])
         self.assertEqual(self.client.get(route + "?pickup_location_id=far", headers=self.headers()).json()["trips"], [])
         self.assertEqual(self.client.get(route + "?dropoff_location_id=far", headers=self.headers()).json()["trips"], [])
         self.assertEqual(self.client.get(route + "?passengers=4", headers=self.headers()).json()["trips"], [])
@@ -403,7 +406,7 @@ class CarpoolAPITests(unittest.TestCase):
         self.assertEqual(self.detail(trip_id).json()["trip"]["vehicle"], "Toyota Camry")
         self.request(trip_id, user_id=3)
         with Session(self.engine) as db:
-            trip = db.get(CarpoolTrip, trip_id)
+            trip = db.get(CarpoolTrip, UUID(trip_id))
             trip.pickup_start = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(minutes=31)
             trip.pickup_end = trip.pickup_start + timedelta(minutes=30)
             db.commit()

@@ -1,3 +1,5 @@
+from uuid import UUID, uuid4
+
 from datetime import datetime
 from decimal import Decimal
 from typing import Literal, TypedDict
@@ -29,7 +31,7 @@ class DriverProfile(Base):
     __tablename__ = "driver_profiles"
     __table_args__ = (CheckConstraint("passenger_capacity BETWEEN 1 AND 8"),)
 
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), primary_key=True)
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), primary_key=True)
     vehicle: Mapped[str] = mapped_column(String(100))
     passenger_capacity: Mapped[int]
     phone: Mapped[str] = mapped_column(String(30))
@@ -45,8 +47,8 @@ class RideRequest(Base):
         CheckConstraint("pickup_end >= pickup_start"),
     )
 
-    id: Mapped[int] = mapped_column(primary_key=True)
-    rider_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    rider_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), index=True)
     pickup: Mapped[RidePlace] = mapped_column(JSON)
     dropoff: Mapped[RidePlace] = mapped_column(JSON)
     pickup_start: Mapped[datetime] = mapped_column(DateTime, index=True)
@@ -73,9 +75,9 @@ class RideOffer(Base):
         CheckConstraint("amount >= 0"),
     )
 
-    id: Mapped[int] = mapped_column(primary_key=True)
-    request_id: Mapped[int] = mapped_column(ForeignKey("ride_requests.id"), index=True)
-    driver_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    request_id: Mapped[UUID] = mapped_column(ForeignKey("ride_requests.id"), index=True)
+    driver_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), index=True)
     pickup_time: Mapped[datetime] = mapped_column(DateTime)
     amount: Mapped[Decimal] = mapped_column(Numeric(6, 2))
     message: Mapped[str] = mapped_column(Text)
@@ -91,11 +93,11 @@ class RideBooking(Base):
         CheckConstraint("status IN ('CONFIRMED','COMPLETED','CANCELLED')"),
     )
 
-    id: Mapped[int] = mapped_column(primary_key=True)
-    request_id: Mapped[int] = mapped_column(ForeignKey("ride_requests.id"), unique=True)
-    offer_id: Mapped[int] = mapped_column(ForeignKey("ride_offers.id"), unique=True)
-    rider_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
-    driver_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    request_id: Mapped[UUID] = mapped_column(ForeignKey("ride_requests.id"), unique=True)
+    offer_id: Mapped[UUID] = mapped_column(ForeignKey("ride_offers.id"), unique=True)
+    rider_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), index=True)
+    driver_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), index=True)
     driver_phone: Mapped[str] = mapped_column(String(30))
     rider_phone: Mapped[str] = mapped_column(String(30))
     vehicle: Mapped[str] = mapped_column(String(100))
@@ -104,5 +106,5 @@ class RideBooking(Base):
     currency: Mapped[str] = mapped_column(String(3))
     status: Mapped[BookingStatus] = mapped_column(String(12), default="CONFIRMED")
     cancellation_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
-    cancelled_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    cancelled_by: Mapped[UUID | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now_naive)

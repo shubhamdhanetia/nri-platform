@@ -15,7 +15,7 @@ export default function PostReactions({
   canReact,
   onChanged,
 }: {
-  postId: number;
+  postId: string;
   likeCount: number;
   dislikeCount: number;
   myReaction: PostReactionType | null;

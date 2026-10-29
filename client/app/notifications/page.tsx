@@ -34,7 +34,7 @@ function Inbox() {
     } catch (err) { setError(notificationError(err)); }
     finally { setBusy(false); }
   }
-  async function markRead(id: number) {
+  async function markRead(id: string) {
     setBusy(true); setError("");
     try {
       const row = await apiRequest<AppNotification>(`/notifications/${id}/read`, { method: "POST" });

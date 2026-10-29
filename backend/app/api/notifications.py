@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
@@ -25,5 +27,5 @@ def count(db: DB, user: Member):
 
 
 @router.post("/{notification_id}/read", response_model=NotificationResponse)
-def read(notification_id: int, db: DB, user: Member):
+def read(notification_id: UUID, db: DB, user: Member):
     return notifications.mark_read(db, notification_id, user.id)

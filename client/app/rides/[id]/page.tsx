@@ -4,17 +4,17 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import RideLayout, { RideRoute } from "../../../components/RideLayout";
-import { apiRequest, type User } from "../../../lib/api";
+import { apiRequest, isUuid, type User } from "../../../lib/api";
 import { refreshNotifications } from "../../../lib/notifications";
 import { localDateTime, localToISO, rideDate, rideError, rideMoney, type DriverProfile, type RideDetail, type RideOffer } from "../../../lib/rides";
 
 export default function RideDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const requestId = Number(id);
-  return <RideLayout>{Number.isInteger(requestId) && requestId > 0 ? <RideContent key={requestId} id={requestId} /> : <p className="form-error" role="alert">Invalid ride request.</p>}</RideLayout>;
+  const requestId = id;
+  return <RideLayout>{isUuid(requestId) ? <RideContent key={requestId} id={requestId} /> : <p className="form-error" role="alert">Invalid ride request.</p>}</RideLayout>;
 }
 
-function RideContent({ id }: { id: number }) {
+function RideContent({ id }: { id: string }) {
   const [data, setData] = useState<RideDetail | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<DriverProfile | null>(null);

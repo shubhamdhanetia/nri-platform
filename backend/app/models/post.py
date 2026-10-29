@@ -1,3 +1,5 @@
+from uuid import UUID, uuid4
+
 from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING
@@ -36,8 +38,8 @@ class PostType(str, Enum):
 class Post(Base):
     __tablename__ = "posts"
 
-    id: Mapped[int] = mapped_column(
-        primary_key=True,
+    id: Mapped[UUID] = mapped_column(
+        primary_key=True, default=uuid4,
         index=True
     )
 
@@ -116,7 +118,7 @@ class Post(Base):
         index=True
     )
 
-    user_id: Mapped[int] = mapped_column(
+    user_id: Mapped[UUID] = mapped_column(
         ForeignKey("users.id")
     )
 

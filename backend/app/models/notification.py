@@ -1,3 +1,5 @@
+from uuid import UUID, uuid4
+
 from datetime import datetime
 
 from sqlalchemy import DateTime, ForeignKey, Index, String
@@ -14,11 +16,11 @@ class Notification(Base):
         Index("ix_notifications_user_read", "user_id", "is_read"),
     )
 
-    id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
     category: Mapped[str] = mapped_column(String(50))
     event_type: Mapped[str] = mapped_column(String(100))
-    resource_id: Mapped[int]
+    resource_id: Mapped[UUID]
     target_path: Mapped[str] = mapped_column(String(300))
     message: Mapped[str] = mapped_column(String(500))
     is_read: Mapped[bool] = mapped_column(default=False)

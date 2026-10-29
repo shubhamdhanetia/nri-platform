@@ -8,7 +8,7 @@ export default function SavePostButton({
   isSaved,
   onChanged,
 }: {
-  postId: number;
+  postId: string;
   isSaved: boolean;
   onChanged?: (isSaved: boolean) => void;
 }) {
@@ -20,7 +20,7 @@ export default function SavePostButton({
     setPending(true);
     setError("");
     try {
-      const response = await apiRequest<{ post_id: number; is_saved: boolean }>(
+      const response = await apiRequest<{ post_id: string; is_saved: boolean }>(
         `/posts/${postId}/save`,
         { method: saved ? "DELETE" : "POST" },
       );

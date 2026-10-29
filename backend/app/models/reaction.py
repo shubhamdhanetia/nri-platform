@@ -1,3 +1,5 @@
+from uuid import UUID, uuid4
+
 from enum import Enum
 
 from sqlalchemy import Enum as SQLAlchemyEnum, ForeignKey, UniqueConstraint
@@ -17,12 +19,12 @@ class PostReaction(Base):
         UniqueConstraint("post_id", "user_id", name="uq_post_reactions_post_user"),
     )
 
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    post_id: Mapped[int] = mapped_column(
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4, index=True)
+    post_id: Mapped[UUID] = mapped_column(
         ForeignKey("posts.id", ondelete="CASCADE"),
         index=True,
     )
-    user_id: Mapped[int] = mapped_column(
+    user_id: Mapped[UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"),
         index=True,
     )
