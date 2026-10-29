@@ -308,11 +308,9 @@ application.
 - Carpool recipients and lifecycle rules are unchanged, but their events now use
   the shared storage and API. Notification messages do not include phone numbers
   or private cancellation reasons; participants open the authorized detail view.
-- Startup creates the new `notifications` table and idempotently copies existing
-  `carpool_notifications` history, preserving recipients, messages, timestamps,
-  and read state. A unique legacy source ID prevents duplicate imports or read
-  state resets. PostgreSQL startup workers serialize the copy using a transaction
-  advisory lock. The legacy table is retained, no longer written by new actions.
+- Alembic creates the shared `notifications` table on fresh databases. Startup
+  does not alter the schema or copy legacy `carpool_notifications` history.
+  Importing data from an older deployment requires a separately reviewed migration.
 - This is in-app delivery only; there is no email, SMS, push, or real-time socket
   delivery, and no notification integration for other features yet.
 
@@ -466,10 +464,9 @@ Lists accept `offset` (default 0) and `limit` (default 20, maximum 50).
 Missing/inaccessible resources return 404, permission failures 403,
 lifecycle/capacity conflicts 409, and invalid input 422.
 
-Carpool storage adds `carpool_trips` and `carpool_seat_requests`, with events in
-the shared `notifications` table (`carpool_notifications` is retained for migration).
-The existing startup `Base.metadata.create_all`
-creates these new tables on backend restart; no existing columns are changed.
+Carpool storage uses `carpool_trips` and `carpool_seat_requests`, with events in
+the shared `notifications` table. Alembic revision `0001` creates these tables
+on a fresh database; backend startup does not create tables.
 PostgreSQL race tests use isolated schemas with `RIDE_TEST_POSTGRES=1`, covering
 last-seat approvals, duplicate approvals/requests, and cancellation races.
 
@@ -683,19 +680,14 @@ Run the FastAPI application with the backend's configured ASGI entry point
 
 ### Ride database setup and validation
 
-Install the updated backend requirements before starting/restarting the API;
-`tzdata` supplies IANA timezone data on Windows. Startup creates the four new
-ride tables (`driver_profiles`, `ride_requests`, `ride_offers`, `ride_bookings`)
-through the repository's existing `Base.metadata.create_all` setup. This is
-additive: existing user/post tables and rows are not rewritten. The configured
-database user must have permission to create tables. No manual column
-alterations are needed for this feature.
-
-The ride-map update adds `ix_ride_requests_pickup_h3`, an expression index on
-the pickup JSON's `h3_cell_id`. Startup explicitly creates this index if missing,
-including on an existing ride table (`create_all` alone does not add indexes
-to existing tables). Restart the API after updating. No location backfill is
-needed: requests already store resolution-8 H3 cells in their pickup snapshots.
+Install the updated backend requirements; `tzdata` supplies IANA timezone data
+on Windows. Before starting the API, run `python -m alembic upgrade head` from
+the backend directory. Revision `0001` creates all current tables, constraints,
+and indexes, including the pickup/drop-off H3 expression indexes and ride browse
+index, on a fresh database. Migration credentials need schema-creation privileges.
+Startup does not perform schema changes or data backfills. Existing databases
+created with `create_all` require a verified baseline, not a blind upgrade or
+stamp; see [database setup and Neon deployment](../README.md#existing-local-databases).
 
 From the backend directory, using your configured Python environment:
 
@@ -730,10 +722,9 @@ indexing and database-side timezone/date filtering.
 
 ## Current implementation notes
 
-- Backend startup calls SQLAlchemy `Base.metadata.create_all` to create missing
-  tables. It does not alter existing tables; databases created before post
-  visibility was added must already have the `posts.is_private` column.
-  Existing posts are Public by default.
+- Database schema changes are explicit Alembic migrations, not startup work.
+  Revision `0001` is the current fresh-database baseline; it includes post
+  visibility, profile fields, rides, carpools, and notifications.
 - Map-result searches are initiated by the user and are limited to 50
   returned posts per request.
 - Geolocation depends on browser permission and device availability.

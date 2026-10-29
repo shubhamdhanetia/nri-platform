@@ -113,8 +113,8 @@ Members can track requests, offers, cancellations, and completion in **My rides*
   them. Repeated idempotent confirmations/cancellations do not duplicate events.
 - The generic model, API, and notification helper can support future platform
   features without creating a separate inbox or notification table for each.
-- Existing carpool notifications migrate automatically on backend restart,
-  preserving their messages, recipients, timestamps, and read states.
+- Notifications are stored in the shared inbox table. The initial database
+  migration targets fresh databases; it does not import legacy notification tables.
   The former carpool inbox page redirects to the shared inbox.
 - The bell refreshes every 30 seconds, on focus, and after notification changes.
   The inbox has an explicit Refresh action. No email, SMS, or push is sent.
@@ -253,13 +253,117 @@ Keep real secrets and environment files out of Git.
 Set-Location backend
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m alembic upgrade head
 .\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8000
 ```
 
-Startup creates missing tables and the ride pickup H3 index. This uses
-SQLAlchemy `create_all`, not a versioned migration workflow; existing schema
-changes require appropriate upgrade planning. The database user needs schema
-creation privileges for initial setup.
+Alembic creates and versions the database schema, including the H3 indexes.
+Backend startup never creates or alters tables. Run `alembic upgrade head`
+before starting a fresh database and before deploying code that needs schema
+changes. Migration credentials need permission to create/alter tables and indexes.
+
+#### Existing local databases
+
+The initial revision `0001` targets an empty database. Do not run it blindly on
+tables previously created by `create_all`: it will fail rather than overwrite them.
+For a disposable local database, point `DATABASE_URL` at a new empty database and
+run the upgrade command. This does not require deleting the previous database.
+For a database you need to keep, back it up and verify that its tables, columns,
+constraints, and indexes match revision `0001` before using
+`.\.venv\Scripts\python.exe -m alembic stamp 0001`. Stamping records a revision;
+it does not create, fix, or validate the schema. Do not stamp an older schema.
+
+#### First deployment to Neon
+
+1. Create a Neon project in a region near the planned Render backend. Use a fresh,
+   empty application database, without importing local user data.
+2. Obtain the **direct (non-pooled)** PostgreSQL connection string for migrations.
+   Keep TLS enabled (`sslmode=require`); never commit or paste the real URL in logs.
+   The installed driver supports `postgresql://` and `postgresql+psycopg2://` URLs.
+3. Set `DATABASE_URL` privately in the shell that will run migrations. Environment
+   variables override the local backend `.env`. Migration commands require only
+   this setting, not a Google client ID or JWT secret.
+4. From `backend`, run:
+
+   ```powershell
+   .\.venv\Scripts\python.exe -m alembic upgrade head
+   .\.venv\Scripts\python.exe -m alembic current
+   .\.venv\Scripts\python.exe -m alembic check
+   ```
+
+   Expect revision `0001 (head)` and no new upgrade operations. Remove the shell
+   override with `Remove-Item Env:DATABASE_URL` before returning to local work.
+5. Store Neon's **pooled** connection string in Render's `DATABASE_URL` environment
+   variable for application traffic. The backend checks pooled connections before
+   reuse so connections closed during database inactivity can be replaced.
+
+#### Future schema changes
+
+Update the SQLAlchemy models, then generate a revision on a migrated development
+database, never by experimenting against production:
+
+```powershell
+.\.venv\Scripts\python.exe -m alembic revision --autogenerate -m "Describe schema change"
+.\.venv\Scripts\python.exe -m alembic upgrade head
+.\.venv\Scripts\python.exe -m alembic check
+```
+
+Review generated code before applying it: renames, data backfills, check
+constraints, and enum changes may need manual instructions. Test on a disposable
+database, commit the revision, and run migrations once in the release workflow
+before deploying the application. Changes must remain compatible with the old
+application while it is running; add new fields first and remove old ones in a
+later release. A failed migration must stop deployment. Never automatically
+downgrade production: the initial downgrade drops application tables and data.
+
+Migration tests use an isolated PostgreSQL schema and leave existing tables alone:
+
+```powershell
+$env:MIGRATION_TEST_POSTGRES = "1"
+.\.venv\Scripts\python.exe -m unittest discover -s tests -p test_migrations.py -v
+Remove-Item Env:MIGRATION_TEST_POSTGRES
+```
+
+#### Deploy FastAPI on Render (free web service)
+
+Connect this repository and choose the branch containing the migration setup.
+Use these service settings:
+
+| Setting | Value |
+| --- | --- |
+| Runtime | Python 3 |
+| Root directory | `backend` |
+| Region | Virginia (near the Neon database) |
+| Instance | Free |
+| Build command | `pip install -r requirements.txt` |
+| Start command | `uvicorn app.main:app --host 0.0.0.0 --port $PORT` |
+| Health check path | `/health` |
+| Auto-deploy | Off until the migration/release workflow is configured |
+
+Set `PYTHON_VERSION=3.13.4` to match the tested local runtime. Add these private
+environment settings in Render, never in Git:
+
+- `DATABASE_URL`: the Neon pooled URL, with TLS enabled.
+- `GOOGLE_CLIENT_ID`: the same Google OAuth web client ID used by the frontend.
+- `JWT_SECRET`: a new, strong random production secret, separate from local testing.
+- `CORS_ORIGINS`: a JSON array, for example
+  `["https://client-bay-alpha-95.vercel.app"]`. The default remains
+  `["http://localhost:3000"]` for local development.
+
+The initial Neon migration is already applied. For future releases, run pending
+migrations once using the direct URL before deploying compatible application code.
+Do not run migrations in the build command or independently in every web worker.
+Free services do not provide Render's paid pre-deploy-command feature; use an
+explicit release workflow or a controlled manual migration step instead.
+
+`GET /health` checks that the web process responds; it does not check database
+availability. Verify database-backed functionality separately after deployment.
+The location provider uses outbound HTTP and must also be checked from the hosted
+service; a successful health check does not prove provider availability.
+
+After deployment, set Vercel's `NEXT_PUBLIC_API_URL` to the Render HTTPS origin
+and redeploy the frontend. Add the Vercel origin to Google's authorized JavaScript
+origins. Free Render services can sleep when idle, so the first request can be slow.
 
 ### 3. Configure and run the frontend
 

@@ -1,8 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-from app.db.base import Base
-from app.db.session import engine
+from app.core.config import settings
 
 from app.api.auth import router as auth_router
 from app.api.locations import router as locations_router
@@ -14,28 +12,21 @@ from app.api.posts import (
     router as posts_router
 )
 
-import app.models.user
-import app.models.post
-import app.models.comment
-import app.models.reaction
-import app.models.saved_post
-import app.models.ride
-import app.models.carpool
-import app.models.notification
-
-Base.metadata.create_all(bind=engine)
-
 app = FastAPI(title="NRI Platform")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000"
-    ],
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.get("/health", tags=["Health"])
+def health() -> dict[str, str]:
+    return {"status": "ok"}
+
 
 app.include_router(
     auth_router,
