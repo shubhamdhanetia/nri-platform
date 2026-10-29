@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
-from sqlalchemy import String, DateTime
+from sqlalchemy import JSON, String, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -51,6 +51,10 @@ class User(Base):
         DateTime,
         default=datetime.utcnow
     )
+
+    bio: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    home_city: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    languages: Mapped[list[str]] = mapped_column(JSON, default=list, server_default="[]")
 
     posts: Mapped[list["Post"]] = relationship(
         back_populates="author"

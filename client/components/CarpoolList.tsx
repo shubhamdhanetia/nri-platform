@@ -303,7 +303,7 @@ export default function CarpoolList({ mine = false }: { mine?: boolean }) {
             if ((event.target as HTMLElement).closest("a, button") || window.getSelection()?.toString()) return;
             if (view === "feed") selectTrip(trip.id); else selectMapTrip(trip.id);
           }}>
-            <div className="community-post-top"><span className="community-category-icon"><Car size={21} /></span><div className="community-post-context"><span>{trip.driver.name}</span><time dateTime={trip.pickup_start}>{rideDate(trip.pickup_start, trip.timezone)}</time></div><span className="post-type-pill">{trip.status}</span></div>
+            <div className="community-post-top"><span className="community-category-icon"><Car size={21} /></span><div className="community-post-context"><Link className="member-profile-link" href={`/profile/${trip.driver.id}`}>{trip.driver.name}</Link><time dateTime={trip.pickup_start}>{rideDate(trip.pickup_start, trip.timezone)}</time></div><span className="post-type-pill">{trip.status}</span></div>
             <h3><Link href={`/rides/carpools/${trip.id}`}>{trip.pickup.city} to {trip.dropoff.city}<ArrowUpRight size={18} /></Link></h3>
             <dl className="rides-result-route"><div><dt>Meeting point</dt><dd>{trip.pickup.location}</dd></div><div><dt>Drop-off point</dt><dd>{trip.dropoff.location}</dd></div></dl>
             <p className="rides-result-window">Until {rideDate(trip.pickup_end, trip.timezone)} ({trip.timezone})</p>

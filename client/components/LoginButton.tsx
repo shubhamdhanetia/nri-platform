@@ -1,13 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { GoogleLogin } from "@react-oauth/google";
 import { apiRequest, type LoginResponse } from "../lib/api";
+import { safeReturnPath } from "../lib/auth-redirect";
 
 export default function LoginButton() {
   const router = useRouter();
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (window.localStorage.getItem("access_token")) {
+      router.replace(safeReturnPath(new URLSearchParams(window.location.search).get("next")));
+    }
+  }, [router]);
 
   return (
     <div className="login-button-wrap">
@@ -26,7 +33,7 @@ export default function LoginButton() {
             });
             window.localStorage.setItem("access_token", data.access_token);
             window.localStorage.setItem("user", JSON.stringify(data.user));
-            router.replace("/explore");
+            router.replace(safeReturnPath(new URLSearchParams(window.location.search).get("next")));
           } catch (requestError) {
             setError(requestError instanceof Error ? requestError.message : "Unable to sign in. Please try again.");
           }

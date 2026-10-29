@@ -187,6 +187,22 @@ def get_posts_by_user(
     )
 
 
+def get_public_posts_by_user(
+    db: Session,
+    user_id: UUID,
+    limit: int,
+    offset: int,
+) -> list[Post]:
+    return (
+        db.query(Post)
+        .filter(Post.user_id == user_id, Post.is_private.is_(False))
+        .order_by(Post.created_at.desc(), Post.id.desc())
+        .offset(offset)
+        .limit(limit + 1)
+        .all()
+    )
+
+
 def get_saved_posts(db: Session, user_id: UUID) -> list[Post]:
     return (
         db.query(Post)

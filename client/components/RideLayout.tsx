@@ -25,7 +25,7 @@ export default function RideLayout({ children }: { children: ReactNode }) {
 
 export function RideCard({ ride, role }: { ride: RideRequest; role?: "Driver" | "Passenger" }) {
   return <article className="ride-card">
-    <div className="ride-between"><strong>{ride.rider.name}</strong><span className="ride-badge">{ride.booking_status ?? ride.status}</span></div>
+    <div className="ride-between"><strong><Link className="member-profile-link" href={`/profile/${ride.rider.id}`}>{ride.rider.name}</Link></strong><span className="ride-badge">{ride.booking_status ?? ride.status}</span></div>
     {role && <p className="field-hint">Your role: <span className="ride-badge">{role}</span></p>}
     {ride.my_offer_status && <p className="field-hint">Your driver offer: {ride.my_offer_status.toLowerCase().replaceAll("_", " ")}</p>}
     <RideRoute ride={ride} />

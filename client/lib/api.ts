@@ -2,12 +2,42 @@ export function isUuid(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 }
 
-export interface User {
+export interface ProfileFields {
+  bio: string | null;
+  home_city: string | null;
+  languages: string[];
+}
+
+export interface MemberProfile extends ProfileFields {
+  id: string;
+  name: string;
+  picture?: string | null;
+  member_since: string;
+}
+
+export interface MemberPost {
+  id: string;
+  title: string;
+  description: string;
+  category: PostCategory;
+  post_type: PostType;
+  city: string;
+  created_at: string;
+  comment_count: number;
+}
+
+export interface MemberPostsResponse {
+  posts: MemberPost[];
+  has_more: boolean;
+}
+
+export interface User extends ProfileFields {
   id: string;
   email: string;
   name: string;
   picture?: string | null;
   provider?: string;
+  created_at: string;
 }
 
 export const POST_CATEGORIES = [

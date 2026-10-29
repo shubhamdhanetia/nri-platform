@@ -223,14 +223,16 @@ function PostDetailsContent({ postId }: { postId: string }) {
             {post.category === "RIDES" && <RideCommunityNotice compact />}
             <p className="post-detail-description">{post.description}</p>
             <div className="post-detail-author">
+              <Link href={`/profile/${post.author.id}`} aria-label={`View ${post.author.name}'s profile`}>
               {post.author.picture ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img className="author-photo" src={post.author.picture} alt="" />
               ) : (
                 <span className="author-avatar">{post.author.name.charAt(0).toUpperCase()}</span>
               )}
+              </Link>
               <div>
-                <strong>{post.author.name}</strong>
+                <strong><Link className="member-profile-link" href={`/profile/${post.author.id}`}>{post.author.name}</Link></strong>
                 <div className="post-detail-timestamp">
                   <time dateTime={post.created_at}>{formatDate(post.created_at)}</time>
                   {post.updated_at && <span className="edited-indicator">Edited</span>}
@@ -310,15 +312,17 @@ function PostDetailsContent({ postId }: { postId: string }) {
               <div className="comment-list">
                 {comments.map((comment) => (
                   <article className="comment-card" key={comment.id}>
+                    <Link href={`/profile/${comment.author.id}`} aria-label={`View ${comment.author.name}'s profile`}>
                     {comment.author.picture ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img className="author-photo" src={comment.author.picture} alt="" />
                     ) : (
                       <span className="author-avatar">{comment.author.name.charAt(0).toUpperCase()}</span>
                     )}
+                    </Link>
                     <div className="comment-content">
                       <div className="comment-meta">
-                        <strong>{comment.author.name}</strong>
+                        <strong><Link className="member-profile-link" href={`/profile/${comment.author.id}`}>{comment.author.name}</Link></strong>
                         <span className="comment-timestamp">
                           <time dateTime={comment.created_at}>{formatDate(comment.created_at)}</time>
                           {comment.updated_at && <span className="edited-indicator">Edited</span>}

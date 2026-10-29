@@ -23,7 +23,8 @@ export default function ProtectedPage({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!window.localStorage.getItem("access_token")) {
-      router.replace("/login");
+      const destination = window.location.pathname + window.location.search + window.location.hash;
+      router.replace(`/login?next=${encodeURIComponent(destination)}`);
     }
   }, [router]);
 
