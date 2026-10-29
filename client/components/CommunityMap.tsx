@@ -404,6 +404,7 @@ const PostMarker = memo(function PostMarker({
         <div className="post-map-popup">
           <strong>{location.title}</strong>
           <span>{location.description}</span>
+          {selected && post.destination && <span>Connection, not driving route</span>}
           <Link href={post.href}>{post.linkLabel}</Link>
         </div>
       </Popup>

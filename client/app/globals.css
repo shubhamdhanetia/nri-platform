@@ -2518,6 +2518,28 @@ a {
 .carpool-browse .community-map-actions > .button { margin-right: auto; white-space: nowrap; }
 .community-map-actions .button { border-radius: 5px; gap: 6px; font-size: 11px; min-height: 36px; padding: 0 10px; box-shadow: 0 2px 6px #233a3226; }
 .community-map-actions .community-icon-button { background: white; box-shadow: 0 2px 6px #233a3226; }
+.ride-map-key { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; min-height: 48px; padding: 6px 8px; background: white; border-top: 1px solid #d6dfd5; font-size: 12px; }
+.ride-map-key > span { display: inline-flex; align-items: center; gap: 6px; }
+.ride-pickup-key { color: #226b55; }
+.ride-destination-key { color: #b33e45; }
+.ride-map-key > button { margin-left: auto; flex-shrink: 0; }
+.ride-map-key > button:disabled { opacity: .4; cursor: default; }
+.ride-request-browser .community-map-actions { flex-wrap: wrap; justify-content: flex-end; }
+.ride-request-browser .community-map-actions > * { flex-shrink: 0; }
+.ride-request-browser .community-map-actions > .button { margin-right: auto; }
+.ride-request-browser .community-sheet-toggle { display: inline-flex; flex-shrink: 0; }
+.ride-request-browser .community-results-heading > div { flex-wrap: wrap; }
+.ride-request-browser .rides-result { position: relative; }
+.ride-result-select { display: block; width: 100%; padding: 0; border: 0; background: none; text-align: left; font: inherit; color: inherit; overflow-wrap: anywhere; cursor: pointer; }
+.ride-result-select::after { content: ""; position: absolute; inset: 0; border-radius: 8px; }
+.ride-result-select:hover { color: var(--green); }
+.community-page .ride-result-select:focus-visible { outline: none; }
+.ride-result-select:focus-visible::after { outline: 2px solid var(--green); outline-offset: 3px; }
+.ride-request-browser .community-post-footer > button, .ride-request-browser .community-post-footer > a { position: relative; z-index: 1; }
+.ride-selected-summary { display: grid; gap: 8px; padding: 12px 0; border-top: 1px solid #d6dfd5; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.ride-selected-summary > strong { font-size: 15px; }
+.ride-selected-summary > span { color: #586b5e; }
+.ride-selected-summary > a { display: inline-flex; align-items: center; gap: 5px; justify-self: start; }
 .community-map .community-post { padding: 18px 16px 13px; }
 .community-map .community-post h3 { font-size: 20px; }
 .community-map .community-sort { display: none; }

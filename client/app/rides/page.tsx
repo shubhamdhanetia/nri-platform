@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { ArrowUpRight, CalendarDays, Car, ChevronDown, ChevronUp, Clock3, List, LocateFixed, Luggage, Map as MapIcon, MapPin, Maximize2, Minimize2, Plus, Search, Users } from "lucide-react";
+import { ArrowUpRight, CalendarDays, Car, ChevronDown, ChevronUp, Clock3, Flag, List, LocateFixed, Luggage, Map as MapIcon, MapPin, Maximize2, Minimize2, Plus, Search, Users, X } from "lucide-react";
 import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import RideLayout from "../../components/RideLayout";
 import ExploreLocationSearch from "../../components/ExploreLocationSearch";
@@ -47,6 +47,11 @@ export default function RidesPage() {
   const mounted = useRef(false);
   const searchController = useRef<AbortController | null>(null);
   const mapViewport = useRef<{ center: [number, number]; zoom: number } | null>(null);
+  const resultsPanel = useRef<HTMLElement>(null);
+  const resultsHeading = useRef<HTMLDivElement>(null);
+  const selectedResult = useRef<HTMLElement>(null);
+  const mapPanel = useRef<HTMLDivElement>(null);
+  const revealedSelection = useRef(0);
 
   const onBoundsChange = useCallback((next: PostSearchBounds) => setMapBounds(next), []);
   const onCenterChange = useCallback((next: [number, number]) => setSearchCenter(next), []);
@@ -62,9 +67,43 @@ export default function RidesPage() {
     setAutoSearchPending(true);
   }, []);
   const selectRide = useCallback((id: string) => {
-    setView("map"); setResultsOpen(true);
+    setView("map"); setResultsOpen(!window.matchMedia("(max-width: 760px)").matches);
     setSelectedId(id); setSelectionVersion(version => version + 1);
   }, []);
+  const selectMapRide = useCallback((id: string) => {
+    setSelectedId(id);
+    setResultsOpen(!window.matchMedia("(max-width: 760px)").matches);
+  }, []);
+  const clearMapSelection = useCallback(() => { setSelectedId(null); setResultsOpen(true); }, []);
+
+  useEffect(() => {
+    if (view !== "map" || !resultsOpen) return;
+    const panel = resultsPanel.current;
+    const result = selectedResult.current;
+    if (!panel || !result) return;
+    const panelBounds = panel.getBoundingClientRect();
+    const resultBounds = result.getBoundingClientRect();
+    const headingHeight = resultsHeading.current?.offsetHeight ?? 0;
+    if (resultBounds.top < panelBounds.top + headingHeight || resultBounds.bottom > panelBounds.bottom) {
+      panel.scrollTo({ top: panel.scrollTop + resultBounds.top - panelBounds.top - headingHeight - 8, behavior: "instant" });
+    }
+  }, [selectedId, resultsOpen, view, selectionVersion]);
+
+  useEffect(() => {
+    if (selectionVersion === revealedSelection.current) return;
+    revealedSelection.current = selectionVersion;
+    const panel = mapPanel.current;
+    if (!panel || !window.matchMedia("(max-width: 760px)").matches) return;
+    if (fullscreen) {
+      panel.scrollIntoView({ block: "nearest", behavior: "instant" });
+      return;
+    }
+    const headerBottom = document.querySelector(".app-header")?.getBoundingClientRect().bottom ?? 0;
+    const panelBounds = panel.getBoundingClientRect();
+    if (panelBounds.top < headerBottom || panelBounds.bottom > window.innerHeight) {
+      window.scrollBy({ top: panelBounds.top - headerBottom - 12, behavior: "instant" });
+    }
+  }, [selectionVersion, fullscreen]);
 
   function changeView(next: "feed" | "map") {
     if (mapViewport.current) {
@@ -128,6 +167,11 @@ export default function RidesPage() {
     title: `${ride.rider.name}: ${ride.pickup.location}`,
     description: `To ${ride.dropoff.location} / ${rideDate(ride.pickup_start, ride.timezone)} (${ride.timezone})`,
     href: `/rides/${ride.id}`, linkLabel: "View ride details",
+    destination: {
+      latitude: ride.dropoff.latitude, longitude: ride.dropoff.longitude,
+      title: `Destination: ${ride.dropoff.location}`,
+      description: `${ride.rider.name} / From ${ride.pickup.location} / ${rideDate(ride.pickup_start, ride.timezone)} (${ride.timezone})`,
+    },
   })), [rides]);
 
   async function searchArea(searchBounds = bounds, filters = { date, timeRangeOpen, timeFrom, timeTo }) {
@@ -140,7 +184,7 @@ export default function RidesPage() {
     searchController.current?.abort();
     const controller = new AbortController();
     searchController.current = controller;
-    setBounds(searchBounds); setBusy(true); setError(""); setResultsOpen(true);
+    setBounds(searchBounds); setBusy(true); setError(""); setResultsOpen(true); setSelectedId(null);
     const searchSignature = JSON.stringify({ bounds: searchBounds, date: departureDate, timeFrom: hasTimeRange ? from : "", timeTo: hasTimeRange ? to : "" });
     try {
       const result = await apiRequest<{ rides: RideRequest[]; has_more: boolean }>("/rides/requests/search", {
@@ -159,13 +203,14 @@ export default function RidesPage() {
 
   const resultsLoading = busy || locating || autoSearchPending;
   const filterBounds = view === "map" ? mapBounds : bounds;
+  const selectedRide = !resultsLoading && !error ? rides.find(ride => ride.id === selectedId) : undefined;
 
   function resetFilters() {
     setDate(""); setTimeRangeOpen(false); setTimeFrom(""); setTimeTo("");
     void searchArea(filterBounds, { date: "", timeRangeOpen: false, timeFrom: "", timeTo: "" });
   }
 
-  return <RideLayout><div className={`community-page rides-browse rides-map-browser${fullscreen ? " community-expanded" : ""}`}>
+  return <RideLayout><div className={`community-page rides-browse rides-map-browser ride-request-browser${fullscreen ? " community-expanded" : ""}`}>
     <header className="community-heading">
       <div><p className="eyebrow">GO TOGETHER. YOUR COMMUNITY.</p><h1>Ride requests</h1><p className="muted">People looking for a ride. Offer to drive someone going your way.</p></div>
       <div className="community-heading-actions">
@@ -213,23 +258,33 @@ export default function RidesPage() {
       {view === "feed" && <button className="button button-primary" disabled={!bounds || busy || locating} onClick={() => void searchArea()}><Search size={16} />{busy ? "Searching..." : "Search requests"}</button>}
     </div>
     <section className={`community-content community-${view} rides-${view}`} aria-label="Explore rides by pickup location">
-      {view === "map" && <div className="community-map-panel">
-        <RideMap key={mapVersion} posts={resultsLoading || error ? [] : points} center={center} initialZoom={zoom} fullscreen={fullscreen} onBoundsChange={onBoundsChange} onCenterChange={onCenterChange} onViewportChange={onViewportChange} onSelectPost={selectRide} selectedPostId={selectedId} selectionVersion={selectionVersion} />
+      {view === "map" && <div ref={mapPanel} className="community-map-panel">
+        <RideMap key={mapVersion} posts={resultsLoading || error ? [] : points} center={center} initialZoom={zoom} fullscreen={fullscreen} onBoundsChange={onBoundsChange} onCenterChange={onCenterChange} onViewportChange={onViewportChange} onSelectPost={selectMapRide} onClearSelection={clearMapSelection} selectedPostId={selectedId} selectionVersion={selectionVersion} />
         <div className="community-map-actions">
           <button className="button button-primary" disabled={!mapBounds || busy || locating} onClick={() => void searchArea(mapBounds)}><Search size={16} />{busy ? "Searching..." : "Search this area"}</button>
           <button className="community-icon-button" title="Center map on my location" aria-label="Center map on my location" disabled={locating} onClick={locate}>{locating ? <span className="spinner" /> : <LocateFixed size={19} />}</button>
           <button className="community-icon-button" title={fullscreen ? "Exit full screen" : "Full screen map"} aria-label={fullscreen ? "Exit full screen" : "Full screen map"} onClick={toggleFullscreen}>{fullscreen ? <Minimize2 size={19} /> : <Maximize2 size={19} />}</button>
         </div>
-      </div>}
-      <section className={`community-results${!resultsOpen && view === "map" ? " community-results-collapsed" : ""}`} aria-label="Rides in this area" aria-busy={resultsLoading}>
-        <div className="community-results-heading"><div><h2>Upcoming ride requests</h2><span aria-live="polite">{resultsLoading ? "Searching..." : error ? "Search unavailable" : `${rides.length}${more ? "+" : ""} ${rides.length === 1 && !more ? "request" : "requests"}`}</span></div>
-          {view === "map" && <button className="community-icon-button community-sheet-toggle" aria-expanded={resultsOpen} aria-label={resultsOpen ? "Collapse ride results" : "Expand ride results"} onClick={() => setResultsOpen(!resultsOpen)}>{resultsOpen ? <ChevronDown size={20} /> : <ChevronUp size={20} />}</button>}
+        <div className="ride-map-key" role="group" aria-label="Map legend and selection">
+          <span><MapPin size={16} className="ride-pickup-key" aria-hidden="true" />Pickup</span>
+          <span><Flag size={16} className="ride-destination-key" aria-hidden="true" />Destination</span>
+          <button type="button" className="community-icon-button" title="Clear selection" aria-label="Clear selection" disabled={!selectedRide} onClick={clearMapSelection}><X size={18} /></button>
         </div>
-        <div className="community-result-body">
+      </div>}
+      <section ref={resultsPanel} className={`community-results${!resultsOpen && view === "map" ? " community-results-collapsed" : ""}`} aria-label="Rides in this area" aria-busy={resultsLoading}>
+        <div ref={resultsHeading} className="community-results-heading"><div><h2>Upcoming ride requests</h2><span aria-live="polite">{resultsLoading ? "Searching..." : error ? "Search unavailable" : `${rides.length}${more ? "+" : ""} ${rides.length === 1 && !more ? "request" : "requests"}`}</span></div>
+          {view === "map" && <button className="community-icon-button community-sheet-toggle" aria-expanded={resultsOpen} aria-controls="ride-request-results" aria-label={resultsOpen ? "Collapse ride results" : "Expand ride results"} onClick={() => setResultsOpen(!resultsOpen)}>{resultsOpen ? <ChevronDown size={20} /> : <ChevronUp size={20} />}</button>}
+        </div>
+        {view === "map" && !resultsOpen && selectedRide && <div className="ride-selected-summary" aria-label="Selected ride" aria-live="polite">
+          <strong>{selectedRide.pickup.city} to {selectedRide.dropoff.city}</strong>
+          <span>{selectedRide.rider.name} / {rideDate(selectedRide.pickup_start, selectedRide.timezone)} ({selectedRide.timezone})</span>
+          <Link className="text-link" href={`/rides/${selectedRide.id}`}>View ride<ArrowUpRight size={15} /></Link>
+        </div>}
+        <div id="ride-request-results" className="community-result-body">
           {resultsLoading ? <div className="community-state" role="status"><span className="spinner" /><p>{locating ? "Finding your location..." : "Searching this area..."}</p></div> : error ? <div className="community-state" role="alert"><h3>Could not load ride requests</h3><p>{error}</p><button className="button button-secondary" onClick={() => void searchArea()}>Try again</button></div> : !searched ? <div className="community-state"><MapPin size={30} /><h3>Where are you headed?</h3><p>Select a pickup area or use your location to automatically see nearby ride requests. You can also move the map and select Search this area.</p></div> : rides.length === 0 ? <div className="community-state"><Car size={30} /><h3>No upcoming rides here</h3><Link className="button button-secondary" href="/rides/new">Request a ride</Link></div> : <>
-            {rides.map(ride => <article className={`community-post rides-result${selectedId === ride.id ? " is-selected" : ""}`} key={ride.id}>
+            {rides.map(ride => <article ref={selectedId === ride.id ? selectedResult : undefined} className={`community-post rides-result${selectedId === ride.id ? " is-selected" : ""}`} key={ride.id}>
               <div className="community-post-top"><span className="community-category-icon"><Car size={21} /></span><div className="community-post-context"><span>{ride.rider.name}</span><time dateTime={ride.pickup_start}>{rideDate(ride.pickup_start, ride.timezone)}</time></div><span className="post-type-pill">Open</span></div>
-              <h3><Link href={`/rides/${ride.id}`}>{ride.pickup.city} to {ride.dropoff.city}<ArrowUpRight size={18} /></Link></h3>
+              <h3><button type="button" className="ride-result-select" aria-label={`Select ${ride.rider.name}'s request on map`} aria-pressed={selectedId === ride.id} onClick={() => selectRide(ride.id)}>{ride.pickup.city} to {ride.dropoff.city}</button></h3>
               <dl className="rides-result-route"><div><dt>Pickup</dt><dd>{ride.pickup.location}</dd></div><div><dt>Drop-off</dt><dd>{ride.dropoff.location}</dd></div></dl>
               <p className="rides-result-window"><Clock3 size={14} /><span>{rideDate(ride.pickup_start, ride.timezone)} - {rideDate(ride.pickup_end, ride.timezone)}<small>{ride.timezone}</small></span></p>
               <div className="community-post-footer"><span title="Passengers" aria-label={`${ride.passengers} passengers`}><Users size={15} />{ride.passengers}</span><span title="Bags" aria-label={`${ride.bags} bags`}><Luggage size={15} />{ride.bags}</span><button className="community-icon-button" title="Show on map" aria-label={`Show ${ride.rider.name}'s request on map`} onClick={() => selectRide(ride.id)}><LocateFixed size={17} /></button><Link className="text-link" href={`/rides/${ride.id}`}>View ride<ArrowUpRight size={15} /></Link></div>
