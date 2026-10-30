@@ -51,6 +51,22 @@ within the current browser session.
 
 ## Local setup
 
+Community discovery categories adapt to the available width: desktop shows
+complete category shortcuts and a More menu for overflow, while mobile uses
+a category picker bottom sheet. A selected overflow category is named in the
+desktop trigger. Both controls support keyboard navigation and Escape dismissal.
+
+The **Sports** community category uses the API value `SPORTS` and is available
+in creation/editing, discovery filters, and post/category labels. Apply backend
+Alembic revision `0002` before running the updated API and frontend against an
+existing database. The migration preserves all existing posts.
+
+The **Travel** community category (`TRAVEL`) replaces the former Rides category.
+Apply Alembic revision `0003` with the development API stopped, then restart
+the updated API and frontend. Existing Rides community posts become Travel
+posts; the separate Rides feature, requests, carpools, and bookings are unchanged.
+Community screens no longer show the ride-request notice or its links.
+
 The **Medical support** community category includes a notice on creation, editing,
 filtered discovery, and post details: use local emergency services for urgent care
 and avoid sharing private medical information. Its API value is `MEDICAL_SUPPORT`.

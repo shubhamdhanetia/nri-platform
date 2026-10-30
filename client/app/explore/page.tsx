@@ -13,13 +13,9 @@ import {
 import {
   ArrowDownWideNarrow,
   ArrowUpRight,
-  BriefcaseBusiness,
-  CalendarDays,
   ChevronDown,
   ChevronUp,
   Globe2,
-  House,
-  HeartPulse,
   List,
   LocateFixed,
   Map as MapIcon,
@@ -30,11 +26,7 @@ import {
   Minimize2,
   Plus,
   Search,
-  ShoppingBag,
-  Utensils,
-  Users,
   X,
-  Car,
 } from "lucide-react";
 import ProtectedPage from "../../components/ProtectedPage";
 import ExploreLocationSearch from "../../components/ExploreLocationSearch";
@@ -44,7 +36,7 @@ import EditPostButton from "../../components/EditPostButton";
 import DeletePostButton from "../../components/DeletePostButton";
 import PostVisibilityButton from "../../components/PostVisibilityButton";
 import MedicalSupportNotice from "../../components/MedicalSupportNotice";
-import RideCommunityNotice from "../../components/RideCommunityNotice";
+import CategoryFilter, { CATEGORY_ICONS } from "../../components/CategoryFilter";
 import { locationSearchBounds } from "../../lib/map";
 import {
   apiRequest,
@@ -70,17 +62,6 @@ const ExploreMap = dynamic(() => import("../../components/ExploreMap"), {
   ),
 });
 
-const CATEGORY_ICONS = {
-  HOUSING: House,
-  RIDES: Car,
-  JOBS: BriefcaseBusiness,
-  FOOD: Utensils,
-  EVENTS: CalendarDays,
-  IMMIGRATION: Globe2,
-  MARKETPLACE: ShoppingBag,
-  MEDICAL_SUPPORT: HeartPulse,
-  GENERAL: MessagesSquare,
-};
 const STORAGE_KEY = "community-view-v1";
 type Preferences = {
   view: "feed" | "map";
@@ -533,32 +514,10 @@ export default function CommunityPage() {
           </p>
         )}
 
-        <div className="community-categories" aria-label="Post categories">
-          <button
-            type="button"
-            aria-pressed={!preferences.category}
-            onClick={() => updatePreferences({ category: "" })}
-          >
-            <Users size={17} /> All
-          </button>
-          {POST_CATEGORIES.map((category) => {
-            const Icon = CATEGORY_ICONS[category];
-            return (
-              <button
-                type="button"
-                key={category}
-                aria-pressed={preferences.category === category}
-                onClick={() => updatePreferences({ category })}
-              >
-                <Icon size={17} />
-                {POST_CATEGORY_LABELS[category]}
-              </button>
-            );
-          })}
-        </div>
+        <CategoryFilter value={preferences.category}
+          onChange={(category) => updatePreferences({ category })} />
 
         {preferences.category === "MEDICAL_SUPPORT" && <MedicalSupportNotice />}
-        {preferences.category === "RIDES" && <RideCommunityNotice />}
         <div className="community-controls">
           <div className="community-scope">
             <Globe2 size={15} />

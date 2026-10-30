@@ -37,7 +37,7 @@ application.
 
 - Create a post with a title, description, category, post type, and a selected
   location. Posts are Public by default; authors may choose Only me.
-- Categories: Housing, Rides, Jobs, Food, Events, Immigration & visa,
+- Categories: Housing, Travel (`TRAVEL`), Jobs, Food, Events, Sports (`SPORTS`), Immigration & visa,
   Marketplace, Medical support (`MEDICAL_SUPPORT`), and General.
 - Medical support is for blood-donor requests, caregiver help, and community
   resources, not emergency response. Creation, editing, category-filtered discovery,
@@ -119,12 +119,10 @@ application.
 
 - `/rides` is a separate ride board, not an extension of post comments.
   Members may request rides without registering as drivers.
-  Existing posts in the Rides category remain community content, not bookings;
-  selecting that category in Community (Feed or Map), post creation, or editing
-  displays a neutral "Ride discussions, not ride requests" notice. Post details
-  show a compact version. The notice explains that posts/comments do not create
-  ride requests or bookings, and links to Ride requests and Request a ride.
-  It is not repeated on individual browse cards.
+  The Travel community category is for travel discussions, recommendations,
+  and companions. Community posts do not create ride requests or bookings.
+  The former Rides category and its ride-request notice/links have been removed
+  from community screens; the dedicated Rides feature is unchanged.
 - Request creation selects **both exact pickup and drop-off** through the same
   location autocomplete/provider used by posts. The server resolves both IDs;
   client-supplied coordinates and address strings are not trusted.
@@ -721,6 +719,20 @@ prefilter. A larger deployment may also benefit from destination geospatial
 indexing and database-side timezone/date filtering.
 
 ## Current implementation notes
+
+- Revision `0002` expands the `posts.post_category` check constraint to allow
+  `SPORTS`, without changing existing posts. Deploy the migration, then the
+  updated API, then the frontend before creating Sports posts. The older API
+  does not recognize Sports values when reading rows. Downgrading to `0001`
+  fails if Sports posts remain; explicitly recategorize them first if a
+  downgrade is necessary.
+
+- Revision `0003` replaces the community category `RIDES` with `TRAVEL` and
+  converts existing posts without changing their IDs, content, or relationships.
+  Downgrading to `0002` converts Travel posts back to Rides. Ride requests,
+  carpools, and bookings are unaffected. There are no runtime aliases or
+  dual-category support. Stop the development API, run `alembic upgrade head`,
+  then restart the updated API and frontend together.
 
 - Database schema changes are explicit Alembic migrations, not startup work.
   Revision `0001` is the current fresh-database baseline; it includes post

@@ -8,7 +8,6 @@ import CommentActions from "../../../components/CommentActions";
 import PostReactions from "../../../components/PostReactions";
 import SavePostButton from "../../../components/SavePostButton";
 import MedicalSupportNotice from "../../../components/MedicalSupportNotice";
-import RideCommunityNotice from "../../../components/RideCommunityNotice";
 import {
   apiRequest,
   isUuid,
@@ -220,7 +219,6 @@ function PostDetailsContent({ postId }: { postId: string }) {
             </div>
             <h1>{post.title}</h1>
             {post.category === "MEDICAL_SUPPORT" && <MedicalSupportNotice />}
-            {post.category === "RIDES" && <RideCommunityNotice compact />}
             <p className="post-detail-description">{post.description}</p>
             <div className="post-detail-author">
               <Link href={`/profile/${post.author.id}`} aria-label={`View ${post.author.name}'s profile`}>

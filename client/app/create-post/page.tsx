@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import ProtectedPage from "../../components/ProtectedPage";
 import LocationAutocomplete from "../../components/LocationAutocomplete";
 import MedicalSupportNotice from "../../components/MedicalSupportNotice";
-import RideCommunityNotice from "../../components/RideCommunityNotice";
 import {
   apiRequest,
   POST_CATEGORIES,
@@ -135,7 +134,6 @@ export default function CreatePostPage() {
           </label>
         </div>
         {category === "MEDICAL_SUPPORT" && <MedicalSupportNotice />}
-        {category === "RIDES" && <RideCommunityNotice />}
         <label className="form-field post-visibility-field">
           <span>Who can see this post?</span>
           <select

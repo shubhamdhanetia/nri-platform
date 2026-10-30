@@ -3,13 +3,6 @@
 .medical-support-notice { padding: 16px 18px; margin: 16px 0; border: 1px solid #d5e3db; border-radius: 8px; background: #edf4ef; color: #243a32; font-size: 13px; line-height: 1.6; }
 .medical-support-notice p { margin: 8px 0 0; }
 .edit-fields-grid > .medical-support-notice { grid-column: 1 / -1; }
-.ride-community-notice { display: flex; align-items: flex-start; gap: 12px; padding: 16px 18px; margin: 16px 0; border: 1px solid #d5e3db; border-radius: 8px; background: #edf4ef; color: #243a32; font-size: 13px; line-height: 1.6; min-width: 0; }
-.ride-community-notice > svg { flex-shrink: 0; margin-top: 2px; color: #226b55; }
-.ride-community-notice > div { min-width: 0; }
-.ride-community-notice p { margin: 6px 0 0; }
-.ride-community-notice-links { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 10px; }
-.ride-community-notice-links a { display: inline-flex; align-items: center; gap: 4px; }
-.edit-fields-grid > .ride-community-notice { grid-column: 1 / -1; }
 
 .ride-tabs { display:flex; gap:25px; border-bottom:1px solid #e0e6dc; margin-bottom:28px; overflow-x:auto; }
 .ride-tabs a { padding:15px 0; white-space:nowrap; color:#64736b; font-weight:600; }
@@ -2470,11 +2463,24 @@ a {
 .community-icon-button { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 0; border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--green); flex-shrink: 0; }
 .community-icon-button:hover { background: #eaf1ec; }
 .community-icon-button .spinner { width: 17px; height: 17px; }
-.community-categories { display: flex; gap: 22px; overflow-x: auto; scrollbar-width: thin; border-bottom: 1px solid #dde5de; margin-top: 23px; }
-.community-categories button { display: flex; align-items: center; gap: 7px; white-space: nowrap; border: 0; border-bottom: 2px solid transparent; color: #68776d; background: none; padding: 16px 0; font-size: 12px; min-height: 52px; }
-.community-categories button:hover { color: var(--green); }
-.community-categories button[aria-pressed="true"] { color: var(--green); border-color: var(--green); font-weight: 700; }
-.community-categories button > span { font-size: 10px; background: #e6eee8; padding: 2px 6px; border-radius: 4px; }
+.category-filter { position: relative; min-width: 0; margin-top: 23px; border-bottom: 1px solid #dde5de; }
+.category-desktop { position: relative; display: flex; gap: 22px; align-items: center; }
+.category-tab { display: inline-flex; flex-shrink: 0; align-items: center; gap: 7px; white-space: nowrap; border: 0; border-bottom: 2px solid transparent; color: #68776d; background: none; padding: 16px 0; font: inherit; font-size: 12px; font-weight: 600; min-height: 52px; }
+.category-tab:hover { color: var(--green); }
+.category-tab[aria-pressed="true"], .category-tab.is-active { color: var(--green); border-bottom-color: var(--green); }
+.category-filter button:focus-visible, .category-sheet button:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; border-radius: 4px; }
+.category-measurements { position: absolute; display: flex; gap: 22px; width: max-content; visibility: hidden; pointer-events: none; height: 0; overflow: hidden; }
+.category-menu { position: absolute; z-index: 1200; right: 0; top: calc(100% + 6px); min-width: 230px; padding: 6px; border: 1px solid #dde5de; border-radius: 10px; background: white; box-shadow: 0 8px 28px #233a3226; }
+.category-menu button, .category-sheet-options button { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 10px 12px; border: 0; border-radius: 6px; background: transparent; color: #465b4d; text-align: left; font: inherit; font-size: 13px; }
+.category-menu button:hover, .category-menu button:focus-visible, .category-menu button[aria-checked="true"], .category-sheet-options button:hover, .category-sheet-options button[aria-pressed="true"] { background: #edf4ef; color: var(--green); }
+.category-menu button > svg:last-child:not(:first-child), .category-sheet-options button > svg:last-child:not(:first-child) { margin-left: auto; }
+.category-mobile-trigger { display: none; }
+.category-sheet { position: fixed; inset: auto 0 0; width: 100%; max-width: 100%; max-height: 85dvh; margin: 0; padding: 0; border: 0; border-radius: 18px 18px 0 0; background: white; color: var(--foreground); }
+.category-sheet::backdrop { background: #172e2566; }
+.category-sheet-content { padding: 18px 18px max(18px, env(safe-area-inset-bottom)); }
+.category-sheet header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.category-sheet h2 { margin: 0; font-size: 18px; }
+.category-sheet-options button { min-height: 48px; }
 .community-controls { display: flex; align-items: center; gap: 14px; padding: 19px 0 24px; }
 .community-scope { display: flex; align-items: center; gap: 7px; font-size: 12px; color: #586b5e; min-width: 0; margin-right: auto; }
 .community-scope > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -2588,7 +2594,7 @@ a {
 .community-expanded .community-heading { margin-bottom: 16px; }
 .community-expanded .community-heading h1 { font-size: 28px; }
 .community-expanded .community-heading .eyebrow { display: none; }
-.community-expanded .community-categories { margin-top: 10px; }
+.community-expanded .category-filter { margin-top: 10px; }
 .community-expanded .community-controls { padding: 12px 0; }
 .community-expanded .community-content { grid-template-columns: minmax(0, 1fr) minmax(320px, 390px); }
 .community-expanded .community-map-panel { top: 0; }
@@ -2609,8 +2615,11 @@ a {
   .community-heading { margin-bottom: 23px; gap: 12px; }
   .community-discovery { grid-template-columns: 1fr; gap: 9px; }
   .community-search { padding-top: 2px; padding-bottom: 2px; }
-  .community-categories { gap: 22px; margin-top: 14px; }
-  .community-categories button { font-size: 12px; }
+  .category-filter { margin-top: 14px; padding-bottom: 12px; }
+  .category-desktop { display: none; }
+  .category-mobile-trigger { display: flex; align-items: center; gap: 9px; min-height: 44px; max-width: 100%; padding: 10px 12px; border: 1px solid #dce3dc; border-radius: 6px; background: white; color: var(--green); font: inherit; font-size: 13px; }
+  .category-mobile-trigger > span { text-align: left; }
+  .category-mobile-trigger > svg { flex-shrink: 0; }
   .community-controls { flex-wrap: wrap; gap: 12px; padding: 14px 0 18px; }
   .community-scope { flex-basis: 100%; font-size: 11px; }
   .community-type { margin-right: auto; }
