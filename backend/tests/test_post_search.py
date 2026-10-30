@@ -155,6 +155,29 @@ class PostSearchTests(unittest.TestCase):
         self.assertEqual(self.client.get(f"/posts/{UUID(int=9999)}").status_code, 404)
 
     def test_medical_support_category_can_be_created_updated_and_searched(self):
+        self.check_category_create_update_search("MEDICAL_SUPPORT")
+
+    def test_sports_category_can_be_created_updated_and_searched(self):
+        self.check_category_create_update_search("SPORTS")
+
+    def test_travel_category_can_be_created_updated_and_searched(self):
+        self.check_category_create_update_search("TRAVEL")
+
+    def test_retired_rides_category_is_rejected(self):
+        self.seed(1)
+        payload = {
+            "title": "Travel question", "description": "Airport recommendations",
+            "category": "RIDES", "post_type": "DISCUSSION", "location_id": "test",
+        }
+        self.assertEqual(self.client.post("/posts", json=payload).status_code, 422)
+        self.assertEqual(
+            self.client.put(f"/posts/{UUID(int=1)}", json=payload).status_code, 422
+        )
+        self.assertEqual(
+            self.client.post("/posts/search", json={"category": "RIDES"}).status_code, 422
+        )
+
+    def check_category_create_update_search(self, selected_category):
         location = {
             "location_id": "test", "location": "Fremont, CA", "city": "Fremont",
             "country_code": "US", "postal_code": "94538", "state": "CA",
@@ -163,23 +186,23 @@ class PostSearchTests(unittest.TestCase):
         }
         payload = {
             "title": "Community caregiver resources", "description": "Local support resources",
-            "category": "MEDICAL_SUPPORT", "post_type": "REQUEST", "location_id": "test",
+            "category": selected_category, "post_type": "REQUEST", "location_id": "test",
         }
         with patch("app.api.posts.resolve_post_location", return_value=PostLocationFields(**location)):
             created = self.client.post("/posts", json=payload)
             self.assertEqual(created.status_code, 200, created.text)
             post_id = created.json()["id"]
-            self.assertEqual(created.json()["category"], "MEDICAL_SUPPORT")
-            for category in ("GENERAL", "MEDICAL_SUPPORT"):
+            self.assertEqual(created.json()["category"], selected_category)
+            for category in ("GENERAL", selected_category):
                 updated = self.client.put(
                     f"/posts/{post_id}", json={**payload, "category": category},
                 )
                 self.assertEqual(updated.status_code, 200, updated.text)
                 self.assertEqual(updated.json()["category"], category)
         self.seed(1)
-        self.seed(2, category=PostCategory.MEDICAL_SUPPORT, is_private=True)
+        self.seed(2, category=PostCategory(selected_category), is_private=True)
         for bounds in (None, self.bounds):
             with self.subTest(bounds=bounds):
-                result = self.search(bounds=bounds, category="MEDICAL_SUPPORT")
+                result = self.search(bounds=bounds, category=selected_category)
                 self.assertEqual([post["id"] for post in result["posts"]], [post_id])
-                self.assertEqual(result["posts"][0]["category"], "MEDICAL_SUPPORT")
+                self.assertEqual(result["posts"][0]["category"], selected_category)
