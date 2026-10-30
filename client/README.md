@@ -54,9 +54,9 @@ within the current browser session.
 The **Medical support** community category includes a notice on creation, editing,
 filtered discovery, and post details: use local emergency services for urgent care
 and avoid sharing private medical information. Its API value is `MEDICAL_SUPPORT`.
-New databases include it through the post model. Existing local databases need
-the category column widened to `VARCHAR(15)` and the `post_category` check updated
-to include `MEDICAL_SUPPORT`; `create_all` does not alter existing tables.
+New databases include it through the initial Alembic migration. Older local
+databases need a reviewed schema upgrade before adopting the migration baseline;
+see [database setup](../README.md#existing-local-databases).
 
 The header contains **Posts** and **Rides**. Rides opens **Ride requests**
 (`/rides`); tabs are **Ride requests**, **Find a carpool**, **Request a ride**,

@@ -22,7 +22,7 @@ import "react-leaflet-cluster/dist/assets/MarkerCluster.Default.css";
 import type { PostSearchBounds } from "../lib/api";
 
 export interface MapPoint {
-  id: number;
+  id: string;
   latitude: number;
   longitude: number;
   title: string;
@@ -166,9 +166,9 @@ export default function CommunityMap({
 }: {
   posts: MapPoint[];
   fullscreen: boolean;
-  selectedPostId: number | null;
+  selectedPostId: string | null;
   selectionVersion: number;
-  onSelectPost: (postId: number) => void;
+  onSelectPost: (postId: string) => void;
   onBoundsChange: (bounds: PostSearchBounds) => void;
   onCenterChange: (center: [number, number]) => void;
   onViewportChange?: (center: [number, number], zoom: number) => void;
@@ -180,11 +180,11 @@ export default function CommunityMap({
   const selectedPost = posts.find((post) => post.id === selectedPostId);
   const selectedMarker = useRef<LeafletMarker>(null);
   const cluster = useRef<LeafletCluster>(null);
-  const [popupSelection, setPopupSelection] = useState<{ id: number; destination: boolean } | null>(null);
-  const selectPickup = useCallback((id: number) => {
+  const [popupSelection, setPopupSelection] = useState<{ id: string; destination: boolean } | null>(null);
+  const selectPickup = useCallback((id: string) => {
     setPopupSelection({ id, destination: false }); onSelectPost(id);
   }, [onSelectPost]);
-  const selectDestination = useCallback((id: number) => {
+  const selectDestination = useCallback((id: string) => {
     setPopupSelection({ id, destination: true }); onSelectPost(id);
   }, [onSelectPost]);
   const clearSelection = useCallback(() => {
@@ -365,7 +365,7 @@ const PostMarker = memo(function PostMarker({
 }: {
   post: MapPoint;
   selected: boolean;
-  onSelect: (postId: number) => void;
+  onSelect: (postId: string) => void;
   markerRef?: React.RefObject<LeafletMarker | null>;
   destination?: boolean;
   dimmed?: boolean;
@@ -404,6 +404,7 @@ const PostMarker = memo(function PostMarker({
         <div className="post-map-popup">
           <strong>{location.title}</strong>
           <span>{location.description}</span>
+          {selected && post.destination && <span>Connection, not driving route</span>}
           <Link href={post.href}>{post.linkLabel}</Link>
         </div>
       </Popup>

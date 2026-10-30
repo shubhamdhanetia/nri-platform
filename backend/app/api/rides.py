@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from datetime import date, timezone
 
 from fastapi import APIRouter, Depends, Query
@@ -97,41 +99,41 @@ def search_table(
 
 
 @router.get("/requests/{request_id}", response_model=RideDetailResponse)
-def get_detail(request_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+def get_detail(request_id: UUID, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     return rides.detail(db, rides.get_request(db, request_id, user.id), user.id)
 
 
 @router.post("/requests/{request_id}/offers", response_model=RideDetailResponse, status_code=201)
-def offer(request_id: int, data: RideOfferInput, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+def offer(request_id: UUID, data: RideOfferInput, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     rides.send_offer(db, request_id, user.id, data)
     return get_detail(request_id, db, user)
 
 
 @router.post("/requests/{request_id}/offers/{offer_id}/withdraw", response_model=RideDetailResponse)
-def withdraw(request_id: int, offer_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+def withdraw(request_id: UUID, offer_id: UUID, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     rides.withdraw_offer(db, request_id, offer_id, user.id)
     return get_detail(request_id, db, user)
 
 
 @router.post("/requests/{request_id}/confirm", response_model=RideDetailResponse)
-def confirm(request_id: int, data: ConfirmationInput, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+def confirm(request_id: UUID, data: ConfirmationInput, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     rides.confirm(db, request_id, data.offer_id, user.id)
     return get_detail(request_id, db, user)
 
 
 @router.post("/requests/{request_id}/cancel", response_model=RideDetailResponse)
-def cancel(request_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+def cancel(request_id: UUID, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     rides.cancel_request(db, request_id, user.id)
     return get_detail(request_id, db, user)
 
 
 @router.post("/requests/{request_id}/booking/cancel", response_model=RideDetailResponse)
-def cancel_booking(request_id: int, data: CancellationInput, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+def cancel_booking(request_id: UUID, data: CancellationInput, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     rides.change_booking(db, request_id, user.id, reason=data.reason)
     return get_detail(request_id, db, user)
 
 
 @router.post("/requests/{request_id}/booking/complete", response_model=RideDetailResponse)
-def complete(request_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+def complete(request_id: UUID, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     rides.change_booking(db, request_id, user.id)
     return get_detail(request_id, db, user)

@@ -4,10 +4,10 @@ import type { RideLocation } from "./rides";
 export type SeatStatus = "PENDING" | "CONFIRMED" | "DECLINED" | "CANCELLED" | "EXPIRED";
 
 export interface CarpoolTrip {
-  id: number;
-  driver_id: number;
+  id: string;
+  driver_id: string;
   driver: PostAuthor;
-  linked_trip_id: number | null;
+  linked_trip_id: string | null;
   is_return: boolean;
   pickup: RideLocation;
   dropoff: RideLocation;
@@ -28,8 +28,8 @@ export interface CarpoolTrip {
 }
 
 export interface CarpoolSeatRequest {
-  id: number;
-  trip_id: number;
+  id: string;
+  trip_id: string;
   rider: PostAuthor;
   passengers: number;
   bags: number;

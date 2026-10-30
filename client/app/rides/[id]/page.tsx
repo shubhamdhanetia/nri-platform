@@ -4,17 +4,17 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import RideLayout, { RideRoute } from "../../../components/RideLayout";
-import { apiRequest, type User } from "../../../lib/api";
+import { apiRequest, isUuid, type User } from "../../../lib/api";
 import { refreshNotifications } from "../../../lib/notifications";
 import { localDateTime, localToISO, rideDate, rideError, rideMoney, type DriverProfile, type RideDetail, type RideOffer } from "../../../lib/rides";
 
 export default function RideDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const requestId = Number(id);
-  return <RideLayout>{Number.isInteger(requestId) && requestId > 0 ? <RideContent key={requestId} id={requestId} /> : <p className="form-error" role="alert">Invalid ride request.</p>}</RideLayout>;
+  const requestId = id;
+  return <RideLayout>{isUuid(requestId) ? <RideContent key={requestId} id={requestId} /> : <p className="form-error" role="alert">Invalid ride request.</p>}</RideLayout>;
 }
 
-function RideContent({ id }: { id: number }) {
+function RideContent({ id }: { id: string }) {
   const [data, setData] = useState<RideDetail | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<DriverProfile | null>(null);
@@ -73,6 +73,7 @@ function RideContent({ id }: { id: number }) {
     {success && <p className="ride-notice" role="status">{success}</p>}
     {loading ? <p role="status">Loading ride...</p> : data && ride && user && <>
       <section className="page-heading"><div><p className="eyebrow">{owner ? "Your ride request" : `${ride.rider.name}'s ride request`}</p><h1>{booking?.status === "CONFIRMED" ? "Your ride is confirmed." : "Let's get there together."}</h1><p className="muted">Check the notification bell for updates. Refresh this page for current ride details.</p></div><span className="ride-badge">{booking?.status ?? ride.status}</span></section>
+      <p>Requested by <Link className="member-profile-link" href={`/profile/${ride.rider.id}`}>{ride.rider.name}</Link></p>
       <div className="ride-columns"><div>
         <div className="ride-card"><h2>The route</h2><RideRoute ride={ride} /><p><strong>{rideDate(ride.pickup_start, ride.timezone)} - {rideDate(ride.pickup_end, ride.timezone)}</strong></p><p className="muted">Pickup window in {ride.timezone}</p><div className="ride-meta"><span>{ride.passengers} passenger(s)</span><span>{ride.bags} bag(s)</span><span>Offers in {ride.currency}</span></div>{ride.notes && <p className="ride-message">{ride.notes}</p>}</div>
         {booking ? <div className="ride-card"><h2>{booking.status === "CONFIRMED" ? "The agreed plan" : `Booking ${booking.status.toLowerCase()}`}</h2><p><strong>Pickup: {rideDate(booking.pickup_time, ride.timezone)}</strong></p><p>{booking.vehicle} / {rideMoney(booking.amount, booking.currency)} agreed contribution</p><p className="field-hint">No payment collected by the platform. Booking details and phone numbers are snapshots taken at confirmation.</p>
@@ -84,7 +85,7 @@ function RideContent({ id }: { id: number }) {
         </div> : <>
           <h2>{owner ? "Driver offers" : "Your driver offer"}</h2>
           {data.offers.length === 0 && <div className="ride-card"><p className="muted">{owner ? "No offers yet. Check back or refresh to see new offers." : "You have not offered a ride yet."}</p></div>}
-          {data.offers.map(item => <article className="ride-card" key={item.id}><div className="ride-between"><h3>{item.driver.name}</h3><span className="ride-badge">{item.status}</span></div><p>{item.vehicle} &middot; {item.passenger_capacity} passenger seats</p><p><strong>{rideDate(item.pickup_time, ride.timezone)}</strong></p><p><strong>{rideMoney(item.amount, ride.currency)}</strong> proposed contribution</p><p className="ride-message">{item.message}</p><p className="field-hint">Self-reported vehicle information. This driver is not verified or vetted by the platform.</p>
+          {data.offers.map(item => <article className="ride-card" key={item.id}><div className="ride-between"><h3><Link className="member-profile-link" href={`/profile/${item.driver.id}`}>{item.driver.name}</Link></h3><span className="ride-badge">{item.status}</span></div><p>{item.vehicle} &middot; {item.passenger_capacity} passenger seats</p><p><strong>{rideDate(item.pickup_time, ride.timezone)}</strong></p><p><strong>{rideMoney(item.amount, ride.currency)}</strong> proposed contribution</p><p className="ride-message">{item.message}</p><p className="field-hint">Self-reported vehicle information. This driver is not verified or vetted by the platform.</p>
             {isOpen && item.status === "PENDING" && (owner ? <button className="button button-primary" disabled={busy} onClick={() => setChosen(item)}>Choose {item.driver.name}</button> : <button className="button button-secondary" disabled={busy} onClick={() => void act(`offers/${item.id}/withdraw`)}>Withdraw offer</button>)}
           </article>)}
           {chosen && <section className="ride-card ride-confirm" aria-label="Confirm chosen driver"><h2>Confirm {chosen.driver.name}?</h2><p>{rideDate(chosen.pickup_time, ride.timezone)} &middot; {rideMoney(chosen.amount, ride.currency)} contribution.</p><p>This closes all other offers and shares both contact numbers. No money is collected. Check the details before confirming.</p><div className="form-actions"><button className="button button-primary" disabled={busy} onClick={() => void act("confirm", { offer_id: chosen.id })}>Confirm ride</button><button className="button button-secondary" disabled={busy} onClick={() => setChosen(null)}>Keep comparing</button></div></section>}

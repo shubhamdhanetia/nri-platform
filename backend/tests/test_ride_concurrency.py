@@ -3,7 +3,7 @@ import unittest
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 from threading import Barrier
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -46,19 +46,19 @@ class PostgreSQLConcurrencyTests(unittest.TestCase):
             app.dependency_overrides[get_db] = test_db
             with Session(isolated) as db:
                 for user_id in (1, 2, 3):
-                    db.add(User(id=user_id, email=f"{user_id}@example.test", name=f"Member {user_id}", provider="test", provider_id=str(user_id)))
+                    db.add(User(id=UUID(int=user_id), email=f"{user_id}@example.test", name=f"Member {user_id}", provider="test", provider_id=str(user_id)))
                 db.commit()
                 for user_id in (2, 3):
-                    db.add(DriverProfile(user_id=user_id, vehicle="Test car", passenger_capacity=3, phone=f"+1415555010{user_id}", acknowledgement_at=datetime.utcnow()))
+                    db.add(DriverProfile(user_id=UUID(int=user_id), vehicle="Test car", passenger_capacity=3, phone=f"+1415555010{user_id}", acknowledgement_at=datetime.utcnow()))
                 db.commit()
 
             def seed():
                 with Session(isolated) as db:
                     start = datetime.utcnow() + timedelta(days=1)
-                    ride = RideRequest(rider_id=1, pickup={}, dropoff={}, pickup_start=start, pickup_end=start + timedelta(minutes=30), timezone="UTC", passengers=1, bags=0, notes="", rider_phone="+14155550101", currency="USD")
+                    ride = RideRequest(rider_id=UUID(int=1), pickup={}, dropoff={}, pickup_start=start, pickup_end=start + timedelta(minutes=30), timezone="UTC", passengers=1, bags=0, notes="", rider_phone="+14155550101", currency="USD")
                     db.add(ride)
                     db.flush()
-                    offers = [RideOffer(request_id=ride.id, driver_id=driver_id, pickup_time=start, amount=10, message="Test", vehicle="Test car", passenger_capacity=3) for driver_id in (2, 3)]
+                    offers = [RideOffer(request_id=ride.id, driver_id=UUID(int=driver_id), pickup_time=start, amount=10, message="Test", vehicle="Test car", passenger_capacity=3) for driver_id in (2, 3)]
                     db.add_all(offers)
                     db.commit()
                     return ride.id, offers[0].id, offers[1].id
@@ -72,8 +72,8 @@ class PostgreSQLConcurrencyTests(unittest.TestCase):
                     ride.dropoff = place("dropoff").model_dump()
                     db.commit()
 
-            rider_headers = {"Authorization": f"Bearer {create_access_token(1)}"}
-            driver_headers = {"Authorization": f"Bearer {create_access_token(2)}"}
+            rider_headers = {"Authorization": f"Bearer {create_access_token(UUID(int=1))}"}
+            driver_headers = {"Authorization": f"Bearer {create_access_token(UUID(int=2))}"}
             with TestClient(app) as client:
                 def race(first, second):
                     barrier = Barrier(2)
@@ -91,12 +91,12 @@ class PostgreSQLConcurrencyTests(unittest.TestCase):
                     "bounds": {"north": 37.6, "south": 37.5, "west": -122.05, "east": -121.9},
                 }, headers=driver_headers)
                 self.assertEqual(response.status_code, 200, response.text)
-                self.assertEqual([ride["id"] for ride in response.json()["rides"]], [ride_id])
+                self.assertEqual([ride["id"] for ride in response.json()["rides"]], [str(ride_id)])
                 self.assertNotIn("phone", str(response.json()))
                 confirm_path = f"/rides/requests/{ride_id}/confirm"
                 a, b = race(
-                    lambda: client.post(confirm_path, json={"offer_id": offer_a}, headers=rider_headers),
-                    lambda: client.post(confirm_path, json={"offer_id": offer_b}, headers=rider_headers),
+                    lambda: client.post(confirm_path, json={"offer_id": str(offer_a)}, headers=rider_headers),
+                    lambda: client.post(confirm_path, json={"offer_id": str(offer_b)}, headers=rider_headers),
                 )
                 self.assertEqual(sorted([a.status_code, b.status_code]), [200, 409], (a.text, b.text))
                 with Session(isolated) as db:
@@ -107,8 +107,8 @@ class PostgreSQLConcurrencyTests(unittest.TestCase):
                 locations(ride_id)
                 confirm_path = f"/rides/requests/{ride_id}/confirm"
                 a, b = race(
-                    lambda: client.post(confirm_path, json={"offer_id": offer_a}, headers=rider_headers),
-                    lambda: client.post(confirm_path, json={"offer_id": offer_a}, headers=rider_headers),
+                    lambda: client.post(confirm_path, json={"offer_id": str(offer_a)}, headers=rider_headers),
+                    lambda: client.post(confirm_path, json={"offer_id": str(offer_a)}, headers=rider_headers),
                 )
                 self.assertEqual([a.status_code, b.status_code], [200, 200], (a.text, b.text))
                 self.assertEqual(a.json()["booking"]["id"], b.json()["booking"]["id"])
@@ -125,7 +125,7 @@ class PostgreSQLConcurrencyTests(unittest.TestCase):
                 ride_id, offer_a, _ = seed()
                 locations(ride_id)
                 a, b = race(
-                    lambda: client.post(f"/rides/requests/{ride_id}/confirm", json={"offer_id": offer_a}, headers=rider_headers),
+                    lambda: client.post(f"/rides/requests/{ride_id}/confirm", json={"offer_id": str(offer_a)}, headers=rider_headers),
                     lambda: client.post(f"/rides/requests/{ride_id}/offers/{offer_a}/withdraw", headers=driver_headers),
                 )
                 self.assertEqual(sorted([a.status_code, b.status_code]), [200, 409], (a.text, b.text))

@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from datetime import datetime, timedelta
 
 from jose import jwt, JWTError
@@ -7,7 +9,7 @@ from app.core.config import settings
 ALGORITHM = "HS256"
 
 
-def create_access_token(user_id: int):
+def create_access_token(user_id: UUID):
     payload = {
         "sub": str(user_id),
         "exp": datetime.utcnow() + timedelta(days=7),

@@ -114,12 +114,20 @@ export default function AppNav() {
             {isAccountMenuOpen && (
               <div className="account-menu-dropdown" id="account-menu-options">
                 <Link
-                  aria-current={pathname.startsWith("/profile") ? "page" : undefined}
-                  className={pathname.startsWith("/profile") ? "account-menu-link active" : "account-menu-link"}
+                  aria-current={pathname === "/profile" ? "page" : undefined}
+                  className={pathname === "/profile" ? "account-menu-link active" : "account-menu-link"}
                   href="/profile"
                   onClick={() => setIsAccountMenuOpen(false)}
                 >
                   My profile
+                </Link>
+                <Link
+                  aria-current={pathname === "/my-posts" ? "page" : undefined}
+                  className={pathname === "/my-posts" ? "account-menu-link active" : "account-menu-link"}
+                  href="/my-posts"
+                  onClick={() => setIsAccountMenuOpen(false)}
+                >
+                  My posts
                 </Link>
                 <Link
                   aria-current={pathname.startsWith("/saved") ? "page" : undefined}

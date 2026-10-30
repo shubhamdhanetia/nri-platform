@@ -11,7 +11,7 @@ export default function CommentActions({
 }: {
   comment: Comment;
   onUpdated: (comment: Comment) => void;
-  onDeleted: (commentId: number) => void;
+  onDeleted: (commentId: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [content, setContent] = useState(comment.content);

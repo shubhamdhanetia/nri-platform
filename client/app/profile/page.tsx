@@ -1,42 +1,34 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
+import { ArrowUpRight, Pencil, Save, X } from "lucide-react";
 import ProtectedPage from "../../components/ProtectedPage";
-import DeletePostButton from "../../components/DeletePostButton";
-import EditPostButton from "../../components/EditPostButton";
-import PostReactions from "../../components/PostReactions";
-import PostVisibilityButton from "../../components/PostVisibilityButton";
-import {
-  apiRequest,
-  POST_CATEGORY_LABELS,
-  POST_TYPE_LABELS,
-  type Post,
-  type PostReactionSummary,
-  type User,
-} from "../../lib/api";
+import { CopyProfileLink, MemberDetails, MemberIdentity } from "../../components/MemberProfile";
+import { apiRequest, type User } from "../../lib/api";
 
 export default function ProfilePage() {
+  return <ProtectedPage><ProfileContent /></ProtectedPage>;
+}
+
+function ProfileContent() {
   const [user, setUser] = useState<User | null>(null);
-  const [posts, setPosts] = useState<Post[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   const fetchProfile = useCallback(
-    () => Promise.all([
-      apiRequest<User>("/users/me"),
-      apiRequest<Post[]>("/posts/me"),
-    ]),
+    () => apiRequest<User>("/users/me"),
     [],
   );
 
   useEffect(() => {
     let active = true;
     fetchProfile()
-      .then(([currentUser, userPosts]) => {
+      .then((currentUser) => {
         if (active) {
           setUser(currentUser);
-          setPosts(userPosts);
         }
       })
       .catch((requestError: unknown) => {
@@ -56,9 +48,7 @@ export default function ProfilePage() {
     setLoading(true);
     setError("");
     try {
-      const [currentUser, userPosts] = await fetchProfile();
-      setUser(currentUser);
-      setPosts(userPosts);
+      setUser(await fetchProfile());
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Unable to load your profile.");
     } finally {
@@ -66,31 +56,8 @@ export default function ProfilePage() {
     }
   }
 
-  function removePost(postId: number) {
-    setPosts((currentPosts) => currentPosts.filter((post) => post.id !== postId));
-  }
-
-  function updatePost(updatedPost: Post) {
-    setPosts((currentPosts) => currentPosts.map(
-      (post) => post.id === updatedPost.id ? updatedPost : post,
-    ));
-  }
-
-  function updatePostReactions(summary: PostReactionSummary) {
-    setPosts((currentPosts) => currentPosts.map((post) => (
-      post.id === summary.post_id
-        ? {
-          ...post,
-          like_count: summary.like_count,
-          dislike_count: summary.dislike_count,
-          my_reaction: summary.my_reaction,
-        }
-        : post
-    )));
-  }
-
   return (
-    <ProtectedPage>
+    <div className="member-profile-page">
       <section className="page-heading">
         <div>
           <p className="eyebrow">Your corner of the community</p>
@@ -108,73 +75,74 @@ export default function ProfilePage() {
         </div>
       ) : user ? (
         <>
-          <section className="profile-card">
-            {user.picture ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img className="profile-avatar" src={user.picture} alt="" />
-            ) : (
-              <span className="profile-avatar profile-avatar-fallback">{user.name.charAt(0).toUpperCase()}</span>
-            )}
-            <div>
-              <h2>{user.name}</h2>
-              <p className="muted">{user.email}</p>
-              {user.provider && <span className="provider-label">Signed in with {user.provider}</span>}
-            </div>
-          </section>
-          <section className="profile-posts">
+          <MemberIdentity name={user.name} picture={user.picture} memberSince={user.created_at} />
+          <div className="member-profile-actions">
+            <Link className="button button-secondary" href={`/profile/${user.id}`}><ArrowUpRight size={16} aria-hidden="true" /> View public profile</Link>
+            <CopyProfileLink userId={user.id} />
+          </div>
+          <section className="member-profile-section" aria-labelledby="member-details-heading">
             <div className="section-title-row">
-              <div>
-                <p className="eyebrow">Your contributions</p>
-                <h2>Your posts <span className="count-pill">{posts.length}</span></h2>
-              </div>
-              <Link className="text-link" href="/create-post">Write a post <span aria-hidden="true">→</span></Link>
+              <div><h2 id="member-details-heading">Community profile</h2><p className="muted">Visible to signed-in members</p></div>
+              {!editing && <button className="button button-secondary" type="button" onClick={() => { setEditing(true); setSaved(false); }}><Pencil size={16} aria-hidden="true" /> Edit profile</button>}
             </div>
-            {posts.length === 0 ? (
-              <div className="empty-state compact-empty">
-                <span className="empty-icon">✦</span>
-                <h3>No posts yet</h3>
-                <p className="muted">Your posts will show up here when you share with the community.</p>
-              </div>
-            ) : (
-              <div className="post-grid">
-                {posts.map((post) => (
-                  <article className="post-card" key={post.id}>
-                    <div className="post-meta">
-                      <div className="post-badges">
-                        <span className="category-pill">{POST_CATEGORY_LABELS[post.category]}</span>
-                        <span className={`post-type-pill post-type-${post.post_type.toLowerCase()}`}>
-                          {POST_TYPE_LABELS[post.post_type]}
-                        </span>
-                        {post.updated_at && <span className="edited-indicator">Edited</span>}
-                        {post.is_private && <span className="visibility-private-pill">Only me</span>}
-                      </div>
-                      <span className="post-location"><span aria-hidden="true">⌖</span> {post.location}</span>
-                    </div>
-                    <h3><Link href={`/posts/${post.id}`}>{post.title}</Link></h3>
-                    <p className="post-description">{post.description}</p>
-                    <div className="profile-post-actions">
-                      <Link className="comment-count-link" href={`/posts/${post.id}`}>
-                        {post.comment_count} {post.comment_count === 1 ? "comment" : "comments"}
-                      </Link>
-                      <PostReactions
-                        canReact={false}
-                        dislikeCount={post.dislike_count}
-                        likeCount={post.like_count}
-                        myReaction={post.my_reaction}
-                        onChanged={updatePostReactions}
-                        postId={post.id}
-                      />
-                      <PostVisibilityButton onChanged={updatePost} post={post} />
-                      <EditPostButton onUpdated={updatePost} post={post} />
-                      <DeletePostButton onDeleted={removePost} postId={post.id} />
-                    </div>
-                  </article>
-                ))}
-              </div>
-            )}
+            {editing ? <ProfileForm user={user} onCancel={() => setEditing(false)} onSaved={updated => { setUser(updated); setEditing(false); setSaved(true); }} /> : <MemberDetails profile={user} showEmpty />}
+            {saved && <p role="status" className="profile-save-status">Profile saved</p>}
+          </section>
+          <section className="member-profile-section" aria-labelledby="account-details-heading">
+            <div className="section-title-row"><div><h2 id="account-details-heading">Account details</h2><p className="muted">Only visible to you</p></div></div>
+            <dl className="member-facts">
+              <div><dt>Email</dt><dd>{user.email}</dd></div>
+              {user.provider && <div><dt>Sign-in provider</dt><dd>{user.provider}</dd></div>}
+            </dl>
           </section>
         </>
       ) : null}
-    </ProtectedPage>
+    </div>
   );
+}
+
+function ProfileForm({ user, onSaved, onCancel }: { user: User; onSaved: (user: User) => void; onCancel: () => void }) {
+  const [bio, setBio] = useState(user.bio ?? "");
+  const [city, setCity] = useState(user.home_city ?? "");
+  const [languages, setLanguages] = useState(user.languages.join(", "));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  async function save(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const languageList = languages.split(",").map(language => language.trim()).filter(Boolean);
+    if (languageList.length > 10 || languageList.some(language => language.length > 50)) {
+      setError("Enter up to 10 languages, each no longer than 50 characters.");
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      onSaved(await apiRequest<User>("/users/me", {
+        method: "PATCH",
+        body: JSON.stringify({ bio: bio.trim() || null, home_city: city.trim() || null, languages: languageList }),
+      }));
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Unable to save your profile.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return <form className="member-profile-form" onSubmit={event => void save(event)}>
+    <fieldset disabled={saving}>
+      <label htmlFor="profile-bio">Bio <span className="muted">Optional</span></label>
+      <textarea id="profile-bio" rows={3} maxLength={160} value={bio} onChange={event => setBio(event.target.value)} aria-describedby="profile-bio-count" />
+      <span className="profile-field-hint" id="profile-bio-count">{bio.length}/160</span>
+      <label htmlFor="profile-city">Home city <span className="muted">Optional</span></label>
+      <input id="profile-city" maxLength={100} autoComplete="address-level2" value={city} onChange={event => setCity(event.target.value)} />
+      <label htmlFor="profile-languages">Languages (comma-separated) <span className="muted">Optional</span></label>
+      <input id="profile-languages" maxLength={518} value={languages} onChange={event => setLanguages(event.target.value)} />
+    </fieldset>
+    {error && <p className="form-error" role="alert">{error}</p>}
+    <div className="form-actions">
+      <button className="button button-primary" type="submit" disabled={saving}><Save size={16} aria-hidden="true" />{saving ? "Saving..." : "Save profile"}</button>
+      <button className="button button-secondary" type="button" disabled={saving} onClick={onCancel}><X size={16} aria-hidden="true" />Cancel</button>
+    </div>
+  </form>;
 }

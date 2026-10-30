@@ -1,26 +1,17 @@
-import os
+from uuid import UUID
+
 import unittest
-from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime
 from datetime import timedelta
-from threading import Barrier
 from unittest.mock import patch
-from uuid import uuid4
 
 from fastapi import HTTPException
-from sqlalchemy import create_engine, func, select
+from sqlalchemy import func, inspect, select
 from sqlalchemy.orm import Session
-from sqlalchemy.schema import CreateSchema, DropSchema
 
 from app.api.carpools import router as carpools_router
 from app.api.notifications import router
-from app.db.notification_migration import migrate_carpool_notifications
-from app.db.base import Base
-from app.core.config import settings
-from app.models.carpool import CarpoolNotification, CarpoolTrip
 from app.models.notification import Notification
 from app.models.ride import RideOffer
-from app.models.user import User
 from app.services.notifications import notify
 import test_rides
 
@@ -67,9 +58,9 @@ class NotificationAPITests(unittest.TestCase):
         self.assertEqual(self.client.post("/notifications/1/read").status_code, 401)
         with Session(self.engine) as db:
             for index in range(3):
-                notify(db, user_id=1, category="future-feature", event_type="future.updated",
-                       resource_id=index + 1, target_path="/profile", message=f"Update {index}")
-            notify(db, user_id=2, category="ride", event_type="ride.test", resource_id=1,
+                notify(db, user_id=UUID(int=1), category="future-feature", event_type="future.updated",
+                       resource_id=UUID(int=index + 1), target_path="/profile", message=f"Update {index}")
+            notify(db, user_id=UUID(int=2), category="ride", event_type="ride.test", resource_id=UUID(int=1),
                    target_path="/rides/1", message="Private update for another member")
             db.commit()
         first = self.inbox(query="?limit=2")
@@ -87,7 +78,7 @@ class NotificationAPITests(unittest.TestCase):
         self.assertEqual(self.client.post(path, headers=self.fixture.headers(2)).status_code, 404)
         self.assertEqual(self.client.post(path, headers=self.fixture.headers(1)).status_code, 200)
         self.assertEqual(self.client.post(path, headers=self.fixture.headers(1)).status_code, 200)
-        self.assertEqual(self.client.post("/notifications/99999/read", headers=self.fixture.headers(1)).status_code, 404)
+        self.assertEqual(self.client.post(f"/notifications/{UUID(int=99999)}/read", headers=self.fixture.headers(1)).status_code, 404)
         self.assertEqual(self.inbox()["unread_count"], 2)
         self.assertEqual(self.inbox(2)["unread_count"], 1)
         self.assertEqual(self.client.get("/notifications/unread-count", headers=self.fixture.headers()).json(), {"unread_count": 2})
@@ -207,26 +198,14 @@ class NotificationAPITests(unittest.TestCase):
                 self.assertIn("carpool.trip_cancelled", self.event_types(1))
         self.assertNotIn("Private reason", str(self.inbox(1)) + str(self.inbox(2)))
 
-    def test_migration_preserves_history_and_never_resets_read_state(self):
-        trip_id = self.carpool()
-        with Session(self.engine) as db:
-            first = CarpoolNotification(user_id=1, trip_id=trip_id, message="Historical unread", is_read=False)
-            second = CarpoolNotification(user_id=1, trip_id=trip_id, message="Historical read", is_read=True)
-            db.add_all([first, second])
-            db.commit()
-            created = first.created_at
-        migrate_carpool_notifications(self.engine)
-        rows = self.inbox()["notifications"]
-        self.assertEqual({row["message"] for row in rows}, {"Historical unread", "Historical read"})
-        unread = next(row for row in rows if not row["is_read"])
-        self.assertEqual(unread["created_at"], created.isoformat() + "+00:00")
-        self.assertEqual(unread["target_path"], f"/rides/carpools/{trip_id}")
-        self.client.post(f"/notifications/{unread['id']}/read", headers=self.fixture.headers())
-        migrate_carpool_notifications(self.engine)
-        self.assertEqual(self.inbox()["unread_count"], 0)
-        self.assertEqual(len(self.inbox()["notifications"]), 2)
-        with Session(self.engine) as db:
-            self.assertEqual(db.scalar(select(func.count()).select_from(CarpoolNotification)), 2)
+    def test_fresh_schema_has_no_legacy_notification_storage(self):
+        inspector = inspect(self.engine)
+        self.assertNotIn("carpool_notifications", inspector.get_table_names())
+        self.assertNotIn("legacy_carpool_id", {column["name"] for column in inspector.get_columns("notifications")})
+        self.assertEqual(
+            {index["name"] for index in inspector.get_indexes("notifications")},
+            {"ix_notifications_user_created_id", "ix_notifications_user_read"},
+        )
 
     def test_business_mutation_and_event_rollback_together(self):
         ride_id = self.fixture.create().json()["id"]
@@ -246,62 +225,5 @@ class NotificationAPITests(unittest.TestCase):
         with Session(self.engine) as db:
             for target in ("https://example.test", "//example.test", "/\\example.test"):
                 with self.assertRaises(ValueError):
-                    notify(db, user_id=1, category="test", event_type="test", resource_id=1,
+                    notify(db, user_id=UUID(int=1), category="test", event_type="test", resource_id=UUID(int=1),
                            target_path=target, message="Test")
-
-
-@unittest.skipUnless(os.getenv("RIDE_TEST_POSTGRES") == "1", "Set RIDE_TEST_POSTGRES=1 for isolated PostgreSQL migration tests")
-class NotificationPostgresTests(unittest.TestCase):
-    def test_concurrent_startup_migration_is_idempotent(self):
-        engine = create_engine(settings.DATABASE_URL)
-        self.assertEqual(engine.dialect.name, "postgresql")
-        schema = "notification_test_" + uuid4().hex
-        with engine.begin() as connection:
-            connection.execute(CreateSchema(schema))
-        isolated = engine.execution_options(schema_translate_map={None: schema})
-        try:
-            Base.metadata.create_all(isolated)
-            with Session(isolated) as db:
-                db.add(User(id=1, name="Test member", email="notification@example.test", provider="test", provider_id="notification"))
-                db.commit()
-                start = datetime(2030, 11, 7, 16)
-                trip = CarpoolTrip(
-                    driver_id=1, pickup=test_rides.place("pickup").model_dump(),
-                    dropoff=test_rides.place("dropoff").model_dump(), pickup_start=start,
-                    pickup_end=start + timedelta(minutes=30), timezone="UTC", seats=1,
-                    bags_per_person=1, amount=40, currency="USD", vehicle="Test car", notes="",
-                )
-                db.add(trip)
-                db.flush()
-                trip_id = trip.id
-                db.add(CarpoolNotification(user_id=1, trip_id=trip_id, message="Historical event", is_read=False))
-                notify(db, user_id=1, category="ride", event_type="ride.test", resource_id=1,
-                       target_path="/rides/1", message="Existing shared event")
-                db.commit()
-            barrier = Barrier(2)
-
-            def migrate():
-                barrier.wait(timeout=10)
-                migrate_carpool_notifications(isolated)
-
-            with ThreadPoolExecutor(max_workers=2) as executor:
-                first = executor.submit(migrate)
-                second = executor.submit(migrate)
-                first.result(timeout=20)
-                second.result(timeout=20)
-            with Session(isolated) as db:
-                rows = list(db.scalars(select(Notification).order_by(Notification.id)))
-                self.assertEqual(len(rows), 2)
-                legacy = next(row for row in rows if row.legacy_carpool_id is not None)
-                self.assertEqual(legacy.message, "Historical event")
-                self.assertEqual(legacy.target_path, f"/rides/carpools/{trip_id}")
-                legacy.is_read = True
-                db.commit()
-            migrate_carpool_notifications(isolated)
-            with Session(isolated) as db:
-                self.assertEqual(db.scalar(select(func.count()).select_from(Notification)), 2)
-                self.assertTrue(db.scalar(select(Notification).where(Notification.legacy_carpool_id.is_not(None))).is_read)
-        finally:
-            with engine.begin() as connection:
-                connection.execute(DropSchema(schema, cascade=True))
-            engine.dispose()

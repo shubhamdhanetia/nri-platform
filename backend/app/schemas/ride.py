@@ -1,3 +1,5 @@
+from uuid import UUID
+
 import re
 from datetime import date, datetime, time, timezone
 from decimal import Decimal
@@ -42,7 +44,7 @@ class DriverProfileInput(BaseModel):
 
 class DriverProfileResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    user_id: int
+    user_id: UUID
     vehicle: str
     passenger_capacity: int
     phone: str
@@ -88,7 +90,7 @@ class RideOfferInput(BaseModel):
 
 
 class ConfirmationInput(BaseModel):
-    offer_id: int = Field(gt=0)
+    offer_id: UUID
 
 
 class CancellationInput(BaseModel):
@@ -96,8 +98,8 @@ class CancellationInput(BaseModel):
 
 
 class RideRequestResponse(UTCResponse):
-    id: int
-    rider_id: int
+    id: UUID
+    rider_id: UUID
     rider: PostAuthorResponse
     pickup: PostLocationFields
     dropoff: PostLocationFields
@@ -115,9 +117,9 @@ class RideRequestResponse(UTCResponse):
 
 
 class RideOfferResponse(UTCResponse):
-    id: int
-    request_id: int
-    driver_id: int
+    id: UUID
+    request_id: UUID
+    driver_id: UUID
     driver: PostAuthorResponse
     pickup_time: datetime
     amount: Decimal
@@ -129,11 +131,11 @@ class RideOfferResponse(UTCResponse):
 
 
 class RideBookingResponse(UTCResponse):
-    id: int
-    request_id: int
-    offer_id: int
-    rider_id: int
-    driver_id: int
+    id: UUID
+    request_id: UUID
+    offer_id: UUID
+    rider_id: UUID
+    driver_id: UUID
     rider: PostAuthorResponse
     driver: PostAuthorResponse
     driver_phone: str
@@ -144,7 +146,7 @@ class RideBookingResponse(UTCResponse):
     currency: Currency
     status: Literal["CONFIRMED", "COMPLETED", "CANCELLED"]
     cancellation_reason: str | None
-    cancelled_by: int | None
+    cancelled_by: UUID | None
     created_at: datetime
 
 
@@ -186,7 +188,7 @@ class RideMapSearchResponse(BaseModel):
 
 class RideSearchCursor(BaseModel):
     pickup_start: AwareDatetime
-    id: int = Field(gt=0)
+    id: UUID
 
 
 class RideTableSearchInput(RideTimeFilters):

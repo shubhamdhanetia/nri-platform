@@ -11,6 +11,7 @@ import MedicalSupportNotice from "../../../components/MedicalSupportNotice";
 import RideCommunityNotice from "../../../components/RideCommunityNotice";
 import {
   apiRequest,
+  isUuid,
   POST_CATEGORY_LABELS,
   POST_TYPE_LABELS,
   type Comment,
@@ -28,11 +29,11 @@ function formatDate(value: string) {
 
 export default function PostDetailsPage() {
   const params = useParams<{ id: string }>();
-  const postId = Number(params.id);
+  const postId = params.id;
 
   return (
     <ProtectedPage>
-      {Number.isInteger(postId) && postId > 0 ? (
+      {isUuid(postId) ? (
         <PostDetailsContent key={postId} postId={postId} />
       ) : (
         <div className="state-card error-state" role="alert">
@@ -44,10 +45,10 @@ export default function PostDetailsPage() {
   );
 }
 
-function PostDetailsContent({ postId }: { postId: number }) {
+function PostDetailsContent({ postId }: { postId: string }) {
   const [post, setPost] = useState<PostDetail | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
-  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [pageError, setPageError] = useState("");
   const [commentsError, setCommentsError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -58,7 +59,7 @@ function PostDetailsContent({ postId }: { postId: number }) {
   const [success, setSuccess] = useState("");
 
   const loadPost = useCallback(async () => {
-    if (!Number.isInteger(postId) || postId < 1) {
+    if (!isUuid(postId)) {
       throw new Error("Post not found.");
     }
     const [postResult, userResult] = await Promise.all([
@@ -69,7 +70,7 @@ function PostDetailsContent({ postId }: { postId: number }) {
   }, [postId]);
 
   const loadComments = useCallback(async () => {
-    if (!Number.isInteger(postId) || postId < 1) {
+    if (!isUuid(postId)) {
       throw new Error("Post not found.");
     }
     return apiRequest<Comment[]>(`/posts/${postId}/comments`);
@@ -166,7 +167,7 @@ function PostDetailsContent({ postId }: { postId: number }) {
     ));
   }
 
-  function removeComment(commentId: number) {
+  function removeComment(commentId: string) {
     setComments((currentComments) => currentComments.filter(
       (comment) => comment.id !== commentId,
     ));
@@ -222,14 +223,16 @@ function PostDetailsContent({ postId }: { postId: number }) {
             {post.category === "RIDES" && <RideCommunityNotice compact />}
             <p className="post-detail-description">{post.description}</p>
             <div className="post-detail-author">
+              <Link href={`/profile/${post.author.id}`} aria-label={`View ${post.author.name}'s profile`}>
               {post.author.picture ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img className="author-photo" src={post.author.picture} alt="" />
               ) : (
                 <span className="author-avatar">{post.author.name.charAt(0).toUpperCase()}</span>
               )}
+              </Link>
               <div>
-                <strong>{post.author.name}</strong>
+                <strong><Link className="member-profile-link" href={`/profile/${post.author.id}`}>{post.author.name}</Link></strong>
                 <div className="post-detail-timestamp">
                   <time dateTime={post.created_at}>{formatDate(post.created_at)}</time>
                   {post.updated_at && <span className="edited-indicator">Edited</span>}
@@ -309,15 +312,17 @@ function PostDetailsContent({ postId }: { postId: number }) {
               <div className="comment-list">
                 {comments.map((comment) => (
                   <article className="comment-card" key={comment.id}>
+                    <Link href={`/profile/${comment.author.id}`} aria-label={`View ${comment.author.name}'s profile`}>
                     {comment.author.picture ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img className="author-photo" src={comment.author.picture} alt="" />
                     ) : (
                       <span className="author-avatar">{comment.author.name.charAt(0).toUpperCase()}</span>
                     )}
+                    </Link>
                     <div className="comment-content">
                       <div className="comment-meta">
-                        <strong>{comment.author.name}</strong>
+                        <strong><Link className="member-profile-link" href={`/profile/${comment.author.id}`}>{comment.author.name}</Link></strong>
                         <span className="comment-timestamp">
                           <time dateTime={comment.created_at}>{formatDate(comment.created_at)}</time>
                           {comment.updated_at && <span className="edited-indicator">Edited</span>}

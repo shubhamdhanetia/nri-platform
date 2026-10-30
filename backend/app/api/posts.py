@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import APIRouter
 from fastapi import Depends
 from fastapi import HTTPException
@@ -62,7 +64,7 @@ router = APIRouter()
 def _post_responses(
     db: Session,
     posts: list[Post],
-    user_id: int,
+    user_id: UUID,
 ) -> list[PostResponse]:
     reactions = get_user_post_reactions(
         db,
@@ -86,7 +88,7 @@ def _post_responses(
 
 
 def _reaction_summary(
-    post_id: int,
+    post_id: UUID,
     post: Post,
     reaction: PostReactionType | None,
 ) -> PostReactionSummary:
@@ -100,8 +102,8 @@ def _reaction_summary(
 
 def _get_visible_post_or_404(
     db: Session,
-    post_id: int,
-    user_id: int,
+    post_id: UUID,
+    user_id: UUID,
 ) -> Post:
     post = get_post_by_id(db, post_id)
     if post is None or (post.is_private and post.user_id != user_id):
@@ -198,7 +200,7 @@ def get_my_posts(
     dependencies=[Depends(get_current_user)]
 )
 def get_detail(
-    post_id: int,
+    post_id: UUID,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user)
 ):
@@ -214,7 +216,7 @@ def get_detail(
     response_model=PostSaveResponse,
 )
 def save(
-    post_id: int,
+    post_id: UUID,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
@@ -230,7 +232,7 @@ def save(
     response_model=PostSaveResponse,
 )
 def unsave(
-    post_id: int,
+    post_id: UUID,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
@@ -246,7 +248,7 @@ def unsave(
     response_model=PostResponse,
 )
 def update_visibility(
-    post_id: int,
+    post_id: UUID,
     request: UpdatePostVisibilityRequest,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
@@ -262,7 +264,7 @@ def update_visibility(
     response_model=PostReactionSummary,
 )
 def react_to_post(
-    post_id: int,
+    post_id: UUID,
     request: PostReactionRequest,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user)
@@ -294,7 +296,7 @@ def react_to_post(
     response_model=PostReactionSummary,
 )
 def clear_post_reaction(
-    post_id: int,
+    post_id: UUID,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user)
 ):
@@ -323,7 +325,7 @@ def clear_post_reaction(
     response_model=list[CommentResponse],
 )
 def get_comments(
-    post_id: int,
+    post_id: UUID,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
@@ -337,7 +339,7 @@ def get_comments(
     status_code=201
 )
 def create_post_comment(
-    post_id: int,
+    post_id: UUID,
     request: CreateCommentRequest,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user)
@@ -356,8 +358,8 @@ def create_post_comment(
     response_model=CommentResponse
 )
 def update_post_comment(
-    post_id: int,
-    comment_id: int,
+    post_id: UUID,
+    comment_id: UUID,
     request: UpdateCommentRequest,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user)
@@ -388,8 +390,8 @@ def update_post_comment(
     "/{post_id}/comments/{comment_id}"
 )
 def delete_post_comment(
-    post_id: int,
-    comment_id: int,
+    post_id: UUID,
+    comment_id: UUID,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user)
 ):
@@ -412,7 +414,7 @@ def delete_post_comment(
     response_model=PostResponse
 )
 def update(
-    post_id: int,
+    post_id: UUID,
     request: UpdatePostRequest,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user)
@@ -459,7 +461,7 @@ def update(
     "/{post_id}"
 )
 def delete(
-    post_id: int,
+    post_id: UUID,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user)
 ):

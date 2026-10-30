@@ -37,7 +37,7 @@ export default function CarpoolList({ mine = false }: { mine?: boolean }) {
   const [view, setView] = useState<"feed" | "map">("map");
   const [fullscreen, setFullscreen] = useState(false);
   const [resultsOpen, setResultsOpen] = useState(true);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectionVersion, setSelectionVersion] = useState(0);
   const [center, setCenter] = useState<[number, number]>(DEFAULT_CENTER);
   const [zoom, setZoom] = useState(2);
@@ -196,6 +196,14 @@ export default function CarpoolList({ mine = false }: { mine?: boolean }) {
   const onPickupSelected = useCallback((selection: LocationSelection | null) => {
     if (scopeRef.current === "pickup") setPickup(selection);
   }, []);
+  const onDestinationLocationSelected = useCallback((next: [number, number]) => {
+    if (scopeRef.current !== "destination") return;
+    locationVersion.current += 1;
+    viewport.current = { center: next, zoom: 11 };
+    setCenter(next); setSearchCenter(next); setZoom(11);
+    setMapVersion(version => version + 1); setMapBounds(null);
+    setSelectedId(null); setLocationError(""); setLocating(false);
+  }, []);
   const onDestinationSelected = useCallback((selection: LocationSelection | null) => {
     setDropoff(selection);
     setDestinationMap(false);
@@ -229,12 +237,12 @@ export default function CarpoolList({ mine = false }: { mine?: boolean }) {
     if (!fullscreen) changeView("map");
     setFullscreen(!fullscreen);
   }
-  const selectTrip = useCallback((id: number) => {
+  const selectTrip = useCallback((id: string) => {
     locationVersion.current += 1;
     setLocating(false);
     setView("map"); setResultsOpen(true); setSelectedId(id); setSelectionVersion(version => version + 1);
   }, []);
-  const selectMapTrip = useCallback((id: number) => { setSelectedId(id); }, []);
+  const selectMapTrip = useCallback((id: string) => { setSelectedId(id); }, []);
   const clearMapSelection = useCallback(() => { setSelectedId(null); }, []);
   const points = useMemo(() => (page?.trips ?? []).map(trip => ({
     id: trip.id, latitude: trip.pickup.latitude, longitude: trip.pickup.longitude,
@@ -264,7 +272,7 @@ export default function CarpoolList({ mine = false }: { mine?: boolean }) {
     </div>
     <form ref={filterForm} className="rides-discovery" aria-label="Carpool filters" onSubmit={search} onChange={interruptLocation}>
       <div className="community-location" hidden={scope === "destination"}><MapPin size={18} /><ExploreLocationSearch key={`pickup-${filterVersion}-${pickupVersion}`} label="Pickup area (optional)" center={searchCenter} onLocationSelected={onLocationSelected} onSelectionChange={onPickupSelected} onQueryChange={setPickupQuery} /></div>
-      <div className="community-location"><MapPin size={18} /><ExploreLocationSearch key={`dropoff-${filterVersion}-${dropoffVersion}`} label={scope === "destination" ? "Destination area" : "Destination area (optional)"} center={searchCenter} onSelectionChange={onDestinationSelected} onQueryChange={setDropoffQuery} /></div>
+      <div className="community-location"><MapPin size={18} /><ExploreLocationSearch key={`dropoff-${filterVersion}-${dropoffVersion}`} label={scope === "destination" ? "Destination area" : "Destination area (optional)"} center={searchCenter} onLocationSelected={onDestinationLocationSelected} onSelectionChange={onDestinationSelected} onQueryChange={setDropoffQuery} /></div>
       <div className="rides-filter-form carpool-filter-fields">
         <label className="rides-date-field"><CalendarDays size={18} /><span>Departure date<input type="date" value={date} onChange={event => setDate(event.target.value)} /></span></label>
         <label className="rides-date-field"><Users size={18} /><span>Seats needed<input type="number" min={1} max={8} required value={passengers} onChange={event => setPassengers(event.target.value)} /></span></label>
@@ -280,7 +288,7 @@ export default function CarpoolList({ mine = false }: { mine?: boolean }) {
     <div className="rides-search-summary"><p className="field-hint">Page {offset / 20 + 1} / local trip times / contribution per person, per direction</p><button className="community-icon-button" aria-label="Refresh carpools" title="Refresh carpools" disabled={resultsLoading || !page} onClick={() => void refresh(offset)}><RefreshCw size={18} /></button></div>
     <div className={`community-content community-${view} rides-${view}`}>
       {view === "map" && <div className="community-map-panel">
-        <CarpoolMap key={mapVersion} posts={busy || autoSearchPending || error ? [] : points} fitPosts={appliedScope === "destination" && !appliedMap} center={center} initialZoom={zoom} fullscreen={fullscreen} selectedPostId={selectedId} selectionVersion={selectionVersion} onSelectPost={selectMapTrip} onClearSelection={clearMapSelection} onBoundsChange={setMapBounds} onCenterChange={setSearchCenter} onViewportChange={onViewportChange} />
+        <CarpoolMap key={mapVersion} posts={busy || autoSearchPending || error ? [] : points} center={center} initialZoom={zoom} fullscreen={fullscreen} selectedPostId={selectedId} selectionVersion={selectionVersion} onSelectPost={selectMapTrip} onClearSelection={clearMapSelection} onBoundsChange={setMapBounds} onCenterChange={setSearchCenter} onViewportChange={onViewportChange} />
         <div className="community-map-actions">
           <button className="button button-primary" title={scope === "destination" ? "Search destinations here" : "Search pickups here"} disabled={resultsLoading || !mapBounds} onClick={searchMapArea}><Search size={16} />{busy ? "Searching..." : scope === "destination" ? "Search destinations here" : "Search pickups here"}</button>
           <button className="community-icon-button" title="Center map on my location" aria-label="Center map on my location" disabled={locating} onClick={locate}>{locating ? <span className="spinner" /> : <LocateFixed size={19} />}</button>
@@ -295,7 +303,7 @@ export default function CarpoolList({ mine = false }: { mine?: boolean }) {
             if ((event.target as HTMLElement).closest("a, button") || window.getSelection()?.toString()) return;
             if (view === "feed") selectTrip(trip.id); else selectMapTrip(trip.id);
           }}>
-            <div className="community-post-top"><span className="community-category-icon"><Car size={21} /></span><div className="community-post-context"><span>{trip.driver.name}</span><time dateTime={trip.pickup_start}>{rideDate(trip.pickup_start, trip.timezone)}</time></div><span className="post-type-pill">{trip.status}</span></div>
+            <div className="community-post-top"><span className="community-category-icon"><Car size={21} /></span><div className="community-post-context"><Link className="member-profile-link" href={`/profile/${trip.driver.id}`}>{trip.driver.name}</Link><time dateTime={trip.pickup_start}>{rideDate(trip.pickup_start, trip.timezone)}</time></div><span className="post-type-pill">{trip.status}</span></div>
             <h3><Link href={`/rides/carpools/${trip.id}`}>{trip.pickup.city} to {trip.dropoff.city}<ArrowUpRight size={18} /></Link></h3>
             <dl className="rides-result-route"><div><dt>Meeting point</dt><dd>{trip.pickup.location}</dd></div><div><dt>Drop-off point</dt><dd>{trip.dropoff.location}</dd></div></dl>
             <p className="rides-result-window">Until {rideDate(trip.pickup_end, trip.timezone)} ({trip.timezone})</p>

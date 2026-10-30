@@ -163,7 +163,7 @@ export default function CommunityPage() {
     DEFAULT_PREFERENCES.center,
   );
   const [mapBounds, setMapBounds] = useState<PostSearchBounds | null>(null);
-  const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const [selectionVersion, setSelectionVersion] = useState(0);
   const [fullscreen, setFullscreen] = useState(false);
   const [resultsOpen, setResultsOpen] = useState(true);
@@ -336,7 +336,7 @@ export default function CommunityPage() {
     await requestPosts();
   }
 
-  const selectPost = useCallback((postId: number) => {
+  const selectPost = useCallback((postId: string) => {
     setSelectedPostId(postId);
     setSelectionVersion((version) => version + 1);
     setResultsOpen(true);

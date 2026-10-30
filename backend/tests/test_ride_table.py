@@ -3,7 +3,7 @@ import unittest
 from datetime import datetime, timedelta, timezone
 from math import degrees
 from unittest.mock import patch
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -68,9 +68,9 @@ class PostgreSQLTableTests(unittest.TestCase):
         self.addCleanup(self.cleanup_database)
         with Session(self.isolated) as db:
             for id in (1, 2, 3):
-                db.add(User(id=id, email=f"{id}@example.test", name=f"Member {id}", provider="test", provider_id=str(id)))
+                db.add(User(id=UUID(int=id), email=f"{id}@example.test", name=f"Member {id}", provider="test", provider_id=str(id)))
             db.commit()
-            db.add(DriverProfile(user_id=2, vehicle="Test", passenger_capacity=4, phone="+14155550102", acknowledgement_at=datetime.now()))
+            db.add(DriverProfile(user_id=UUID(int=2), vehicle="Test", passenger_capacity=4, phone="+14155550102", acknowledgement_at=datetime.now()))
             db.commit()
         app = FastAPI()
         app.include_router(router, prefix="/rides")
@@ -99,19 +99,19 @@ class PostgreSQLTableTests(unittest.TestCase):
             pickup["h3_cell_id"] = h3.latlng_to_cell(pickup["latitude"], pickup["longitude"], 8)
         start = (self.start + timedelta(minutes=minutes)).replace(tzinfo=None)
         with Session(self.isolated) as db:
-            ride = RideRequest(rider_id=rider, pickup=pickup, dropoff=place("dropoff").model_dump(),
+            ride = RideRequest(rider_id=UUID(int=rider), pickup=pickup, dropoff=place("dropoff").model_dump(),
                                pickup_start=start, pickup_end=start + timedelta(minutes=30), timezone=zone,
                                passengers=passengers, bags=1, notes="", rider_phone="+14155550101", currency="USD", status=status)
             db.add(ride)
             db.commit()
-            return ride.id
+            return str(ride.id)
 
     def search(self, user=2, **data):
         return self.client.post("/rides/requests/table-search", json=data,
-                                headers={"Authorization": f"Bearer {create_access_token(user)}"})
+                                headers={"Authorization": f"Bearer {create_access_token(UUID(int=user))}"})
 
     def test_permissions_pagination_and_privacy(self):
-        ids = [self.seed() for _ in range(5)]
+        ids = sorted(self.seed() for _ in range(5))
         self.seed(rider=2)
         self.seed(status="CANCELLED")
         self.assertEqual(self.search(user=3).status_code, 200)
@@ -133,7 +133,7 @@ class PostgreSQLTableTests(unittest.TestCase):
         self.seed(distance=25.01)
         self.seed(passengers=5)
         wanted = self.seed(distance=24.99)
-        self.seed(distance=1)
+        self.seed(distance=1, minutes=1)
         result = self.search(pickup_location_id="pickup", radius_km=25, max_passengers=2, limit=1)
         self.assertEqual(result.status_code, 200, result.text)
         self.assertEqual([r["id"] for r in result.json()["rides"]], [wanted])

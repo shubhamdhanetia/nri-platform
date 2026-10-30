@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from datetime import datetime
 
 from pydantic import BaseModel
@@ -6,10 +8,10 @@ from app.schemas.common import UTCResponse
 
 
 class NotificationResponse(UTCResponse):
-    id: int
+    id: UUID
     category: str
     event_type: str
-    resource_id: int
+    resource_id: UUID
     target_path: str
     message: str
     is_read: bool

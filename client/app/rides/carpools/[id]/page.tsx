@@ -5,18 +5,18 @@ import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import RideLayout from "../../../../components/RideLayout";
 import CarpoolCard from "../../../../components/CarpoolCard";
-import { apiRequest, type User } from "../../../../lib/api";
+import { apiRequest, isUuid, type User } from "../../../../lib/api";
 import type { CarpoolDetail } from "../../../../lib/carpools";
 import { refreshNotifications } from "../../../../lib/notifications";
 import { rideDate, rideError, rideMoney } from "../../../../lib/rides";
 
 export default function CarpoolDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const tripId = Number(id);
-  return <RideLayout>{Number.isSafeInteger(tripId) && tripId > 0 ? <CarpoolContent key={tripId} id={tripId} /> : <p className="form-error" role="alert">Invalid carpool trip.</p>}</RideLayout>;
+  const tripId = id;
+  return <RideLayout>{isUuid(tripId) ? <CarpoolContent key={tripId} id={tripId} /> : <p className="form-error" role="alert">Invalid carpool trip.</p>}</RideLayout>;
 }
 
-function CarpoolContent({ id }: { id: number }) {
+function CarpoolContent({ id }: { id: string }) {
   const [detail, setDetail] = useState<CarpoolDetail | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -98,7 +98,7 @@ function CarpoolContent({ id }: { id: number }) {
         <h2>{owner ? "Passenger requests" : "Your seat request"}</h2>
         {detail.requests.length === 0 && <p className="muted">{owner ? "No requests yet. Pending requests do not reserve seats." : "You have not requested this direction."}</p>}
         {detail.requests.map(item => <article className="ride-card" key={item.id}>
-          <div className="ride-between"><h3>{item.rider.name}</h3><span className="ride-badge">{item.status}</span></div>
+          <div className="ride-between"><h3><Link className="member-profile-link" href={`/profile/${item.rider.id}`}>{item.rider.name}</Link></h3><span className="ride-badge">{item.status}</span></div>
           <p>{item.passengers} passenger(s) &middot; {item.bags} bag(s)</p>
           <p><strong>{rideMoney(String(Number(trip.amount) * item.passengers), trip.currency)}</strong> total contribution for this direction.</p>
           {item.message && <p className="ride-message">{item.message}</p>}

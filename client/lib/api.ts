@@ -1,9 +1,43 @@
-export interface User {
-  id: number;
+export function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+}
+
+export interface ProfileFields {
+  bio: string | null;
+  home_city: string | null;
+  languages: string[];
+}
+
+export interface MemberProfile extends ProfileFields {
+  id: string;
+  name: string;
+  picture?: string | null;
+  member_since: string;
+}
+
+export interface MemberPost {
+  id: string;
+  title: string;
+  description: string;
+  category: PostCategory;
+  post_type: PostType;
+  city: string;
+  created_at: string;
+  comment_count: number;
+}
+
+export interface MemberPostsResponse {
+  posts: MemberPost[];
+  has_more: boolean;
+}
+
+export interface User extends ProfileFields {
+  id: string;
   email: string;
   name: string;
   picture?: string | null;
   provider?: string;
+  created_at: string;
 }
 
 export const POST_CATEGORIES = [
@@ -43,7 +77,7 @@ export const POST_TYPE_LABELS: Record<PostType, string> = {
 };
 
 export interface Post {
-  id: number;
+  id: string;
   created_at: string;
   updated_at: string | null;
   title: string;
@@ -60,7 +94,7 @@ export interface Post {
   latitude: number;
   longitude: number;
   h3_cell_id: string;
-  user_id: number;
+  user_id: string;
   comment_count: number;
   like_count: number;
   dislike_count: number;
@@ -90,14 +124,14 @@ export interface PostSearchResponse {
 }
 
 export interface PostReactionSummary {
-  post_id: number;
+  post_id: string;
   like_count: number;
   dislike_count: number;
   my_reaction: PostReactionType | null;
 }
 
 export interface PostAuthor {
-  id: number;
+  id: string;
   name: string;
   picture: string | null;
 }
@@ -130,10 +164,10 @@ export interface PostDetail extends Post {
 }
 
 export interface Comment {
-  id: number;
+  id: string;
   content: string;
-  user_id: number;
-  post_id: number;
+  user_id: string;
+  post_id: string;
   created_at: string;
   updated_at: string | null;
   author: PostAuthor;

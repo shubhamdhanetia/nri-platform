@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Annotated, Literal, Self
@@ -63,10 +65,10 @@ class SeatRequestInput(BaseModel):
 
 
 class CarpoolTripResponse(UTCResponse):
-    id: int
-    driver_id: int
+    id: UUID
+    driver_id: UUID
     driver: PostAuthorResponse
-    linked_trip_id: int | None
+    linked_trip_id: UUID | None
     is_return: bool
     pickup: PostLocationFields
     dropoff: PostLocationFields
@@ -88,8 +90,8 @@ class CarpoolTripResponse(UTCResponse):
 
 
 class SeatRequestResponse(UTCResponse):
-    id: int
-    trip_id: int
+    id: UUID
+    trip_id: UUID
     rider: PostAuthorResponse
     passengers: int
     bags: int

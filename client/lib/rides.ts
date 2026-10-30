@@ -11,14 +11,14 @@ export interface RideLocation {
   longitude: number;
 }
 export interface DriverProfile {
-  user_id: number;
+  user_id: string;
   vehicle: string;
   passenger_capacity: number;
   phone: string;
 }
 export interface RideRequest {
-  id: number;
-  rider_id: number;
+  id: string;
+  rider_id: string;
   rider: PostAuthor;
   pickup: RideLocation;
   dropoff: RideLocation;
@@ -35,9 +35,9 @@ export interface RideRequest {
   created_at: string;
 }
 export interface RideOffer {
-  id: number;
-  request_id: number;
-  driver_id: number;
+  id: string;
+  request_id: string;
+  driver_id: string;
   driver: PostAuthor;
   pickup_time: string;
   amount: string;
@@ -47,10 +47,10 @@ export interface RideOffer {
   status: "PENDING" | "ACCEPTED" | "WITHDRAWN" | "NOT_SELECTED" | "EXPIRED";
 }
 export interface RideBooking {
-  id: number;
-  offer_id: number;
-  rider_id: number;
-  driver_id: number;
+  id: string;
+  offer_id: string;
+  rider_id: string;
+  driver_id: string;
   rider: PostAuthor;
   driver: PostAuthor;
   driver_phone: string;

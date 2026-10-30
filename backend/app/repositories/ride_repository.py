@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from datetime import date, datetime, time, timedelta, timezone
 from math import asin, cos, radians, sin, sqrt
 from zoneinfo import ZoneInfo
@@ -12,29 +14,29 @@ from app.core.ride_time import utc_now_naive
 from app.schemas.ride import RideTableSearchInput
 
 
-def driver_profile(db: Session, user_id: int) -> DriverProfile | None:
+def driver_profile(db: Session, user_id: UUID) -> DriverProfile | None:
     return db.get(DriverProfile, user_id)
 
 
-def request_by_id(db: Session, request_id: int, *, lock: bool = False) -> RideRequest | None:
+def request_by_id(db: Session, request_id: UUID, *, lock: bool = False) -> RideRequest | None:
     query = select(RideRequest).where(RideRequest.id == request_id)
     if lock:
         query = query.with_for_update().execution_options(populate_existing=True)
     return db.scalar(query)
 
 
-def booking_for_request(db: Session, request_id: int) -> RideBooking | None:
+def booking_for_request(db: Session, request_id: UUID) -> RideBooking | None:
     return db.scalar(select(RideBooking).where(RideBooking.request_id == request_id))
 
 
-def offers_for_request(db: Session, request_id: int, driver_id: int | None = None) -> list[RideOffer]:
+def offers_for_request(db: Session, request_id: UUID, driver_id: UUID | None = None) -> list[RideOffer]:
     query = select(RideOffer).where(RideOffer.request_id == request_id)
     if driver_id is not None:
         query = query.where(RideOffer.driver_id == driver_id)
     return list(db.scalars(query.order_by(RideOffer.created_at, RideOffer.id)))
 
 
-def my_requests(db: Session, user_id: int, offset: int, limit: int) -> list[RideRequest]:
+def my_requests(db: Session, user_id: UUID, offset: int, limit: int) -> list[RideRequest]:
     offered = exists().where(RideOffer.request_id == RideRequest.id, RideOffer.driver_id == user_id)
     query = select(RideRequest).where(or_(RideRequest.rider_id == user_id, offered))
     return list(db.scalars(query.order_by(RideRequest.created_at.desc(), RideRequest.id.desc()).offset(offset).limit(limit)))
@@ -46,7 +48,7 @@ def distance_km(lat: float, lng: float, target_lat: float, target_lng: float) ->
 
 
 def open_requests(
-    db: Session, user_id: int, offset: int, limit: int,
+    db: Session, user_id: UUID, offset: int, limit: int,
     pickup: PostLocationFields | None = None, dropoff: PostLocationFields | None = None,
     departure_date: date | None = None, radius_km: int = 25,
     bounds: PostSearchBounds | None = None, cell_ids: set[str] | None = None,
@@ -120,7 +122,7 @@ def _local_boundary_utc(local: datetime, *, latest: bool):
 
 
 def table_requests(
-    db: Session, user_id: int, data: RideTableSearchInput,
+    db: Session, user_id: UUID, data: RideTableSearchInput,
     pickup: PostLocationFields | None, cells: set[str] | None,
 ) -> list[RideRequest]:
     now = utc_now_naive()

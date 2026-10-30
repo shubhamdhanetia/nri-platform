@@ -1,3 +1,5 @@
+from uuid import UUID, uuid4
+
 from datetime import datetime
 from decimal import Decimal
 from typing import Literal
@@ -22,9 +24,9 @@ class CarpoolTrip(Base):
         CheckConstraint("status IN ('OPEN','CANCELLED')"),
     )
 
-    id: Mapped[int] = mapped_column(primary_key=True)
-    driver_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
-    outbound_id: Mapped[int | None] = mapped_column(ForeignKey("carpool_trips.id"), unique=True)
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    driver_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), index=True)
+    outbound_id: Mapped[UUID | None] = mapped_column(ForeignKey("carpool_trips.id"), unique=True)
     pickup: Mapped[RidePlace] = mapped_column(JSON)
     dropoff: Mapped[RidePlace] = mapped_column(JSON)
     pickup_start: Mapped[datetime] = mapped_column(DateTime, index=True)
@@ -54,9 +56,9 @@ class CarpoolSeatRequest(Base):
         CheckConstraint("status IN ('PENDING','CONFIRMED','DECLINED','CANCELLED')"),
     )
 
-    id: Mapped[int] = mapped_column(primary_key=True)
-    trip_id: Mapped[int] = mapped_column(ForeignKey("carpool_trips.id"), index=True)
-    rider_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    trip_id: Mapped[UUID] = mapped_column(ForeignKey("carpool_trips.id"), index=True)
+    rider_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), index=True)
     passengers: Mapped[int]
     bags: Mapped[int]
     message: Mapped[str] = mapped_column(Text)
@@ -64,17 +66,4 @@ class CarpoolSeatRequest(Base):
     driver_phone: Mapped[str | None] = mapped_column(String(30))
     status: Mapped[SeatStatus] = mapped_column(String(12), default="PENDING")
     cancellation_reason: Mapped[str | None] = mapped_column(Text)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now_naive)
-
-
-class CarpoolNotification(Base):
-    """Legacy storage retained for the idempotent shared-notification migration."""
-
-    __tablename__ = "carpool_notifications"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
-    trip_id: Mapped[int] = mapped_column(ForeignKey("carpool_trips.id"))
-    message: Mapped[str] = mapped_column(String(500))
-    is_read: Mapped[bool] = mapped_column(default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now_naive)

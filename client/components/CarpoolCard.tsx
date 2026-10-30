@@ -4,7 +4,7 @@ import { rideDate, rideMoney } from "../lib/rides";
 
 export default function CarpoolCard({ trip, role }: { trip: CarpoolTrip; role?: "Driver" | "Passenger" }) {
   return <article className="ride-card">
-    <div className="ride-between"><strong>{trip.driver.name}</strong><span className="ride-badge">{trip.status}</span></div>
+    <div className="ride-between"><strong><Link className="member-profile-link" href={`/profile/${trip.driver.id}`}>{trip.driver.name}</Link></strong><span className="ride-badge">{trip.status}</span></div>
     {role && <p className="field-hint">Your role: <span className="ride-badge">{role}</span></p>}
     <div className="ride-route"><div><span>Meeting point</span><strong>{trip.pickup.location}</strong></div><div><span>Drop-off point</span><strong>{trip.dropoff.location}</strong></div></div>
     <p><strong>{rideDate(trip.pickup_start, trip.timezone)}</strong></p>
