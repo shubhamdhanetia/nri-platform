@@ -10,6 +10,7 @@ import { locationSearchBounds } from "../lib/map";
 import { rideDate, rideError, rideMoney, type LocationSelection } from "../lib/rides";
 import CarpoolCard from "./CarpoolCard";
 import ExploreLocationSearch from "./ExploreLocationSearch";
+import TripMapLegend from "./TripMapLegend";
 
 const CarpoolMap = dynamic(() => import("./CommunityMap"), {
   ssr: false,
@@ -295,16 +296,18 @@ export default function CarpoolList({ mine = false }: { mine?: boolean }) {
           {selectedId !== null && !resultsLoading && !error && <button className="community-icon-button" title="Show both locations" aria-label="Show both locations" onClick={() => setSelectionVersion(version => version + 1)}><MapIcon size={19} /></button>}
           <button className="community-icon-button" title={fullscreen ? "Exit full screen" : "Full screen map"} aria-label={fullscreen ? "Exit full screen" : "Full screen map"} onClick={toggleFullscreen}>{fullscreen ? <Minimize2 size={19} /> : <Maximize2 size={19} />}</button>
         </div>
+        <TripMapLegend hasSelection={!resultsLoading && !error && !!page?.trips.some(trip => trip.id === selectedId)}
+          onClearSelection={clearMapSelection} />
       </div>}
       <section className={`community-results${view === "map" && !resultsOpen ? " community-results-collapsed" : ""}`} aria-label="Available carpools" aria-busy={resultsLoading}>
         <div className="community-results-heading"><div><h2>Available carpools</h2><span aria-live="polite">{resultsLoading ? "Searching..." : error ? "Search unavailable" : !page ? "" : `${page.trips.length}${page.has_more ? "+" : ""} trips`}</span></div>{view === "map" && <button className="community-icon-button community-sheet-toggle" aria-label={resultsOpen ? "Collapse carpools" : "Expand carpools"} aria-expanded={resultsOpen} onClick={() => setResultsOpen(!resultsOpen)}>{resultsOpen ? <ChevronDown size={20} /> : <ChevronUp size={20} />}</button>}</div>
         <div className="community-result-body">
           {resultsLoading ? <div className="community-state" role="status"><span className="spinner" /><p>{locating ? "Finding your location..." : "Searching carpools..."}</p></div> : error ? <div className="community-state" role="alert"><h3>Could not load carpools</h3><p>{error}</p><button className="button button-secondary" onClick={() => void refresh(offset)}>Try again</button></div> : !page ? <div className="community-state"><MapPin size={30} /><h3>{scope === "destination" ? "Choose a destination" : "Choose a pickup area"}</h3></div> : !page.trips.length ? <div className="community-state"><Car size={30} /><h3>No matching carpools</h3><Link className="button button-secondary" href="/rides/new">Request a ride</Link></div> : page.trips.map(trip => <article className={`community-post rides-result${selectedId === trip.id ? " is-selected" : ""}`} key={trip.id} onClick={event => {
             if ((event.target as HTMLElement).closest("a, button") || window.getSelection()?.toString()) return;
-            if (view === "feed") selectTrip(trip.id); else selectMapTrip(trip.id);
+            selectTrip(trip.id);
           }}>
             <div className="community-post-top"><span className="community-category-icon"><Car size={21} /></span><div className="community-post-context"><Link className="member-profile-link" href={`/profile/${trip.driver.id}`}>{trip.driver.name}</Link><time dateTime={trip.pickup_start}>{rideDate(trip.pickup_start, trip.timezone)}</time></div><span className="post-type-pill">{trip.status}</span></div>
-            <h3><Link href={`/rides/carpools/${trip.id}`}>{trip.pickup.city} to {trip.dropoff.city}<ArrowUpRight size={18} /></Link></h3>
+            <h3><button type="button" className="ride-result-select" aria-label={`Select ${trip.driver.name}'s carpool on map`} aria-pressed={selectedId === trip.id} onClick={() => selectTrip(trip.id)}>{trip.pickup.city} to {trip.dropoff.city}</button></h3>
             <dl className="rides-result-route"><div><dt>Meeting point</dt><dd>{trip.pickup.location}</dd></div><div><dt>Drop-off point</dt><dd>{trip.dropoff.location}</dd></div></dl>
             <p className="rides-result-window">Until {rideDate(trip.pickup_end, trip.timezone)} ({trip.timezone})</p>
             <p className="carpool-price"><strong>{rideMoney(trip.amount, trip.currency)}</strong> / person</p><p className="field-hint">{trip.vehicle}</p>

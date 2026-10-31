@@ -1,8 +1,9 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import TripMapLegend from "../../components/TripMapLegend";
 import Link from "next/link";
-import { ArrowUpRight, CalendarDays, Car, ChevronDown, ChevronUp, Clock3, Flag, List, LocateFixed, Luggage, Map as MapIcon, MapPin, Maximize2, Minimize2, Plus, Search, Users, X } from "lucide-react";
+import { ArrowUpRight, CalendarDays, Car, ChevronDown, ChevronUp, Clock3, List, LocateFixed, Luggage, Map as MapIcon, MapPin, Maximize2, Minimize2, Plus, Search, Users } from "lucide-react";
 import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import RideLayout from "../../components/RideLayout";
 import ExploreLocationSearch from "../../components/ExploreLocationSearch";
@@ -265,11 +266,7 @@ export default function RidesPage() {
           <button className="community-icon-button" title="Center map on my location" aria-label="Center map on my location" disabled={locating} onClick={locate}>{locating ? <span className="spinner" /> : <LocateFixed size={19} />}</button>
           <button className="community-icon-button" title={fullscreen ? "Exit full screen" : "Full screen map"} aria-label={fullscreen ? "Exit full screen" : "Full screen map"} onClick={toggleFullscreen}>{fullscreen ? <Minimize2 size={19} /> : <Maximize2 size={19} />}</button>
         </div>
-        <div className="ride-map-key" role="group" aria-label="Map legend and selection">
-          <span><MapPin size={16} className="ride-pickup-key" aria-hidden="true" />Pickup</span>
-          <span><Flag size={16} className="ride-destination-key" aria-hidden="true" />Destination</span>
-          <button type="button" className="community-icon-button" title="Clear selection" aria-label="Clear selection" disabled={!selectedRide} onClick={clearMapSelection}><X size={18} /></button>
-        </div>
+        <TripMapLegend hasSelection={!!selectedRide} onClearSelection={clearMapSelection} />
       </div>}
       <section ref={resultsPanel} className={`community-results${!resultsOpen && view === "map" ? " community-results-collapsed" : ""}`} aria-label="Rides in this area" aria-busy={resultsLoading}>
         <div ref={resultsHeading} className="community-results-heading"><div><h2>Upcoming ride requests</h2><span aria-live="polite">{resultsLoading ? "Searching..." : error ? "Search unavailable" : `${rides.length}${more ? "+" : ""} ${rides.length === 1 && !more ? "request" : "requests"}`}</span></div>

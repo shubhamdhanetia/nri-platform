@@ -51,6 +51,11 @@ within the current browser session.
 
 ## Local setup
 
+Ride-request and carpool discovery maps share the Pickup/Destination legend
+and clear-selection control. Selecting a result's title or Show on map reveals
+both endpoints and their connection (not a driving route); carpool card
+selection also fits both endpoints. View carpool still opens trip details.
+
 Community discovery categories adapt to the available width: desktop shows
 complete category shortcuts and a More menu for overflow, while mobile uses
 a category picker bottom sheet. A selected overflow category is named in the
