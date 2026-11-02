@@ -3,12 +3,12 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import {
   BriefcaseBusiness, CalendarDays, Check, ChevronDown, Globe2, HeartPulse,
-  House, MessagesSquare, Plane, ShoppingBag, Trophy, Users, Utensils, X,
+  House, MessagesSquare, ParkingSquare, Plane, ShoppingBag, Trophy, Users, Utensils, X,
 } from "lucide-react";
 import { POST_CATEGORIES, POST_CATEGORY_LABELS, type PostCategory } from "../lib/api";
 
 export const CATEGORY_ICONS = {
-  HOUSING: House, TRAVEL: Plane, JOBS: BriefcaseBusiness, FOOD: Utensils,
+  HOUSING: House, TRAVEL: Plane, PARKING: ParkingSquare, JOBS: BriefcaseBusiness, FOOD: Utensils,
   EVENTS: CalendarDays, SPORTS: Trophy, IMMIGRATION: Globe2,
   MARKETPLACE: ShoppingBag, MEDICAL_SUPPORT: HeartPulse, GENERAL: MessagesSquare,
 };

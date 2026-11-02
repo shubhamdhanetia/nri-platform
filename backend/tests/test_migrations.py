@@ -10,7 +10,7 @@ from uuid import uuid4
 from alembic import command
 from alembic.config import Config
 from sqlalchemy import create_engine, inspect, select, text
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import DBAPIError, IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy.schema import CreateSchema, DropSchema
 
@@ -18,7 +18,7 @@ from app.core.config import settings
 from app.db.base import Base
 from app.db.url import parse_database_url
 from app.models.user import User
-from app.models.post import Post, PostCategory, PostType
+from app.models.post import Post, PostCategory, PostStatus
 
 
 BACKEND = Path(__file__).resolve().parents[1]
@@ -54,7 +54,7 @@ class MigrationConfigurationTests(unittest.TestCase):
         self.assertIn("CREATE TABLE ride_bookings", sql)
         self.assertIn("ix_ride_requests_pickup_h3", sql)
         self.assertIn("INSERT INTO alembic_version", sql)
-        self.assertEqual(sql.count("CONSTRAINT post_category CHECK"), 3)
+        self.assertEqual(sql.count("CONSTRAINT post_category CHECK"), 4)
         self.assertEqual(sql.count("CONSTRAINT post_type CHECK"), 1)
         self.assertEqual(sql.count("CONSTRAINT post_reaction_type CHECK"), 1)
 
@@ -106,13 +106,12 @@ class PostgreSQLMigrationTests(unittest.TestCase):
                         provider="test", provider_id=str(user_id),
                     ))
                     session.flush()
-                    session.add(Post(
-                        id=post_id, user_id=user_id, title="Community game",
-                        description="Weekend sports", category=PostCategory.GENERAL,
-                        post_type=PostType.DISCUSSION, location_id="test", location="Fremont",
-                        country_code="US", postal_code="94538", state="CA", city="Fremont",
-                        latitude=37.55, longitude=-121.98, h3_cell_id="test",
-                    ))
+                    session.execute(text(
+                        "INSERT INTO posts (id, user_id, title, description, category, post_type, "
+                        "location_id, location, country_code, postal_code, state, city, latitude, longitude, h3_cell_id, created_at) "
+                        "VALUES (:id, :user_id, 'Community game', 'Weekend sports', 'GENERAL', 'DISCUSSION', "
+                        "'test', 'Fremont', 'US', '94538', 'CA', 'Fremont', 37.55, -121.98, 'test', CURRENT_TIMESTAMP)"
+                    ), {"id": post_id, "user_id": user_id})
                     session.commit()
                 with self.assertRaises(IntegrityError):
                     with connection.begin_nested():
@@ -128,8 +127,23 @@ class PostgreSQLMigrationTests(unittest.TestCase):
                 )
                 self.assertEqual(
                     connection.scalar(text("SELECT version_num FROM alembic_version")),
-                    "0003",
+                    "0005",
                 )
+                self.assertEqual(connection.scalar(select(Post.status)), PostStatus.ACTIVE)
+                connection.commit()
+                with self.assertRaises(IntegrityError):
+                    with connection.begin_nested():
+                        connection.execute(text("UPDATE posts SET status = 'CLOSED'"))
+                connection.commit()
+                connection.execute(text("UPDATE posts SET post_type = 'OFFER', status = 'CLOSED'"))
+                connection.commit()
+                with self.assertRaises(DBAPIError):
+                    command.downgrade(config, "0004")
+                connection.rollback()
+                self.assertEqual(connection.scalar(select(Post.status)), PostStatus.CLOSED)
+                self.assertEqual(connection.scalar(text("SELECT version_num FROM alembic_version")), "0005")
+                connection.execute(text("UPDATE posts SET status = 'ACTIVE'"))
+                connection.commit()
                 indexes = {index["name"] for index in inspect(connection).get_indexes("ride_requests")}
                 self.assertIn("ix_ride_requests_pickup_h3", indexes)
                 self.assertIn("ix_ride_requests_status_pickup_id", indexes)
@@ -146,6 +160,23 @@ class PostgreSQLMigrationTests(unittest.TestCase):
                 with self.assertRaises(IntegrityError):
                     with connection.begin_nested():
                         connection.execute(text("UPDATE posts SET category = 'RIDES'"))
+                connection.commit()
+                connection.execute(text("UPDATE posts SET category = 'PARKING'"))
+                connection.commit()
+                self.assertEqual(connection.scalar(select(Post.category)), PostCategory.PARKING)
+                self.assertEqual(connection.scalar(select(Post.id)), post_id)
+                connection.commit()
+                with self.assertRaises(IntegrityError):
+                    command.downgrade(config, "0003")
+                connection.rollback()
+                self.assertEqual(
+                    connection.scalar(text("SELECT version_num FROM alembic_version")), "0005"
+                )
+                self.assertEqual(connection.scalar(select(Post.category)), PostCategory.PARKING)
+                connection.execute(text("UPDATE posts SET category = 'TRAVEL'"))
+                connection.commit()
+                command.downgrade(config, "0003")
+                self.assertEqual(connection.scalar(select(Post.id)), post_id)
                 connection.commit()
                 command.downgrade(config, "0002")
                 self.assertEqual(
@@ -166,7 +197,7 @@ class PostgreSQLMigrationTests(unittest.TestCase):
                     command.downgrade(config, "0001")
                 connection.rollback()
                 self.assertEqual(
-                    connection.scalar(text("SELECT version_num FROM alembic_version")), "0003"
+                    connection.scalar(text("SELECT version_num FROM alembic_version")), "0005"
                 )
                 self.assertEqual(connection.scalar(select(Post.category)), PostCategory.SPORTS)
                 connection.execute(text("UPDATE posts SET category = 'GENERAL'"))

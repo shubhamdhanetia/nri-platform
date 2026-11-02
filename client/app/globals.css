@@ -1,14 +1,19 @@
 @import "tailwindcss";
 
-.medical-support-notice { padding: 16px 18px; margin: 16px 0; border: 1px solid #d5e3db; border-radius: 8px; background: #edf4ef; color: #243a32; font-size: 13px; line-height: 1.6; }
-.medical-support-notice p { margin: 8px 0 0; }
-.edit-fields-grid > .medical-support-notice { grid-column: 1 / -1; }
+.post-status-pill { display:inline-flex; padding:5px 10px; border-radius:20px; background:#edf0ed; color:#4b5c53; font-size:12px; font-weight:600; }
+.post-closed-notice { margin:16px 0; padding:14px 16px; border:1px solid #d5e3db; border-radius:8px; background:#f1f5f1; color:#354b40; }
+.post-status-filter { display:flex; align-items:center; gap:12px; margin-bottom:20px; }
+.post-status-filter select { padding:8px 12px; border:1px solid #d5e3db; border-radius:6px; background:white; }
 
-.ride-tabs { display:flex; gap:25px; border-bottom:1px solid #e0e6dc; margin-bottom:28px; overflow-x:auto; }
-.ride-tabs a { padding:15px 0; white-space:nowrap; color:#64736b; font-weight:600; }
+.medical-support-notice, .parking-notice { padding: 16px 18px; margin: 16px 0; border: 1px solid #d5e3db; border-radius: 8px; background: #edf4ef; color: #243a32; font-size: 13px; line-height: 1.6; }
+.medical-support-notice p, .parking-notice p { margin: 8px 0 0; }
+.edit-fields-grid > :is(.medical-support-notice, .parking-notice) { grid-column: 1 / -1; }
+
+.ride-tabs { display:flex; gap:clamp(12px, 3vw, 25px); border-bottom:1px solid #e0e6dc; margin-bottom:28px; }
+.ride-tabs a { padding:15px 0; white-space:nowrap; color:#64736b; font-size:clamp(14px, 2vw, 16px); font-weight:600; }
 .ride-tabs a[aria-current="page"] { color:#226b55; box-shadow:inset 0 -2px #226b55; }
 .my-rides-tabs { display:flex; gap:8px; margin-bottom:24px; border-bottom:1px solid var(--line); }
-.my-rides-tabs button { padding:14px 18px; border:0; border-bottom:2px solid transparent; background:transparent; color:var(--muted); font:inherit; font-weight:600; cursor:pointer; }
+.my-rides-tabs button { min-width:0; padding:14px 12px; border:0; border-bottom:2px solid transparent; background:transparent; color:var(--muted); font:inherit; font-weight:600; cursor:pointer; }
 .my-rides-tabs button[aria-selected="true"] { border-bottom-color:var(--green); color:var(--green); }
 .my-rides-tabs button:focus-visible { outline:2px solid var(--green); outline-offset:-2px; }
 .ride-card { padding:25px; border:1px solid #e6eae5; border-radius:13px; background:white; margin:18px 0; overflow-wrap:anywhere; }
@@ -1239,25 +1244,86 @@ a {
 }
 
 .profile-post-actions {
-  align-items: center;
   border-top: 1px solid #f0f2ef;
   display: flex;
-  gap: 7px;
+  flex-direction: column;
+  gap: 14px;
   margin-top: auto;
-  padding-top: 12px;
+  padding-top: 14px;
 }
 
-.profile-post-actions .comment-count-link {
-  margin-right: auto;
-  margin-left: 0;
+.owned-post-card .post-location {
+  align-items: flex-start;
+  display: flex;
+  gap: 6px;
+  line-height: 1.5;
 }
 
-.profile-post-actions .post-delete-control {
-  margin-left: 0;
+.owned-post-card .post-location svg {
+  flex-shrink: 0;
+  margin-top: 2px;
 }
 
-.profile-post-actions .post-reactions {
-  margin-left: 0;
+.owned-post-engagement {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.owned-post-engagement .comment-count-link {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+  margin: 0;
+  min-height: 32px;
+}
+
+.owned-post-engagement .post-reactions {
+  flex-shrink: 0;
+}
+
+.owned-post-engagement .post-reaction-count {
+  background: #f7f8f6;
+  border-color: transparent;
+  cursor: default;
+}
+
+.owned-post-controls {
+  align-items: flex-start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.owned-post-controls > .post-delete-control {
+  margin-left: auto;
+}
+
+.owned-post-controls .post-visibility-control {
+  align-items: flex-start;
+  flex-direction: column;
+}
+
+.owned-post-controls :is(.edit-post-button, .delete-post-button) {
+  min-height: 40px;
+  padding: 8px 12px;
+  white-space: nowrap;
+}
+
+.owned-post-status-action .edit-post-button {
+  background: #edf4ef;
+  border-color: #cdded2;
+}
+
+.owned-post-status-action .edit-post-button:hover:not(:disabled) {
+  background: #e2eee6;
+}
+
+.owned-post-controls :is(.edit-post-button, .delete-post-button):focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 3px;
 }
 
 .explore-heading {

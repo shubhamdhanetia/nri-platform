@@ -7,13 +7,17 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.edit_window import EditWindowExpiredError, is_within_edit_window
-from app.models.post import Post, PostCategory, PostType
+from app.models.post import Post, PostCategory, PostStatus, PostType
 from app.models.reaction import PostReaction, PostReactionType
 from app.models.saved_post import SavedPost
 from app.schemas.post import PostLocationFields, PostSearchBounds
 
 
 class PostOwnerReactionError(Exception):
+    pass
+
+
+class PostLifecycleError(Exception):
     pass
 
 
@@ -61,12 +65,16 @@ def update_post(
             Post.id == post_id,
             Post.user_id == user_id
         )
+        .populate_existing()
+        .with_for_update()
         .first()
     )
     if post is None:
         return None
     if not is_within_edit_window(post.created_at):
         raise EditWindowExpiredError
+    if post.status == PostStatus.CLOSED and post_type == PostType.DISCUSSION:
+        raise PostLifecycleError("Reopen the post before changing it to a discussion.")
 
     post.title = title
     post.description = description
@@ -108,7 +116,7 @@ def set_post_visibility(
 def get_posts(db: Session):
     return (
         db.query(Post)
-        .filter(Post.is_private.is_(False))
+        .filter(Post.is_private.is_(False), Post.status == PostStatus.ACTIVE)
         .order_by(Post.created_at.desc())
         .all()
     )
@@ -127,7 +135,7 @@ def get_posts_in_bounds(
     if bounds is not None and not h3_cell_ids:
         return []
 
-    filters = [Post.is_private.is_(False)]
+    filters = [Post.is_private.is_(False), Post.status == PostStatus.ACTIVE]
     if bounds is not None:
         filters.extend([
             Post.h3_cell_id.in_(h3_cell_ids),
@@ -195,7 +203,7 @@ def get_public_posts_by_user(
 ) -> list[Post]:
     return (
         db.query(Post)
-        .filter(Post.user_id == user_id, Post.is_private.is_(False))
+        .filter(Post.user_id == user_id, Post.is_private.is_(False), Post.status == PostStatus.ACTIVE)
         .order_by(Post.created_at.desc(), Post.id.desc())
         .offset(offset)
         .limit(limit + 1)

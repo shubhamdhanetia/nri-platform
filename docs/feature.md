@@ -17,17 +17,20 @@ application.
 - Main navigation contains Posts and Rides. Posts uses the existing `/explore`
   map route and is the post-login and brand-link destination. Feed remains
   accessible at `/feed` without a top-level navigation link.
-- The main Rides link opens `/rides` (Ride requests). Ride tabs are ordered
-  Ride requests, Find a carpool, Request a ride, Offer a carpool, My rides, Driver profile.
-  Request a ride opens the existing creation form at `/rides/new`.
-  Offer a carpool opens the existing publishing form at `/rides/carpools/new`.
-  Ride requests describes people looking for transportation, with guidance to
-  offer to drive someone going your way.
+- The main Rides link opens `/rides` (Find a ride), which browses planned carpools.
+  The three main tabs are Find a ride, Find passengers, and My rides.
+  Request a ride is a page action on Find a ride and opens `/rides/new`.
+  Find passengers at `/rides/requests` browses people looking for transportation.
+  Its Offer a carpool action opens `/rides/carpools/new` for drivers with a planned trip.
+  Creation pages highlight their respective discovery tab; details and Driver
+  settings highlight My rides. Driver settings at `/rides/driver` is linked from
+  My rides and contextual driver-setup guidance, not a primary tab.
   A notification bell beside the profile button opens the shared inbox at
   `/notifications`; it is not a Rides-specific tab.
-  Discovery remains at `/rides`; members without
-  a driver profile see setup guidance there. My rides includes request creation
-  and empty-state links to request a ride or browse requests.
+  Find passengers links to driver setup, which is required to view ride requests.
+  My rides separates Carpools from Ride requests & driver offers and includes
+  creation and empty-state discovery links. Members can be both passengers and
+  drivers; no permanent role selection is required.
 - Create a post is a page action in normal and fullscreen Posts views. Post
   details, creation, and the legacy feed keep Posts highlighted in navigation.
   My profile, Saved posts, and Log out are available in the account menu.
@@ -66,6 +69,29 @@ application.
   of comment creation.
 - Comment content is trimmed and must contain 1–2,000 characters.
 - Post responses include a comment count.
+
+### Community post lifecycle
+
+- Every post has `status: ACTIVE | CLOSED`, independent of public/private
+  visibility. Existing posts become Active in migration `0005`.
+- Across all categories, owners can Mark unavailable for offers or Mark resolved
+  for requests, then Reopen at any time, including after the content edit window.
+  Discussion posts remain Active and have no completion action.
+- Closing hides the post from feed/map/search and member-profile listings. My
+  posts retains it and offers All/Active/Closed filters.
+- A closed public post remains accessible by its detail link and in saved posts,
+  labeled No longer available (offer) or Resolved (request). It does not expose
+  any recipient or agreement information.
+- Saving never overrides privacy. Making the post private denies access to other
+  members and removes it from their saved list; deleting it removes saved
+  associations. Closing never changes visibility.
+- Existing comments and reactions are preserved. New comments return HTTP 409
+  while closed, including for the owner. Reopening permits new comments again.
+- Editing content or changing visibility preserves status. Converting a closed
+  post to Discussion requires reopening first (HTTP 409 otherwise).
+- Migration `0005_add_post_status` preserves existing posts and adds lifecycle
+  constraints. Downgrade requires reopening closed posts first to avoid silently
+  discarding their completion state. Rides booking statuses are unaffected.
 
 ### Reactions
 
@@ -325,17 +351,41 @@ application.
 | `/saved` | Current user's saved posts |
 | `/profile` | Current user's profile and posts |
 | `/notifications` | Shared private inbox for platform notifications |
-| `/rides` | Driver-only map discovery of open ride pickups and exact locations |
+| `/rides` | Find a ride: discover planned carpools and request seats |
+| `/rides/requests` | Find passengers: driver-only discovery of open ride requests |
 | `/rides/new` | Request a scheduled ride |
-| `/rides/driver` | Register/update the current user's driver profile |
+| `/rides/driver` | Driver settings: register/update the current user's driver profile |
 | `/rides/mine` | Own carpools, seat requests, rider requests, and driver offers |
 | `/rides/[id]` | Request details, offers, confirmation and booking management |
-| `/rides/carpools` | Search driver-published planned trips |
 | `/rides/carpools/new` | Publish an outbound trip and optional linked return |
 | `/rides/carpools/[id]` | Trip details, seat requests, approvals, and cancellation |
 | `/rides/carpools/inbox` | Legacy redirect to `/notifications` |
 
 ## Backend API
+
+### Parking community category
+
+- `PARKING` is a Community post category, not a separate rental or booking service.
+- Existing `OFFER`, `REQUEST`, and `DISCUSSION` types support parking available,
+  parking wanted, and general parking questions.
+- Create/edit pickers, category discovery, and post labels support Parking.
+- Parking creation/editing guidance is specific to the post type: Offering asks
+  for availability, price/period, restrictions, and permission to rent out the
+  space; Looking for asks for preferred area, dates/duration, budget/period, and
+  vehicle size. No notice appears for discussions or an unselected post type.
+  Members may include
+  contact details and choose their selected location; both follow the post's
+  visibility setting. A nearby landmark is an optional alternative to an exact
+  address. Never publish gate codes or access credentials.
+  This feature does not automatically anonymize coordinates or add private messaging.
+- Discovery shows no Parking notice. Offer/request details show only a brief
+  reminder to confirm availability and arrangements; a post is not a reservation.
+  Discussion details show no rental-specific notice.
+- Members must confirm availability and arrangements directly and check permission
+  to rent. Posting does not reserve a space. No new messaging or payment flow is added.
+- Apply `0004_add_parking_category` with `alembic upgrade head` before deploying
+  the updated application. It extends the existing check constraint without
+  rewriting posts. Downgrade refuses to remove Parking while such posts remain.
 
 Base URL defaults to `http://localhost:8000`. API documentation generated by
 FastAPI is available at `/docs` while the backend is running.
@@ -528,6 +578,7 @@ compatibility but is no longer used by the Ride requests discovery page.
 | `GET` | `/posts/{post_id}` | Get a post and its author details |
 | `PUT` | `/posts/{post_id}` | Edit an owned post within the 30-minute edit window |
 | `PUT` | `/posts/{post_id}/visibility` | Change visibility of an owned post at any time |
+| `PUT` | `/posts/{post_id}/status` | Owner-only close/reopen an offer or request with `{"status":"CLOSED"}` or `{"status":"ACTIVE"}` |
 | `DELETE` | `/posts/{post_id}` | Delete an owned post |
 | `POST` | `/posts/{post_id}/save` | Save a post |
 | `DELETE` | `/posts/{post_id}/save` | Remove a post from saved posts |

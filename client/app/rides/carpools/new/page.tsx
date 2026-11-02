@@ -54,7 +54,7 @@ export default function NewCarpoolPage() {
   }
   return <RideLayout>
     <section className="page-heading"><div><p className="eyebrow">Room for company</p><h1>Offer a carpool.</h1><p className="muted">You are already making this trip. Share the passenger seats you have available.</p></div></section>
-    <p className="ride-notice">First, complete your <Link className="text-link" href="/rides/driver">driver profile</Link>. Vehicle details are saved with the trip. Your phone is shared only after approval. Published trips cannot be edited; cancel and republish if plans change.</p>
+    <p className="ride-notice">Complete your driver profile in <Link className="text-link" href="/rides/driver">Driver settings</Link> to offer rides. Vehicle details are saved with the trip. Your phone is shared only after approval. Published trips cannot be edited; cancel and republish if plans change.</p>
     <form className="form-card" onSubmit={submit}>
       <fieldset className="carpool-fields" disabled={busy}>
         <legend>Outbound trip</legend>
@@ -71,7 +71,7 @@ export default function NewCarpoolPage() {
         </section>}
         <label className="ride-check"><input name="consent" type="checkbox" required /><span>I selected public meeting points and agree that their full addresses are visible to signed-in members. This is community cost sharing, not guaranteed transport. Payments are arranged outside the platform.</span></label>
         {error && <p className="form-error" role="alert">{error}</p>}
-        <div className="form-actions"><button className="button button-primary">{busy ? "Publishing..." : "Publish carpool"}</button><Link className="button button-secondary" href="/rides/carpools">Cancel</Link></div>
+        <div className="form-actions"><button className="button button-primary">{busy ? "Publishing..." : "Publish carpool"}</button><Link className="button button-secondary" href="/rides/requests">Cancel</Link></div>
       </fieldset>
     </form>
   </RideLayout>;

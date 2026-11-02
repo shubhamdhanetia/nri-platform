@@ -4,7 +4,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field, model_validator
 
-from app.models.post import PostCategory, PostType
+from app.models.post import PostCategory, PostStatus, PostType
 from app.models.reaction import PostReactionType
 
 
@@ -23,6 +23,10 @@ class UpdatePostRequest(CreatePostRequest):
 
 class UpdatePostVisibilityRequest(BaseModel):
     is_private: bool
+
+
+class UpdatePostStatusRequest(BaseModel):
+    status: PostStatus
 
 
 class PostSearchBounds(BaseModel):
@@ -83,6 +87,7 @@ class PostResponse(BaseModel):
     description: str
     category: PostCategory
     post_type: PostType
+    status: PostStatus
     is_private: bool
     city: str
     location_id: str

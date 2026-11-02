@@ -123,7 +123,7 @@ function CarpoolContent({ id }: { id: string }) {
             <button className="button button-primary" disabled={includeReturn && !!linked && passengers > linked.available_seats}>Request {includeReturn ? "both directions" : "seats"}</button>
           </fieldset>
         </form>}
-        {ownRequest && ["CANCELLED", "DECLINED", "EXPIRED"].includes(ownRequest.status) && <p className="ride-notice">This seat request is closed. <Link className="text-link" href="/rides/carpools">Find another carpool</Link>.</p>}
+        {ownRequest && ["CANCELLED", "DECLINED", "EXPIRED"].includes(ownRequest.status) && <p className="ride-notice">This seat request is closed. <Link className="text-link" href="/rides">Find another ride</Link>.</p>}
         {cancelPath && <form className="form-card ride-confirm" onSubmit={event => {
           event.preventDefault();
           const form = new FormData(event.currentTarget);

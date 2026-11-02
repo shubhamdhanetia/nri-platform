@@ -70,7 +70,7 @@ Members can track requests, offers, cancellations, and completion in **My rides*
 
 ### Planned-trip carpools
 
-- **Find a carpool** in Rides searches driver-published journeys by pickup area,
+- **Find a ride**, the Rides landing page, searches driver-published carpools by pickup area,
   destination area, departure date, and seats needed.
 - **Offer a carpool** publishes a future departure window, public meeting
   points, available passenger seats, luggage allowance, and a fixed contribution

@@ -43,6 +43,7 @@ export interface User extends ProfileFields {
 export const POST_CATEGORIES = [
   "HOUSING",
   "TRAVEL",
+  "PARKING",
   "JOBS",
   "FOOD",
   "EVENTS",
@@ -62,6 +63,7 @@ export type PostReactionType = "LIKE" | "DISLIKE";
 export const POST_CATEGORY_LABELS: Record<PostCategory, string> = {
   HOUSING: "Housing",
   TRAVEL: "Travel",
+  PARKING: "Parking",
   JOBS: "Jobs",
   FOOD: "Food",
   EVENTS: "Events",
@@ -86,6 +88,7 @@ export interface Post {
   description: string;
   category: PostCategory;
   post_type: PostType;
+  status: "ACTIVE" | "CLOSED";
   is_private: boolean;
   city: string;
   location_id: string;

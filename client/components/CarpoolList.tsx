@@ -257,12 +257,12 @@ export default function CarpoolList({ mine = false }: { mine?: boolean }) {
     },
   })), [page]);
 
-  if (!mine) return <section className={`community-page rides-browse rides-map-browser carpool-browse${fullscreen ? " community-expanded" : ""}`} aria-label="Find a carpool">
+  if (!mine) return <section className={`community-page rides-browse rides-map-browser carpool-browse${fullscreen ? " community-expanded" : ""}`} aria-label="Find a ride">
     <header className="community-heading">
-      <div><p className="eyebrow">GOING THE SAME WAY</p><h1>Find a carpool</h1></div>
+      <div><p className="eyebrow">GOING THE SAME WAY</p><h1>Find a ride</h1><p className="muted">Join a planned carpool. No suitable trip? Request a ride so a driver can respond.</p></div>
       <div className="community-heading-actions">
         <button className="button button-secondary" aria-pressed={fullscreen} onClick={toggleFullscreen}>{fullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}{fullscreen ? "Exit full screen" : "Full screen map"}</button>
-        <Link className="button button-primary" href="/rides/carpools/new"><Plus size={18} />Offer a carpool</Link>
+        <Link className="button button-primary" href="/rides/new"><Plus size={18} />Request a ride</Link>
       </div>
     </header>
     <div className="community-controls">
@@ -321,14 +321,14 @@ export default function CarpoolList({ mine = false }: { mine?: boolean }) {
     <div className="carpool-pagination"><button className="community-icon-button" title="Previous carpools" aria-label="Previous carpools" disabled={resultsLoading || !!error || offset === 0} onClick={() => void refresh(offset - 20)}><ArrowLeft size={18} /></button><span>Page {offset / 20 + 1}</span><button className="community-icon-button" title="Next carpools" aria-label="Next carpools" disabled={resultsLoading || !!error || !page?.has_more} onClick={() => void refresh(offset + 20)}><ArrowRight size={18} /></button></div>
     <p className="ride-notice">Fixed cost-sharing contributions are per passenger, per direction. Payment is arranged outside the app. Drivers and phone numbers are not verified; transport is not guaranteed.</p>
   </section>;
-  return <section aria-label={mine ? "My carpools" : "Find a carpool"}>
+  return <section aria-label={mine ? "My carpools" : "Find a ride"}>
     <div className="ride-between"><h2>{mine ? "My carpools" : "Available carpools"}</h2><Link className="button button-primary" href="/rides/carpools/new">Offer a carpool</Link></div>
     <p className="muted">Trips you published and directions you requested. Outbound and return approvals are independent.</p>
     <button className="button button-secondary" disabled={busy} onClick={() => void refresh(offset)}>Refresh carpools</button>
     {error && <p className="form-error" role="alert">{error}</p>}
     {busy ? <p role="status">Loading carpools...</p> : page && (
       page.trips.length ? <div className="ride-grid">{page.trips.map(trip => <CarpoolCard key={trip.id} trip={trip} role={mine ? (trip.my_request_status ? "Passenger" : "Driver") : undefined} />)}</div> :
-        <div className="state-card"><p>{mine ? "No carpools yet. Offer your planned trip or request seats on a community trip." : "No available carpools match. Try another date or area, or request a ride instead."}</p><Link className="text-link" href={mine ? "/rides/carpools" : "/rides/new"}>{mine ? "Find a carpool" : "Request a ride"}</Link></div>
+        <div className="state-card"><p>{mine ? "No carpools yet. Offer your planned trip or request seats on a community trip." : "No available carpools match. Try another date or area, or request a ride instead."}</p><Link className="text-link" href={mine ? "/rides" : "/rides/new"}>{mine ? "Find a ride" : "Request a ride"}</Link></div>
     )}
     <div className="form-actions"><button className="button button-secondary" disabled={busy || offset === 0} onClick={() => void refresh(offset - 20)}>Previous carpools</button><button className="button button-secondary" disabled={busy || !page?.has_more} onClick={() => void refresh(offset + 20)}>Next carpools</button></div>
   </section>;

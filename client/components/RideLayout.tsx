@@ -14,10 +14,15 @@ export function useRideTimezone() {
 
 export default function RideLayout({ children }: { children: ReactNode }) {
   const path = usePathname();
+  const activeTab = path === "/rides" || path === "/rides/new"
+    ? "/rides"
+    : path === "/rides/requests" || path === "/rides/carpools/new"
+      ? "/rides/requests"
+      : "/rides/mine";
   return <ProtectedPage>
     <nav className="ride-tabs" aria-label="Rides navigation">
-      {[["/rides", "Ride requests"], ["/rides/carpools", "Find a carpool"], ["/rides/new", "Request a ride"], ["/rides/carpools/new", "Offer a carpool"], ["/rides/mine", "My rides"], ["/rides/driver", "Driver profile"]].map(([href, label]) =>
-        <Link key={href} href={href} aria-current={path === href ? "page" : undefined}>{label}</Link>)}
+      {[["/rides", "Find a ride"], ["/rides/requests", "Find passengers"], ["/rides/mine", "My rides"]].map(([href, label]) =>
+        <Link key={href} href={href} aria-current={activeTab === href ? "page" : undefined}>{label}</Link>)}
     </nav>
     {children}
   </ProtectedPage>;
