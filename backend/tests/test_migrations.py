@@ -127,7 +127,7 @@ class PostgreSQLMigrationTests(unittest.TestCase):
                 )
                 self.assertEqual(
                     connection.scalar(text("SELECT version_num FROM alembic_version")),
-                    "0005",
+                    "0006",
                 )
                 self.assertEqual(connection.scalar(select(Post.status)), PostStatus.ACTIVE)
                 connection.commit()
@@ -141,7 +141,7 @@ class PostgreSQLMigrationTests(unittest.TestCase):
                     command.downgrade(config, "0004")
                 connection.rollback()
                 self.assertEqual(connection.scalar(select(Post.status)), PostStatus.CLOSED)
-                self.assertEqual(connection.scalar(text("SELECT version_num FROM alembic_version")), "0005")
+                self.assertEqual(connection.scalar(text("SELECT version_num FROM alembic_version")), "0006")
                 connection.execute(text("UPDATE posts SET status = 'ACTIVE'"))
                 connection.commit()
                 indexes = {index["name"] for index in inspect(connection).get_indexes("ride_requests")}
@@ -170,7 +170,7 @@ class PostgreSQLMigrationTests(unittest.TestCase):
                     command.downgrade(config, "0003")
                 connection.rollback()
                 self.assertEqual(
-                    connection.scalar(text("SELECT version_num FROM alembic_version")), "0005"
+                    connection.scalar(text("SELECT version_num FROM alembic_version")), "0006"
                 )
                 self.assertEqual(connection.scalar(select(Post.category)), PostCategory.PARKING)
                 connection.execute(text("UPDATE posts SET category = 'TRAVEL'"))
@@ -197,7 +197,7 @@ class PostgreSQLMigrationTests(unittest.TestCase):
                     command.downgrade(config, "0001")
                 connection.rollback()
                 self.assertEqual(
-                    connection.scalar(text("SELECT version_num FROM alembic_version")), "0005"
+                    connection.scalar(text("SELECT version_num FROM alembic_version")), "0006"
                 )
                 self.assertEqual(connection.scalar(select(Post.category)), PostCategory.SPORTS)
                 connection.execute(text("UPDATE posts SET category = 'GENERAL'"))

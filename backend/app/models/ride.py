@@ -59,6 +59,7 @@ class RideRequest(Base):
     notes: Mapped[str] = mapped_column(Text)
     rider_phone: Mapped[str] = mapped_column(String(30))
     currency: Mapped[str] = mapped_column(String(3))
+    preferred_amount: Mapped[Decimal | None] = mapped_column(Numeric(6, 2), nullable=True)
     status: Mapped[RequestStatus] = mapped_column(String(12), default="OPEN", index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now_naive)
 

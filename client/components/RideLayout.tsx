@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSyncExternalStore, type ReactNode } from "react";
 import ProtectedPage from "./ProtectedPage";
-import { rideDate, type RideRequest } from "../lib/rides";
+import { rideDate, rideMoney, type RideRequest } from "../lib/rides";
 
 const subscribe = () => () => {};
 
@@ -36,6 +36,7 @@ export function RideCard({ ride, role }: { ride: RideRequest; role?: "Driver" | 
     <RideRoute ride={ride} />
     <div className="ride-meta"><span>{rideDate(ride.pickup_start, ride.timezone)}</span><span>{ride.passengers} passenger(s)</span><span>{ride.bags} bag(s)</span></div>
     <p className="field-hint">Times in {ride.timezone}. Cost-sharing offers in {ride.currency}.</p>
+    {ride.preferred_amount !== null && <p className="ride-preferred-amount">Rider&apos;s preferred total contribution: <strong>{rideMoney(ride.preferred_amount, ride.currency)}</strong> for the whole ride. This is a preference, not a limit.</p>}
     <Link className="button button-secondary" href={`/rides/${ride.id}`}>View ride</Link>
   </article>;
 }

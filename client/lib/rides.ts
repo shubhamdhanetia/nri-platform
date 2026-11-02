@@ -29,6 +29,7 @@ export interface RideRequest {
   bags: number;
   notes: string;
   currency: string;
+  preferred_amount: string | null;
   status: RideStatus;
   booking_status: RideBooking["status"] | null;
   my_offer_status: RideOffer["status"] | null;

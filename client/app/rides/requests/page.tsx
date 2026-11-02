@@ -9,7 +9,7 @@ import RideLayout from "../../../components/RideLayout";
 import ExploreLocationSearch from "../../../components/ExploreLocationSearch";
 import { apiRequest, type PostSearchBounds } from "../../../lib/api";
 import { locationSearchBounds } from "../../../lib/map";
-import { rideDate, rideError, type RideRequest } from "../../../lib/rides";
+import { rideDate, rideError, rideMoney, type RideRequest } from "../../../lib/rides";
 
 const RideMap = dynamic(() => import("../../../components/CommunityMap"), {
   ssr: false,
@@ -284,6 +284,7 @@ export default function FindPassengersPage() {
               <div className="community-post-top"><span className="community-category-icon"><Car size={21} /></span><div className="community-post-context"><Link className="member-profile-link" href={`/profile/${ride.rider.id}`}>{ride.rider.name}</Link><time dateTime={ride.pickup_start}>{rideDate(ride.pickup_start, ride.timezone)}</time></div><span className="post-type-pill">Open</span></div>
               <h3><button type="button" className="ride-result-select" aria-label={`Select ${ride.rider.name}'s request on map`} aria-pressed={selectedId === ride.id} onClick={() => selectRide(ride.id)}>{ride.pickup.city} to {ride.dropoff.city}</button></h3>
               <dl className="rides-result-route"><div><dt>Pickup</dt><dd>{ride.pickup.location}</dd></div><div><dt>Drop-off</dt><dd>{ride.dropoff.location}</dd></div></dl>
+              {ride.preferred_amount !== null && <p className="ride-preferred-amount">Preferred total contribution: <strong>{rideMoney(ride.preferred_amount, ride.currency)}</strong> for the whole ride</p>}
               <p className="rides-result-window"><Clock3 size={14} /><span>{rideDate(ride.pickup_start, ride.timezone)} - {rideDate(ride.pickup_end, ride.timezone)}<small>{ride.timezone}</small></span></p>
               <div className="community-post-footer"><span title="Passengers" aria-label={`${ride.passengers} passengers`}><Users size={15} />{ride.passengers}</span><span title="Bags" aria-label={`${ride.bags} bags`}><Luggage size={15} />{ride.bags}</span><button className="community-icon-button" title="Show on map" aria-label={`Show ${ride.rider.name}'s request on map`} onClick={() => selectRide(ride.id)}><LocateFixed size={17} /></button><Link className="text-link" href={`/rides/${ride.id}`}>View ride<ArrowUpRight size={15} /></Link></div>
             </article>)}

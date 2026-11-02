@@ -31,6 +31,7 @@
 .ride-meta span { padding:7px 10px; border-radius:5px; background:#f4f6f1; font-size:12px; }
 .ride-notice,.ride-message { padding:16px; background:#edf3e9; border-radius:8px; color:#465d4d; line-height:1.7; margin:20px 0; overflow-wrap:anywhere; }
 .ride-message { background:#f7f8f5; white-space:pre-wrap; }
+.ride-preferred-amount { margin: 14px 0; padding: 11px 13px; border-left: 3px solid #6c907a; background: #f0f4ef; color: #43584a; font-size: 13px; line-height: 1.55; }
 .ride-notice a { text-decoration:underline; }
 .ride-aside { background:#eef2e8; }
 .ride-check { display:flex; gap:12px; font-size:13px; line-height:1.7; align-items:flex-start; }
@@ -1964,6 +1965,39 @@ a {
   display: flex;
   gap: 18px;
 }
+
+.ride-pickup-window {
+  min-width: 0;
+  margin: 4px 0 24px;
+  padding: 18px;
+  border: 1px solid #dfe5df;
+  border-radius: 8px;
+  background: #fcfdfb;
+}
+
+.ride-pickup-window legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 7px;
+  color: #293930;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.ride-pickup-window legend svg,
+.ride-date-field label svg,
+.ride-timezone-note svg { flex: 0 0 auto; color: var(--green); }
+.ride-window-description { margin: 2px 0 14px; color: #68766d; font-size: 12px; line-height: 1.6; }
+.ride-timezone-note { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 19px; color: #53675a; font-size: 12px; line-height: 1.5; }
+.ride-date-field { max-width: 330px; margin-bottom: 14px; }
+.ride-date-field label { display: flex; align-items: center; gap: 7px; color: #37473e; font-size: 12px; font-weight: 700; }
+.ride-time-fields { gap: 14px; }
+.ride-time-fields .form-field { min-width: 0; margin-bottom: 10px; }
+.ride-time-fields .form-field > span { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.ride-time-fields .form-field small { color: #75817a; font-size: 11px; font-weight: 400; }
+.ride-window-summary { min-height: 42px; margin: 8px 0 0; padding: 11px 12px; border-radius: 6px; background: #f0f3ef; color: #68766d; font-size: 12px; line-height: 1.5; }
+.ride-window-summary.is-complete { background: #eaf2e9; color: #355342; font-weight: 600; }
 
 .location-autocomplete {
   position: relative;
