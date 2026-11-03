@@ -66,7 +66,7 @@ function Inbox() {
       <div>
         <p className="eyebrow">Stay in the loop</p>
         <h1>Notifications{inbox && <span className="notification-unread-count">{inbox.unread_count} unread</span>}</h1>
-        <p className="muted">Ride and carpool updates in one place.</p>
+        <p className="muted">Ride, carpool, and housing updates in one place.</p>
       </div>
       <div className="notification-page-actions">
         {Boolean(inbox?.unread_count) && <button className="button button-secondary" disabled={busy} onClick={() => void markAllRead()}><CheckCheck size={16} aria-hidden="true" />Mark all as read</button>}
@@ -80,7 +80,7 @@ function Inbox() {
       <p className="notification-message">{item.message}</p>
       <div className="notification-actions"><Link className="button button-secondary" href={item.target_path}>View details</Link>{!item.is_read && <button className="button button-quiet notification-mark-read" disabled={busy} onClick={() => void markRead(item.id)}><Check size={16} aria-hidden="true" />Mark read</button>}</div>
     </article>)}
-    {!busy && !error && inbox?.notifications.length === 0 && offset === 0 && <div className="notification-empty"><span className="notification-empty-icon"><CheckCheck size={22} aria-hidden="true" /></span><div><h2>You&apos;re all caught up</h2><p>New ride and carpool updates will appear here.</p></div><Link className="text-link" href="/rides">Explore rides</Link></div>}
+    {!busy && !error && inbox?.notifications.length === 0 && offset === 0 && <div className="notification-empty"><span className="notification-empty-icon"><CheckCheck size={22} aria-hidden="true" /></span><div><h2>You&apos;re all caught up</h2><p>New ride, carpool, and housing updates will appear here.</p></div><Link className="text-link" href="/rides">Explore rides</Link></div>}
     {!busy && !error && inbox?.notifications.length === 0 && offset > 0 && <div className="notification-empty"><div><h2>No updates on this page</h2><p>Go back to the previous page of notifications.</p></div></div>}
     {(Boolean(inbox?.notifications.length) || offset > 0) && <nav className="notification-pagination" aria-label="Notification pages"><button className="button button-secondary" disabled={busy || offset === 0} onClick={() => void refresh(offset - 20)}>Previous</button><button className="button button-secondary" disabled={busy || !inbox?.has_more} onClick={() => void refresh(offset + 20)}>Next</button></nav>}
   </>;

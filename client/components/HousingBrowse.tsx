@@ -133,7 +133,9 @@ export default function HousingBrowse({ people = false }: { people?: boolean }) 
     document.body.style.overflow = "hidden";
     if (browserPanel.current) browserPanel.current.scrollTop = 0;
     fullscreenButton.current?.focus({ preventScroll: true });
-    const escape = (event: KeyboardEvent) => { if (event.key === "Escape") setFullscreen(false); };
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !event.defaultPrevented && !document.querySelector("dialog:modal")) setFullscreen(false);
+    };
     document.addEventListener("keydown", escape);
     return () => { document.body.style.overflow = previous; document.removeEventListener("keydown", escape); };
   }, [fullscreen]);

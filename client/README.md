@@ -15,7 +15,7 @@ The client is a Next.js app that supports the MVP community flow:
 - `/rides/[id]` — send/review cost-sharing offers, confirm, cancel or complete a ride
 - `/rides/carpools/new` — offer an outbound trip and optional independent return
 - `/rides/carpools/[id]` — request seats, review approvals and manage cancellations
-- `/notifications` — shared private inbox for ride and carpool updates
+- `/notifications` — shared private inbox for ride, carpool, and housing updates
 - `/housing` — available places and housing requests, with price/date/household filters
 - `/housing/people` — people looking for accommodation or wanting to search together
 - `/housing/roommates` — legacy link redirected to `/housing/people`
@@ -43,6 +43,15 @@ clients cannot supply their own coordinates. Public Housing posts expose the
 original selected address and exact coordinates to signed-in members, without
 obfuscation. Housing requests and searching-together posts select a preferred
 area, not the address of a confirmed available home.
+
+Housing photos use a manual carousel on cards and a main image with thumbnails
+on details. Clicking a photo opens a native modal viewer above fullscreen maps.
+Previous/Next, Left/Right keys, and touch swipes navigate without autoplay;
+navigation stops at the first/last image. Zoom is capped at native resolution
+and 3x the fitted size; drag or scroll pans when zoomed. Changing photos resets
+zoom. Escape closes only the photo viewer, restoring focus and underlying scroll
+locks, filters, and map selection. Broken links show an explicit placeholder.
+Only adjacent full-view images are preloaded; card/thumbnail images are lazy.
 
 Search uses server-side pagination, location/keyword filters, dates, and structured
 space, arrangement, price, stay, furnishing, bathroom, kitchen, parking, and
@@ -80,8 +89,13 @@ Owners can mark filled/resolved, archive, reopen, renew, edit, make private, or
 delete. Active public posts expire from discovery after 30 days; renewal explicitly
 confirms freshness. Filled, archived, and expired posts retain public saved/detail
 access. Private posts and their inquiries are inaccessible to other members.
-Housing inbox replies require checking or refreshing `/housing/inquiries`;
-there are no housing email, push, or notification-bell alerts.
+New housing inquiries notify the post owner; replies notify only the other
+participant through the shared notification bell and inbox. Notifications do not
+include private message contents and link directly to the conversation, independent
+of inbox pagination (`/housing/inquiries?inquiry_id=<id>`). Inaccessible or deleted
+conversations show an explicit error. Sending shows a confirmation, not a notification
+to yourself. Refresh the conversation to load new replies; there are no email or push
+alerts. Existing messages are not backfilled into notifications.
 
 Housing has no booking, payment, screening, or automated verification. Reports
 are persisted for manual operator review, not automatically actioned; there is
@@ -108,7 +122,8 @@ Ride addresses are visible to signed-in members with a driver profile after
 explicit rider consent. Phone numbers are unverified and shared only with
 booking participants after confirmation. The notification bell beside the profile
 button opens a shared inbox with unread indicators and links to the relevant
-ride or carpool. Messages can be marked read individually. The bell refreshes
+ride, carpool, or housing inquiry. Notifications can be marked read individually or
+all at once; opening a conversation does not automatically mark them read. The bell refreshes
 every 30 seconds, on focus, and after notification changes; the inbox has an
 explicit Refresh action. Rides has no email/SMS/push delivery, messaging,
 live tracking or platform payments. Housing provides separate private inquiry threads.

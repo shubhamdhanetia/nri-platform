@@ -128,9 +128,59 @@
 .housing-panel > .muted, .housing-panel > p { font-size: 13px; line-height: 1.8; }
 .housing-panel .housing-owner-controls { margin: 16px 0; }
 .housing-prose { white-space: pre-wrap; overflow-wrap: anywhere; color: #506258; line-height: 1.8; font-size: 14px; }
-.housing-gallery { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 24px; }
-.housing-gallery .housing-photo { border-radius: 10px; }
-.housing-gallery > :first-child { grid-column: 1 / -1; }
+.housing-photo-gallery { min-width: 0; }
+.housing-photo-preview { position: relative; overflow: hidden; background: #eaf0e8; }
+.housing-photo-open { display: block; width: 100%; padding: 0; border: 0; background: transparent; cursor: zoom-in; touch-action: pan-y; }
+.housing-photo-open:focus-visible { outline: 3px solid var(--green); outline-offset: -3px; }
+.housing-photo-count, .housing-photo-expand { position: absolute; bottom: 12px; padding: 5px 9px; border-radius: 6px; background: #172e25cf; color: white; font-size: 12px; pointer-events: none; }
+.housing-photo-count { left: 12px; }
+.housing-photo-expand { right: 12px; display: flex; padding: 7px; }
+.housing-photo-arrow { position: absolute; top: 50%; transform: translateY(-50%); display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 1px solid #ffffff80; border-radius: 50%; background: #fffffff0; color: #254c3b; box-shadow: 0 2px 6px #172e2533; cursor: pointer; }
+.housing-photo-arrow.previous { left: 10px; }
+.housing-photo-arrow.next { right: 10px; }
+.housing-photo-arrow:disabled { opacity: .4; cursor: default; }
+.housing-photo-arrow:focus-visible, .housing-photo-thumbnails button:focus-visible { outline: 3px solid var(--green); outline-offset: 2px; }
+.housing-photo-gallery-detail { margin-bottom: 24px; }
+.housing-photo-gallery-detail .housing-photo-preview { border-radius: 12px; }
+.housing-photo-gallery-detail .housing-photo-open .housing-photo { aspect-ratio: 16 / 10; object-fit: contain; max-height: 520px; }
+.housing-photo-gallery-detail > .button { margin-top: 12px; }
+.housing-photo-thumbnails { display: flex; gap: 8px; overflow-x: auto; padding: 6px 3px; margin-top: 8px; }
+.housing-photo-thumbnails button { flex: 0 0 78px; padding: 2px; border: 2px solid transparent; border-radius: 7px; background: white; cursor: pointer; }
+.housing-photo-thumbnails button[aria-pressed="true"] { border-color: var(--green); }
+.housing-photo-thumbnails .housing-photo { height: 54px; aspect-ratio: auto; border-radius: 3px; }
+.housing-photo-thumbnails .housing-photo-placeholder { gap: 0; font-size: 9px; }
+.housing-photo-thumbnails .housing-photo-placeholder svg { width: 16px; height: 16px; }
+.housing-lightbox { position: fixed; inset: 0; width: 100%; max-width: none; height: 100dvh; max-height: none; box-sizing: border-box; margin: 0; padding: 16px 24px; border: 0; color: white; background: #111a17; overflow: hidden; }
+.housing-lightbox[open] { display: flex; flex-direction: column; }
+.housing-lightbox::backdrop { background: #111a17f5; }
+.housing-lightbox-header, .housing-lightbox-footer, .housing-lightbox-tools { display: flex; align-items: center; gap: 12px; }
+.housing-lightbox-header { justify-content: space-between; padding-bottom: 14px; flex-shrink: 0; }
+.housing-lightbox-header > div:first-child { min-width: 0; }
+.housing-lightbox-header h2 { font-size: 16px; margin: 0 0 5px; overflow-wrap: anywhere; }
+.housing-lightbox-header p { margin: 0; font-size: 12px; color: #c4d2cb; }
+.housing-lightbox-tools { flex-shrink: 0; gap: 6px; }
+.housing-lightbox-tools span { min-width: 42px; text-align: center; font-size: 12px; }
+.housing-lightbox button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-width: 44px; min-height: 44px; padding: 8px; border: 1px solid #ffffff40; border-radius: 7px; background: #ffffff10; color: white; cursor: pointer; }
+.housing-lightbox button:hover:not(:disabled) { background: #ffffff25; }
+.housing-lightbox button:disabled { opacity: .4; cursor: default; }
+.housing-lightbox button:focus-visible { outline: 2px solid white; outline-offset: 2px; }
+.housing-lightbox-viewport { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; touch-action: pan-y; }
+.housing-lightbox-viewport.zoomed { cursor: grab; touch-action: none; }
+.housing-lightbox-viewport.zoomed:active { cursor: grabbing; }
+.housing-lightbox-canvas { display: flex; align-items: center; justify-content: center; position: relative; }
+.housing-lightbox-canvas > img { display: block; flex-shrink: 0; max-width: none; object-fit: contain; user-select: none; }
+.housing-lightbox-loading { position: absolute; }
+.housing-lightbox-error { text-align: center; padding: 24px; color: #c4d2cb; }
+.housing-lightbox-footer { justify-content: space-between; padding-top: 12px; flex-shrink: 0; }
+.housing-lightbox-footer p { font-size: 12px; text-align: center; color: #c4d2cb; margin: 0; flex: 1; }
+@media (max-width: 600px) {
+  .housing-lightbox { padding: 12px; }
+  .housing-lightbox-header { align-items: flex-start; flex-wrap: wrap; gap: 8px; }
+  .housing-lightbox-tools { margin-left: auto; }
+  .housing-lightbox-header h2 { font-size: 14px; }
+  .housing-lightbox-footer { flex-wrap: wrap; }
+  .housing-lightbox-footer p { order: 3; flex-basis: 100%; }
+}
 .housing-fact-list { margin: 22px 0 0; }
 .housing-fact-list > div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 15px; padding: 12px 0; border-bottom: 1px solid #eef1ed; font-size: 13px; line-height: 1.6; }
 .housing-fact-list dt { color: var(--muted); }

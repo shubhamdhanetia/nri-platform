@@ -1,18 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarDays, Home, MapPin } from "lucide-react";
-import { useState } from "react";
+import { CalendarDays, MapPin } from "lucide-react";
+import HousingGallery from "./HousingGallery";
 import { HOUSING_KINDS, ROOM_TYPES, UTILITIES, housingDate, housingExpired, housingMoney, type HousingItem } from "../lib/housing";
-
-export function HousingPhoto({ url, title }: { url?: string; title: string }) {
-  const [failedUrl, setFailedUrl] = useState<string | null>(null);
-  return url && failedUrl !== url
-    // User-supplied external images are loaded directly, never through an image proxy.
-    // eslint-disable-next-line @next/next/no-img-element
-    ? <img className="housing-photo" src={url} alt={title} loading="lazy" referrerPolicy="no-referrer" onError={() => setFailedUrl(url)} />
-    : <div className="housing-photo housing-photo-placeholder"><Home size={30} aria-hidden="true" /><span>{url ? "Photo unavailable" : "No photos added"}</span></div>;
-}
 
 export function HousingStatusBadge({ item }: { item: HousingItem }) {
   const label = item.status === "FILLED" ? (item.kind === "LISTING" ? "No longer available" : "Resolved")
@@ -22,9 +13,7 @@ export function HousingStatusBadge({ item }: { item: HousingItem }) {
 
 export default function HousingCard({ item, children }: { item: HousingItem; children?: React.ReactNode }) {
   return <article className="housing-card">
-    <Link className="housing-card-image" href={`/housing/${item.id}`} aria-label={`View ${item.title}`}>
-      <HousingPhoto url={item.photo_urls[0]} title={item.title} />
-    </Link>
+    <HousingGallery urls={item.photo_urls} title={item.title} />
     <div className="housing-card-body">
       <div className="post-badges"><span className="category-pill">{HOUSING_KINDS[item.kind]}</span><HousingStatusBadge item={item} /></div>
       <h2><Link href={`/housing/${item.id}`}>{item.title}</Link></h2>

@@ -105,8 +105,17 @@ preserved. All Housing APIs and screens require sign-in.
   accessible only to their two participants while visibility permits. Existing
   threads can continue after filling/expiry; new inquiries cannot.
 - Inquiries do not reserve accommodation, and there are no bookings, platform
-  payments, screening, or verified landlord-approval claims. Members check the
-  Housing inbox manually; housing has no notification-bell/email/push integration.
+  payments, screening, or verified landlord-approval claims.
+- New inquiries create a `housing.inquiry_received` notification for the owner;
+  subsequent messages through either sending endpoint create a
+  `housing.reply_received` notification for the other participant only. Message
+  and notification writes commit together. Notifications contain no message
+  contents and link to `/housing/inquiries?inquiry_id=<id>`, which loads that
+  conversation regardless of pagination and enforces current access permissions.
+  Deleted or inaccessible threads return 404. Existing messages are not backfilled.
+  The shared bell checks every 30 seconds and on focus; refresh the thread to load
+  new replies. Read state uses the shared inbox's explicit mark-read actions,
+  not message read receipts. There are no housing email or push alerts.
 - Scam, inaccuracy, discrimination, and other reports are stored for manual
   operator review. Submission does not automatically remove a post.
   **Operational requirement:** an operator must review `housing_reports` in the
@@ -131,7 +140,7 @@ preserved. All Housing APIs and screens require sign-in.
 | PUT | `/housing/{id}/visibility` | Set public / Only me |
 | PUT / DELETE | `/housing/{id}/saved` | Save / unsave |
 | POST | `/housing/{id}/inquiries` | Start or continue an inquiry |
-| GET | `/housing/inquiries` | Paginated participant-only threads |
+| GET | `/housing/inquiries` | Paginated participant-only threads; optional `inquiry_id` selects one accessible thread, ignoring offset |
 | POST | `/housing/inquiries/{id}/messages` | Reply in an accessible thread |
 | POST | `/housing/{id}/reports` | Record a report for manual review |
 

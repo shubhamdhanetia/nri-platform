@@ -10,6 +10,7 @@ from app.core.ride_time import utc_now_naive
 from app.db.dependencies import get_db
 from app.models.housing import HousingInquiry, HousingMessage, HousingPost, HousingReport, HousingSave
 from app.models.user import User
+from app.services import notifications
 from app.services.location_search import resolve_post_location
 from app.services.post_search import h3_cells_for_bounds
 from app.schemas.housing import (
@@ -154,18 +155,38 @@ def inquiry_response(inquiry: HousingInquiry) -> HousingInquiryResponse:
     )
 
 
+def notify_inquiry_message(db: Session, inquiry: HousingInquiry, user: User, *, is_new: bool = False) -> None:
+    db.flush()
+    recipient = inquiry.housing.owner_id if user.id == inquiry.sender_id else inquiry.sender_id
+    notifications.notify(
+        db, user_id=recipient, category="housing",
+        event_type="housing.inquiry_received" if is_new else "housing.reply_received",
+        resource_id=inquiry.id, target_path=f"/housing/inquiries?inquiry_id={inquiry.id}",
+        message="New housing inquiry. Open the conversation to read it." if is_new
+        else "New reply to your housing inquiry. Open the conversation to read it.",
+    )
+
+
 @router.get("/inquiries", response_model=HousingInquiryCollection)
 def my_inquiries(
     limit: int = Query(20, ge=1, le=50), offset: int = Query(0, ge=0, le=10000),
+    inquiry_id: UUID | None = None,
     db: Session = Depends(get_db), user: User = Depends(get_current_user),
 ):
-    inquiries = list(db.scalars(select(HousingInquiry).join(HousingPost).options(
+    statement = select(HousingInquiry).join(HousingPost).options(
         selectinload(HousingInquiry.messages), joinedload(HousingInquiry.sender),
         joinedload(HousingInquiry.housing).joinedload(HousingPost.owner),
     ).where(
         or_(HousingInquiry.sender_id == user.id, HousingPost.owner_id == user.id),
         or_(HousingPost.is_private.is_(False), HousingPost.owner_id == user.id),
-    ).order_by(HousingInquiry.created_at.desc(), HousingInquiry.id.desc()).offset(offset).limit(limit + 1)))
+    )
+    if inquiry_id is not None:
+        statement = statement.where(HousingInquiry.id == inquiry_id)
+    inquiries = list(db.scalars(statement.order_by(
+        HousingInquiry.created_at.desc(), HousingInquiry.id.desc(),
+    ).offset(0 if inquiry_id is not None else offset).limit(limit + 1)))
+    if inquiry_id is not None and not inquiries:
+        raise HTTPException(404, "Inquiry not found or no longer accessible.")
     return HousingInquiryCollection(items=[inquiry_response(item) for item in inquiries[:limit]], has_more=len(inquiries) > limit)
 
 
@@ -178,6 +199,7 @@ def reply_to_inquiry(inquiry_id: UUID, payload: HousingMessageInput, db: Session
     if user.id not in (inquiry.sender_id, post.owner_id):
         raise HTTPException(404, "Inquiry not found.")
     inquiry.messages.append(HousingMessage(sender_id=user.id, content=payload.message))
+    notify_inquiry_message(db, inquiry, user)
     db.commit()
     return inquiry_response(inquiry)
 
@@ -271,11 +293,13 @@ def inquire(post_id: UUID, payload: HousingMessageInput, db: Session = Depends(g
     if post.owner_id == user.id:
         raise HTTPException(409, "You cannot inquire on your own housing post.")
     inquiry = db.scalar(select(HousingInquiry).where(HousingInquiry.housing_id == post_id, HousingInquiry.sender_id == user.id))
+    is_new = inquiry is None
     if inquiry is None:
         require_available(post)
         inquiry = HousingInquiry(housing_id=post_id, sender_id=user.id)
         db.add(inquiry)
     inquiry.messages.append(HousingMessage(sender_id=user.id, content=payload.message))
+    notify_inquiry_message(db, inquiry, user, is_new=is_new)
     db.commit()
     return inquiry_response(inquiry)
 

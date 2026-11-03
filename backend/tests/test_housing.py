@@ -13,11 +13,13 @@ from sqlalchemy.pool import StaticPool
 
 from app.api.dependencies import get_current_user
 from app.api.housing import router
+from app.api.notifications import router as notifications_router
 from app.core.ride_time import utc_now_naive
 from app.db.base import Base
 from app.db.dependencies import get_db
 from app.main import app as production_app
 from app.models.housing import HousingInquiry, HousingMessage, HousingPost, HousingReport, HousingSave
+from app.models.notification import Notification
 from app.models.user import User
 from app.schemas.post import PostLocationFields
 
@@ -38,6 +40,7 @@ class HousingTests(unittest.TestCase):
         self.user = self.users[0]
         self.app = FastAPI()
         self.app.include_router(router, prefix="/housing")
+        self.app.include_router(notifications_router, prefix="/notifications")
 
         def test_db():
             with Session(self.engine) as db:
@@ -291,6 +294,93 @@ class HousingTests(unittest.TestCase):
         self.user = self.users[1]
         self.assertEqual(self.client.get("/housing/inquiries").json()["items"], [])
         self.assertEqual(self.client.post(reply_path, json={"message": "Private access"}).status_code, 404)
+
+    def test_inquiry_notifications_and_exact_conversation_links(self):
+        item = self.create()
+        path = f"/housing/{item['id']}/inquiries"
+        self.assertEqual(self.client.post(path, json={"message": "Own post"}).status_code, 409)
+        self.user = self.users[1]
+        thread = self.client.post(path, json={"message": "Private first message"}).json()
+        self.assertEqual(self.client.get("/notifications").json()["notifications"], [])
+        self.assertEqual(self.client.post(path, json={"message": "Private follow-up"}).status_code, 201)
+        self.user = self.users[0]
+        inbox = self.client.get("/notifications").json()
+        self.assertEqual(inbox["unread_count"], 2)
+        self.assertEqual({row["event_type"] for row in inbox["notifications"]},
+                         {"housing.inquiry_received", "housing.reply_received"})
+        for row in inbox["notifications"]:
+            self.assertEqual(row["category"], "housing")
+            self.assertEqual(row["resource_id"], thread["id"])
+            self.assertFalse(row["is_read"])
+            self.assertNotIn("Private", row["message"])
+            target = row["target_path"]
+            self.assertEqual(target, f"/housing/inquiries?inquiry_id={thread['id']}")
+            self.assertEqual(self.client.get(target + "&offset=100").json()["items"][0]["id"], thread["id"])
+        reply_path = f"/housing/inquiries/{thread['id']}/messages"
+        self.assertEqual(self.client.post(reply_path, json={"message": "Private owner reply"}).status_code, 200)
+        self.assertEqual(self.client.get("/notifications").json()["unread_count"], 2)
+        self.user = self.users[1]
+        received = self.client.get("/notifications").json()
+        self.assertEqual(received["unread_count"], 1)
+        self.assertEqual(received["notifications"][0]["event_type"], "housing.reply_received")
+        notification_id = received["notifications"][0]["id"]
+        self.assertEqual(self.client.post(f"/notifications/{notification_id}/read").status_code, 200)
+        self.assertEqual(self.client.get("/notifications/unread-count").json()["unread_count"], 0)
+        self.assertEqual(self.client.post(reply_path, json={"message": "Seeker reply"}).status_code, 200)
+        self.user = self.users[2]
+        self.assertEqual(self.client.get(target).status_code, 404)
+        self.assertEqual(self.client.post(reply_path, json={"message": "Unauthorized"}).status_code, 404)
+        self.assertEqual(self.client.get("/notifications").json()["notifications"], [])
+        self.assertEqual(self.client.get("/housing/inquiries?inquiry_id=invalid").status_code, 422)
+        self.assertEqual(self.client.get(f"/housing/inquiries?inquiry_id={uuid4()}").status_code, 404)
+        self.user = self.users[0]
+        self.assertEqual(self.client.get("/notifications").json()["unread_count"], 3)
+        self.client.put(f"/housing/{item['id']}/visibility", json={"is_private": True})
+        self.user = self.users[1]
+        self.assertEqual(self.client.get(target).status_code, 404)
+        self.assertEqual(self.client.post(reply_path, json={"message": "Private access"}).status_code, 404)
+        self.user = self.users[0]
+        self.assertEqual(self.client.get(target).status_code, 200)
+        self.assertEqual(self.client.delete(f"/housing/{item['id']}").status_code, 200)
+        self.assertEqual(self.client.get(target).status_code, 404)
+
+    def test_notification_link_finds_thread_beyond_first_page(self):
+        threads = []
+        for index in range(21):
+            self.user = self.users[0]
+            item = self.create(title=f"Room {index}")
+            self.user = self.users[1]
+            response = self.client.post(f"/housing/{item['id']}/inquiries", json={"message": "Interested"})
+            self.assertEqual(response.status_code, 201, response.text)
+            threads.append(response.json()["id"])
+        self.user = self.users[0]
+        first_page = self.client.get("/housing/inquiries").json()
+        self.assertTrue(first_page["has_more"])
+        self.assertNotIn(threads[0], [row["id"] for row in first_page["items"]])
+        target = f"/housing/inquiries?inquiry_id={threads[0]}"
+        result = self.client.get(target)
+        self.assertEqual(result.status_code, 200, result.text)
+        self.assertEqual([row["id"] for row in result.json()["items"]], [threads[0]])
+        self.assertFalse(result.json()["has_more"])
+
+    def test_notification_failure_rolls_back_message_and_inquiry(self):
+        item = self.create()
+        self.user = self.users[1]
+        path = f"/housing/{item['id']}/inquiries"
+        with patch("app.api.housing.notifications.notify", side_effect=RuntimeError("Notification write failed")):
+            with self.assertRaisesRegex(RuntimeError, "Notification write failed"):
+                self.client.post(path, json={"message": "Must not persist"})
+        with Session(self.engine) as db:
+            for model in (HousingInquiry, HousingMessage, Notification):
+                self.assertEqual(list(db.scalars(select(model))), [])
+        thread = self.client.post(path, json={"message": "Persisted"}).json()
+        self.user = self.users[0]
+        with patch("app.api.housing.notifications.notify", side_effect=RuntimeError("Notification write failed")):
+            with self.assertRaisesRegex(RuntimeError, "Notification write failed"):
+                self.client.post(f"/housing/inquiries/{thread['id']}/messages", json={"message": "Must not persist"})
+        with Session(self.engine) as db:
+            self.assertEqual(len(list(db.scalars(select(HousingMessage)))), 1)
+            self.assertEqual(len(list(db.scalars(select(Notification)))), 1)
 
     def test_reports_and_delete_cascade(self):
         item = self.create()

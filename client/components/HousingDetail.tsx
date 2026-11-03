@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { apiRequest, type User } from "../lib/api";
 import { ALCOHOL, APPROVALS, ARRANGEMENTS, BATHROOMS, FURNISHINGS, HOUSING_KINDS, KITCHENS, PETS, ROOM_TYPES, SMOKING, STAY_TYPES, UTILITIES, housingDate, housingError, housingExpired, housingMoney, useHousingResource, type HousingInquiry, type HousingItem } from "../lib/housing";
-import { HousingPhoto, HousingStatusBadge } from "./HousingCard";
+import { HousingStatusBadge } from "./HousingCard";
+import HousingGallery from "./HousingGallery";
 import { HousingLoadState, HousingOwnerActions, HousingSaveButton } from "./HousingControls";
 
 function yesNo(value: boolean | null): string { return value === null ? "Not specified" : value ? "Yes" : "No"; }
@@ -12,19 +13,19 @@ function yesNo(value: boolean | null): string { return value === null ? "Not spe
 function HousingInquiryForm({ item }: { item: HousingItem }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [sent, setSent] = useState(false);
+  const [sentInquiryId, setSentInquiryId] = useState<string | null>(null);
   async function send(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
     const data = new FormData(form);
-    setBusy(true); setError("");
+    setBusy(true); setError(""); setSentInquiryId(null);
     try {
-      await apiRequest<HousingInquiry>(`/housing/${item.id}/inquiries`, { method: "POST", body: JSON.stringify({ message: data.get("message") }) });
-      form.reset(); setSent(true);
+      const inquiry = await apiRequest<HousingInquiry>(`/housing/${item.id}/inquiries`, { method: "POST", body: JSON.stringify({ message: data.get("message") }) });
+      form.reset(); setSentInquiryId(inquiry.id);
     } catch (failure) { setError(housingError(failure)); } finally { setBusy(false); }
   }
   return <section className="housing-panel"><h2>Ask about this {item.kind === "LISTING" ? "place" : "housing request"}</h2><p className="muted">Introduce yourself, confirm dates, and ask about next steps. Inquiries are private between you and the poster; they do not reserve accommodation.</p>
-    {sent && <p className="housing-callout" role="status">Inquiry sent. <Link href="/housing/inquiries">Open your inquiries</Link> to follow up and check replies.</p>}
+    {sentInquiryId && <p className="housing-callout" role="status">Inquiry sent. <Link href={`/housing/inquiries?inquiry_id=${sentInquiryId}`}>Open your conversation</Link> to follow up and check replies.</p>}
     <form onSubmit={send}><label className="form-field"><span>Your message</span><textarea name="message" rows={4} minLength={1} maxLength={2000} required placeholder="Hi! Is this still available? I'm looking to move..." /></label>
       {error && <p className="form-error" role="alert">{error}</p>}
       <button className="button button-primary" disabled={busy}>{busy ? "Sending..." : "Send inquiry"}</button></form>
@@ -88,7 +89,7 @@ export default function HousingDetail({ id }: { id: string }) {
     {owner && <section className="housing-panel"><h2>Manage your post</h2><p className="field-hint">Discovery expires {housingDate(item.expires_at)}. Renew only if the details and availability are still accurate. Making it public does not reopen or renew it.</p><HousingOwnerActions item={item} onChanged={setData} /><Link className="text-link" href="/housing/inquiries">Check housing inquiries →</Link></section>}
     <div className="housing-detail-columns">
       <div>
-        <div className="housing-gallery">{item.photo_urls.length ? item.photo_urls.map((url, index) => <HousingPhoto key={`${index}-${url}`} url={url} title={`${item.title}, photo ${index + 1}`} />) : <HousingPhoto title={item.title} />}</div>
+        <HousingGallery urls={item.photo_urls} title={item.title} detail />
         <section className="housing-panel"><h2>{item.kind === "LISTING" ? "About this place" : "What I'm looking for"}</h2><p className="housing-prose">{item.description}</p><p><strong>{item.kind === "LISTING" ? "Available" : "Move-in"}:</strong> {housingDate(item.available_from)}{item.available_until ? ` through ${housingDate(item.available_until)}` : " onward"}</p><dl className="housing-fact-list">{facts.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl></section>
         <section className="housing-panel"><h2>Home & household</h2><dl className="housing-fact-list">{household.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>{item.household_notes && <><h3>Household notes</h3><p className="housing-prose">{item.household_notes}</p></>}{item.accessibility_notes && <><h3>Accessibility</h3><p className="housing-prose">{item.accessibility_notes}</p></>}</section>
       </div>
