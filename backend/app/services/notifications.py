@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from fastapi import HTTPException
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
 from app.models.notification import Notification
@@ -56,3 +56,14 @@ def mark_read(db: Session, notification_id: UUID, user_id: UUID, *, category: st
     db.commit()
     db.refresh(row)
     return row
+
+
+def mark_all_read(db: Session, user_id: UUID) -> int:
+    result = db.execute(
+        update(Notification)
+        .where(Notification.user_id == user_id, Notification.is_read.is_(False))
+        .values(is_read=True)
+        .execution_options(synchronize_session=False)
+    )
+    db.commit()
+    return result.rowcount or 0

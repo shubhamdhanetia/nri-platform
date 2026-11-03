@@ -8,7 +8,12 @@ from sqlalchemy.orm import Session
 from app.api.dependencies import get_current_user
 from app.db.dependencies import get_db
 from app.models.user import User
-from app.schemas.notification import NotificationCountResponse, NotificationPageResponse, NotificationResponse
+from app.schemas.notification import (
+    NotificationCountResponse,
+    NotificationMarkAllReadResponse,
+    NotificationPageResponse,
+    NotificationResponse,
+)
 from app.services import notifications
 
 router = APIRouter()
@@ -24,6 +29,12 @@ def inbox(db: DB, user: Member, offset: int = Query(0, ge=0), limit: int = Query
 @router.get("/unread-count", response_model=NotificationCountResponse)
 def count(db: DB, user: Member):
     return NotificationCountResponse(unread_count=notifications.unread_count(db, user.id))
+
+
+@router.post("/read-all", response_model=NotificationMarkAllReadResponse)
+def read_all(db: DB, user: Member):
+    updated_count = notifications.mark_all_read(db, user.id)
+    return NotificationMarkAllReadResponse(updated_count=updated_count, unread_count=0)
 
 
 @router.post("/{notification_id}/read", response_model=NotificationResponse)
