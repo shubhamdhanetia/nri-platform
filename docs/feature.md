@@ -14,7 +14,7 @@ application.
 - The client stores the access token in browser local storage and sends it as a
   Bearer token for authenticated API requests.
 - Protected pages redirect unauthenticated visitors to `/login`.
-- Main navigation contains Posts and Rides. Posts uses the existing `/explore`
+- Main navigation contains Community, Rides, and Housing. Community uses the existing `/explore`
   map route and is the post-login and brand-link destination. Feed remains
   accessible at `/feed` without a top-level navigation link.
 - The main Rides link opens `/rides` (Find a ride), which browses planned carpools.
@@ -35,6 +35,105 @@ application.
   details, creation, and the legacy feed keep Posts highlighted in navigation.
   My profile, Saved posts, and Log out are available in the account menu.
   Signing out removes the local access token.
+
+### Dedicated Housing
+
+Housing is separate from Community posts; existing Housing-category posts are
+preserved. All Housing APIs and screens require sign-in.
+
+#### Discovery and posting
+
+- `/housing`: Find a place, containing only available listings (`LISTING`) for
+  shared/private rooms, entire homes, sublets, transfers, and temporary stays.
+- `/housing/people`: Find people, containing only housing requests (`REQUEST`)
+  and people searching together (`TOGETHER`). Entire-home requests are included.
+  The Looking for selector narrows these two post types. Available listings
+  never appear here; the discovery views do not overlap.
+- `/housing/roommates` redirects to `/housing/people` for existing links.
+  Search API views are `PLACES` and `PEOPLE`; legacy `ROOMMATES` remains accepted
+  with the new people-only semantics. Incompatible view/kind combinations return
+  422 with guidance. No stored posts are modified or duplicated.
+- `/housing/new`: publish a place (`LISTING`), housing request (`REQUEST`), or
+  search-together post (`TOGETHER`). `/housing/{id}/edit`: owner-only content editing.
+- Space, rental arrangement, and stay length are independent dimensions:
+  shared/private/entire space; household/rental/sublet/lease takeover; short/long/flexible.
+- Price always has a currency and month/week/night period. Deposits, fees,
+  utilities, available dates, minimum stay, spaces, and current occupants are explicit.
+- Optional household facts describe shared kitchen food policies, smoking,
+  alcohol, pets, parking, laundry, kitchen access, work-from-home suitability,
+  quiet hours/cleaning/guest notes, and accessibility. Identity eligibility
+  filters are intentionally not provided.
+- New and edited posts require a selected location-provider ID. The backend
+  resolves city/state/country, postal code, original address, exact coordinates,
+  and resolution-8 H3; client-supplied derived fields are rejected.
+  Public posts expose the selected address/coordinates to signed-in members
+  without approximation. Requests and searching-together posts label the location
+  as a preferred area, not an available property. Landmark notes remain optional.
+  Up to eight optional HTTPS photo URLs load from external hosts; there is no
+  upload service. Owners must have permission to share those photos.
+- Search is paginated server-side and filters active, public, unexpired posts.
+  Price ranges require currency and period. Dates and structured household
+  filters are applied by the backend, not to an already downloaded page.
+- Map/List discovery shares applied filters, selected search area, and pagination.
+  Map is the initial view; preference is remembered within the browser session.
+  Like Rides, entry requests browser location, centers the map, then searches its
+  viewport without an initial unbounded fetch. Denial/unavailability shows an
+  explicit manual-search alternative; autocomplete works without permission.
+  Current-location icons appear inline in the location input and on the map.
+  Fullscreen preserves the viewport and provides Escape to exit.
+  Subsequent panning/zooming never fetches automatically.
+  Search this area applies current bounds; Search housing applies form filters
+  plus the current map viewport (or existing bounds in List). Reset filters
+  retains the area; Search all areas clears bounds.
+- The shared Leaflet map clusters locations and synchronizes markers/cards.
+  Markers represent only the current result page; more-results messaging and
+  Next/Previous prevent implying that the loaded markers are all matching homes.
+  Search uses an H3 index for candidate cells and exact coordinate bounds,
+  including antimeridian crossing. Oversized areas explicitly require zooming in.
+
+#### Lifecycle, privacy, and inquiries
+
+- `/housing/mine`, `/housing/saved`, and `/housing/inquiries` manage owned posts,
+  saved items, and private inquiry threads.
+- `ACTIVE`, `FILLED`, and `ARCHIVED` status is independent from visibility.
+  Active posts expire from discovery after 30 days. Owners explicitly renew
+  freshness, reopen for 30 days, or mark filled/resolved.
+- Saved/detail links to public inactive posts remain usable. Private posts and
+  their inquiry threads are owner-only; saving never bypasses privacy. Deletion
+  removes associated saves, inquiries/messages, and reports.
+- Members cannot inquire on their own or unavailable posts. Inquiry threads are
+  accessible only to their two participants while visibility permits. Existing
+  threads can continue after filling/expiry; new inquiries cannot.
+- Inquiries do not reserve accommodation, and there are no bookings, platform
+  payments, screening, or verified landlord-approval claims. Members check the
+  Housing inbox manually; housing has no notification-bell/email/push integration.
+- Scam, inaccuracy, discrimination, and other reports are stored for manual
+  operator review. Submission does not automatically remove a post.
+  **Operational requirement:** an operator must review `housing_reports` in the
+  database and handle reports; no moderation dashboard or automated process exists.
+- Apply migrations through `0008` before serving Housing. Revision `0007` adds independent
+  housing, save, inquiry/message, and report tables without moving Community data.
+  Revision `0008` adds nullable location fields and an H3 index, preserving existing
+  Housing posts without inventing coordinates. Such posts remain in unrestricted
+  listings and saved/details, but bounded searches exclude them until edited.
+  Downgrading `0008` refuses to discard populated locations.
+
+#### Housing API
+
+| Method | Path | Purpose |
+|---|---|---|
+| POST | `/housing/search` | Paginated filtered discovery |
+| POST | `/housing` | Create housing post |
+| GET | `/housing/me`, `/housing/saved` | Paginated owned/saved posts |
+| GET / PUT / DELETE | `/housing/{id}` | View, edit, delete |
+| PUT | `/housing/{id}/status` | Fill/resolve, archive, reopen |
+| POST | `/housing/{id}/renew` | Confirm active availability for 30 days |
+| PUT | `/housing/{id}/visibility` | Set public / Only me |
+| PUT / DELETE | `/housing/{id}/saved` | Save / unsave |
+| POST | `/housing/{id}/inquiries` | Start or continue an inquiry |
+| GET | `/housing/inquiries` | Paginated participant-only threads |
+| POST | `/housing/inquiries/{id}/messages` | Reply in an accessible thread |
+| POST | `/housing/{id}/reports` | Record a report for manual review |
 
 ### Posts
 

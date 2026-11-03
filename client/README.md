@@ -16,6 +16,93 @@ The client is a Next.js app that supports the MVP community flow:
 - `/rides/carpools/new` — offer an outbound trip and optional independent return
 - `/rides/carpools/[id]` — request seats, review approvals and manage cancellations
 - `/notifications` — shared private inbox for ride and carpool updates
+- `/housing` — available places and housing requests, with price/date/household filters
+- `/housing/people` — people looking for accommodation or wanting to search together
+- `/housing/roommates` — legacy link redirected to `/housing/people`
+- `/housing/new` — list a place, request housing, or find a place together
+- `/housing/mine` — manage housing status, visibility, editing, and availability renewal
+- `/housing/saved` — saved housing, subject to privacy and deletion
+- `/housing/inquiries` — private housing inquiry threads and replies
+
+## Housing
+
+Housing is a dedicated discovery/inquiry feature, separate from Community posts
+and Rides. Existing Community Housing posts are not migrated or removed.
+Available places support shared rooms, private rooms, and entire homes; requests
+can also be flexible. Arrangements distinguish joining a household, rentals,
+sublets, and lease takeovers. Short-term stays are listings, not reservations.
+
+The form captures rent/budget with currency and period, deposit and fees,
+dates and minimum stay, furnishing, bathroom, utilities, occupants, availability,
+approval claims, optional practical household preferences, and up to eight
+HTTPS photo URLs. Photos load directly from their hosts without sending the app's
+referrer; there is no image-upload service. New and edited posts select a
+location through the existing autocomplete APIs. The backend resolves city,
+state, country, address, coordinates, and resolution-8 H3 cell from its provider ID;
+clients cannot supply their own coordinates. Public Housing posts expose the
+original selected address and exact coordinates to signed-in members, without
+obfuscation. Housing requests and searching-together posts select a preferred
+area, not the address of a confirmed available home.
+
+Search uses server-side pagination, location/keyword filters, dates, and structured
+space, arrangement, price, stay, furnishing, bathroom, kitchen, parking, and
+laundry filters. Budget filters require a currency and period, avoiding comparisons
+between monthly/nightly or different-currency amounts. Find a place shows only
+available listings, including shared/private rooms and entire homes. Find people
+shows only housing requests and searching-together posts, including entire-home
+requests. Its Looking for selector narrows those two types. The two discovery
+views never overlap; posting still has the same three choices.
+
+Discovery starts in Map view, remembers Map/List preference in the browser
+session, and keeps applied filters and search bounds when switching views.
+Like Rides, it requests browser location on entry and searches the current-location
+viewport after the map centers. It does not first download unrestricted results.
+If permission is denied or location is unavailable, an explicit message offers
+city/area autocomplete or manual map search instead. The location input uses the
+shared Community/Rides styling with an inline current-location icon; the map also
+has recenter and fullscreen controls. Escape exits fullscreen and restores scrolling.
+Fullscreen expands the entire Housing browser, like Rides: the heading, location
+search, all filters, view switch, map, and results stay available. Filters use a
+compact layout above the map; desktop results use a narrower scrolling column,
+while phone layouts stack the map and results. Entering/exiting fullscreen does
+not reset entered filters, selected results, or the map viewport.
+The shared Leaflet map clusters results and synchronizes
+marker/card selection. Subsequent panning does not fetch automatically; Search this area
+applies the current viewport. Search housing applies the form filters and current
+map viewport (or existing area in List view). Reset filters keeps the area;
+Search all areas clears only the geographic restriction.
+H3 candidates are narrowed with exact latitude/longitude bounds, including
+antimeridian handling. The map shows only the current result page and explains
+when more pages exist. Existing coordinate-less posts remain in unrestricted
+list results but do not match bounded searches until their owners add a location.
+
+Owners can mark filled/resolved, archive, reopen, renew, edit, make private, or
+delete. Active public posts expire from discovery after 30 days; renewal explicitly
+confirms freshness. Filled, archived, and expired posts retain public saved/detail
+access. Private posts and their inquiries are inaccessible to other members.
+Housing inbox replies require checking or refreshing `/housing/inquiries`;
+there are no housing email, push, or notification-bell alerts.
+
+Housing has no booking, payment, screening, or automated verification. Reports
+are persisted for manual operator review, not automatically actioned; there is
+no moderation dashboard. No gender, caste, religion, or nationality eligibility
+filters are provided. Apply Alembic revision `0008` before using Housing; `0007`
+creates Housing and `0008` adds its locations and indexed H3 search.
+
+### Local Housing samples
+
+From `backend`, run
+`.\.venv\Scripts\python.exe -m scripts.seed_housing --email "existing-user@example.com"`.
+This refuses non-local PostgreSQL and requires the owner to exist and migrations
+through `0008`. It adds 26 `[Demo]` posts across nine public landmark anchors in
+Fremont, San Jose, Sunnyvale, San Francisco, Oakland, Berkeley, and Long Beach
+(downtown, Belmont Shore, Bixby Knolls). All posts explain that neither the
+availability nor the illustrative stock-photo URLs represent real properties.
+Coverage includes all post/space/arrangement/stay/price-period types, practical
+household filters, active/filled/archived/private/expired/ended-date examples.
+Inactive and private cases are intentionally absent from public discovery;
+inspect them in My housing. Re-running preserves existing demo posts and owner edits.
+It never creates other members, messages, saves, bookings, or notifications.
 
 Ride addresses are visible to signed-in members with a driver profile after
 explicit rider consent. Phone numbers are unverified and shared only with
@@ -23,8 +110,8 @@ booking participants after confirmation. The notification bell beside the profil
 button opens a shared inbox with unread indicators and links to the relevant
 ride or carpool. Messages can be marked read individually. The bell refreshes
 every 30 seconds, on focus, and after notification changes; the inbox has an
-explicit Refresh action. There is no email/SMS/push delivery, messaging,
-live tracking or platform payments in this version.
+explicit Refresh action. Rides has no email/SMS/push delivery, messaging,
+live tracking or platform payments. Housing provides separate private inquiry threads.
 See [feature documentation](../docs/feature.md) for API, privacy,
 database setup and tests.
 
@@ -118,7 +205,7 @@ New databases include it through the initial Alembic migration. Older local
 databases need a reviewed schema upgrade before adopting the migration baseline;
 see [database setup](../README.md#existing-local-databases).
 
-The header contains **Posts** and **Rides**. Rides opens **Find a ride**
+The header contains **Community**, **Rides**, and **Housing**. Rides opens **Find a ride**
 (`/rides`); its three tabs are **Find a ride**, **Find passengers**, and **My rides**.
 Find passengers is at `/rides/requests`. Posting actions remain at `/rides/new`
 and `/rides/carpools/new`. Driver settings is available from My rides.
