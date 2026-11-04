@@ -85,6 +85,23 @@ class NotificationAPITests(unittest.TestCase):
         for query in ("?offset=-1", "?limit=0", "?limit=51"):
             self.assertEqual(self.client.get("/notifications" + query, headers=self.fixture.headers()).status_code, 422)
 
+    def test_mark_all_read_only_updates_current_member_and_is_idempotent(self):
+        with Session(self.engine) as db:
+            for user_id in (1, 1, 2):
+                notify(
+                    db, user_id=UUID(int=user_id), category="ride", event_type="ride.test",
+                    resource_id=UUID(int=user_id), target_path="/rides", message="Test update",
+                )
+            db.commit()
+        response = self.client.post("/notifications/read-all", headers=self.fixture.headers())
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(response.json(), {"updated_count": 2, "unread_count": 0})
+        self.assertEqual(self.inbox()["unread_count"], 0)
+        self.assertEqual(self.inbox(2)["unread_count"], 1)
+        repeated = self.client.post("/notifications/read-all", headers=self.fixture.headers())
+        self.assertEqual(repeated.status_code, 200, repeated.text)
+        self.assertEqual(repeated.json(), {"updated_count": 0, "unread_count": 0})
+
     def test_ride_offers_withdrawals_and_confirmations(self):
         ride_id, first = self.fixture.seed_offer()
         self.assertEqual(self.event_types(), ["ride.offer_received"])

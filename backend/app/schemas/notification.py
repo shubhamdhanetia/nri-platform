@@ -26,3 +26,8 @@ class NotificationPageResponse(BaseModel):
 
 class NotificationCountResponse(BaseModel):
     unread_count: int
+
+
+class NotificationMarkAllReadResponse(BaseModel):
+    updated_count: int
+    unread_count: int

@@ -126,22 +126,29 @@ function SelectedPostPan({
   const map = useMap();
 
   useEffect(() => {
-    if (!post) return;
+    if (!post) {
+      map.closePopup();
+      return;
+    }
     const selectedMarker = marker.current;
     const markerCluster = cluster.current;
     if (!selectedMarker || !markerCluster) {
       map.panTo([post.latitude, post.longitude]);
       return;
     }
+    let active = true;
     let revealed = false;
     const reveal = () => {
       if (revealed || !markerCluster.getVisibleParent(selectedMarker)) return;
       revealed = true;
-      markerCluster.zoomToShowLayer(selectedMarker, () => selectedMarker.openPopup());
+      markerCluster.zoomToShowLayer(selectedMarker, () => {
+        if (active) selectedMarker.openPopup();
+      });
     };
     markerCluster.on("layeradd", reveal);
     const frame = requestAnimationFrame(reveal);
     return () => {
+      active = false;
       cancelAnimationFrame(frame);
       markerCluster.off("layeradd", reveal);
     };

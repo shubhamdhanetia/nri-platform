@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, FileText } from "lucide-react";
+import { ArrowRight, FileText, MapPin, MessageCircle } from "lucide-react";
 import ProtectedPage from "../../components/ProtectedPage";
 import DeletePostButton from "../../components/DeletePostButton";
 import EditPostButton from "../../components/EditPostButton";
 import PostReactions from "../../components/PostReactions";
 import PostVisibilityButton from "../../components/PostVisibilityButton";
+import PostStatus from "../../components/PostStatus";
+import PostStatusButton from "../../components/PostStatusButton";
 import {
   apiRequest,
   POST_CATEGORY_LABELS,
@@ -20,6 +22,8 @@ export default function MyPostsPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState<"ALL" | Post["status"]>("ALL");
+  const visiblePosts = posts.filter(post => statusFilter === "ALL" || post.status === statusFilter);
 
   useEffect(() => {
     let active = true;
@@ -84,6 +88,17 @@ export default function MyPostsPage() {
         </div>
         <Link className="button button-secondary" href="/create-post">Write a post <ArrowRight size={16} aria-hidden="true" /></Link>
       </section>
+      <p className="muted">Closed posts leave Community discovery but remain accessible through saved posts and links while public. Make a post private to restrict access to yourself.</p>
+      <label className="post-status-filter">Post status
+        <select value={statusFilter} onChange={event => {
+          const value = event.target.value;
+          if (value === "ALL" || value === "ACTIVE" || value === "CLOSED") setStatusFilter(value);
+        }}>
+          <option value="ALL">All posts</option>
+          <option value="ACTIVE">Active</option>
+          <option value="CLOSED">Closed</option>
+        </select>
+      </label>
       {loading ? (
         <div className="state-card"><span className="spinner" /> Loading your posts...</div>
       ) : error ? (
@@ -93,15 +108,15 @@ export default function MyPostsPage() {
             Try again
           </button>
         </div>
-      ) : posts.length === 0 ? (
+      ) : visiblePosts.length === 0 ? (
         <div className="empty-state compact-empty">
           <span className="empty-icon"><FileText size={24} aria-hidden="true" /></span>
-          <h3>No posts yet</h3>
+          <h3>{posts.length ? "No posts with this status" : "No posts yet"}</h3>
         </div>
       ) : (
         <div className="post-grid">
-          {posts.map((post) => (
-            <article className="post-card" key={post.id}>
+          {visiblePosts.map((post) => (
+            <article className="post-card owned-post-card" key={post.id}>
               <div className="post-meta">
                 <div className="post-badges">
                   <span className="category-pill">{POST_CATEGORY_LABELS[post.category]}</span>
@@ -110,26 +125,40 @@ export default function MyPostsPage() {
                   </span>
                   {post.updated_at && <span className="edited-indicator">Edited</span>}
                   {post.is_private && <span className="visibility-private-pill">Only me</span>}
+                  <PostStatus post={post} />
                 </div>
-                <span className="post-location">{post.location}</span>
+                <span className="post-location">
+                  <MapPin size={14} aria-hidden="true" />
+                  {post.location}
+                </span>
               </div>
               <h3><Link href={`/posts/${post.id}`}>{post.title}</Link></h3>
               <p className="post-description">{post.description}</p>
               <div className="profile-post-actions">
-                <Link className="comment-count-link" href={`/posts/${post.id}`}>
-                  {post.comment_count} {post.comment_count === 1 ? "comment" : "comments"}
-                </Link>
-                <PostReactions
-                  canReact={false}
-                  dislikeCount={post.dislike_count}
-                  likeCount={post.like_count}
-                  myReaction={post.my_reaction}
-                  onChanged={updatePostReactions}
-                  postId={post.id}
-                />
-                <PostVisibilityButton onChanged={updatePost} post={post} />
-                <EditPostButton onUpdated={updatePost} post={post} />
-                <DeletePostButton onDeleted={removePost} postId={post.id} />
+                <div className="owned-post-engagement">
+                  <Link className="comment-count-link" href={`/posts/${post.id}`}>
+                    <MessageCircle size={15} aria-hidden="true" />
+                    {post.comment_count} {post.comment_count === 1 ? "comment" : "comments"}
+                  </Link>
+                  <PostReactions
+                    canReact={false}
+                    dislikeCount={post.dislike_count}
+                    likeCount={post.like_count}
+                    myReaction={post.my_reaction}
+                    onChanged={updatePostReactions}
+                    postId={post.id}
+                  />
+                </div>
+                <div className="owned-post-controls" role="group" aria-label={`Manage ${post.title}`}>
+                  {post.post_type !== "DISCUSSION" && (
+                    <span className="owned-post-status-action">
+                      <PostStatusButton onChanged={updatePost} post={post} />
+                    </span>
+                  )}
+                  <PostVisibilityButton onChanged={updatePost} post={post} />
+                  <EditPostButton onUpdated={updatePost} post={post} />
+                  <DeletePostButton onDeleted={removePost} postId={post.id} />
+                </div>
               </div>
             </article>
           ))}

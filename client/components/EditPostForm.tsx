@@ -13,6 +13,7 @@ import {
 } from "../lib/api";
 import LocationAutocomplete from "./LocationAutocomplete";
 import MedicalSupportNotice from "./MedicalSupportNotice";
+import ParkingNotice from "./ParkingNotice";
 
 function isPostCategory(value: string): value is PostCategory {
   return POST_CATEGORIES.some((category) => category === value);
@@ -136,6 +137,7 @@ export default function EditPostForm({
             </select>
           </label>
           {category === "MEDICAL_SUPPORT" && <MedicalSupportNotice />}
+          {category === "PARKING" && <ParkingNotice postType={postType} />}
           <LocationAutocomplete
             initialSelection={{
               locationId: post.location_id,
@@ -155,9 +157,10 @@ export default function EditPostForm({
               value={postType}
             >
               {POST_TYPES.map((value) => (
-                <option key={value} value={value}>{POST_TYPE_LABELS[value]}</option>
+                <option key={value} value={value} disabled={post.status === "CLOSED" && value === "DISCUSSION"}>{POST_TYPE_LABELS[value]}</option>
               ))}
             </select>
+            {post.status === "CLOSED" && <span className="field-hint">Reopen the post before changing it to a discussion.</span>}
           </label>
           <label className="form-field">
             <span>Who can see this post?</span>

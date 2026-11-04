@@ -39,7 +39,7 @@ export default function DriverPage() {
     } catch (err) { setError(rideError(err)); } finally { setBusy(false); }
   }
   return <RideLayout>
-    <section className="page-heading"><div><p className="eyebrow">One account, both roles</p><h1>Your driver profile</h1><p className="muted">Offer scheduled rides to members of your community.</p></div></section>
+    <section className="page-heading"><div><p className="eyebrow">One account, both roles</p><h1>Driver settings</h1><p className="muted">Manage your vehicle and contact details to offer community cost-sharing rides.</p></div></section>
     {error && <p className="form-error" role="alert">{error}</p>}
     {!ready ? <p role="status">{error ? "Reload the page to retry loading your profile." : "Loading profile..."}</p> : <form className="form-card" onSubmit={save}>
       <label className="form-field"><span>Vehicle make and model</span><input required maxLength={100} value={vehicle} onChange={e => setVehicle(e.target.value)} placeholder="Toyota Camry" /></label>
@@ -49,7 +49,7 @@ export default function DriverPage() {
       {!acknowledged && <p className="field-hint" id="driver-acknowledgement-hint">Please accept the eligibility and address-use acknowledgement to continue.</p>}
       <p className="field-hint">Profile changes apply to new offers. Existing offers keep their vehicle details, and confirmed bookings keep the agreed vehicle and contact numbers.</p>
       {success && <p className="ride-notice" role="status">{success}</p>}
-      <div className="form-actions"><button className="button button-primary" disabled={busy || !acknowledged}>{busy ? "Saving..." : profile ? "Update profile" : "Create driver profile"}</button><Link className="button button-secondary" href="/rides">Ride requests</Link></div>
+      <div className="form-actions"><button className="button button-primary" disabled={busy || !acknowledged}>{busy ? "Saving..." : profile ? "Update profile" : "Create driver profile"}</button><Link className="button button-secondary" href="/rides/mine">Back to My rides</Link></div>
     </form>}
   </RideLayout>;
 }

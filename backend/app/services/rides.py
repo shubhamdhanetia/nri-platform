@@ -60,6 +60,7 @@ def create_request(db: Session, user_id: UUID, data: RideRequestInput) -> RideRe
         pickup_start=utc_naive(data.pickup_start), pickup_end=utc_naive(data.pickup_end),
         timezone=data.timezone, passengers=data.passengers, bags=data.bags,
         notes=data.notes, rider_phone=data.rider_phone, currency=data.currency,
+        preferred_amount=data.preferred_amount,
     )
     db.add(ride)
     db.commit()

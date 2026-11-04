@@ -22,23 +22,27 @@ export default function ExploreLocationSearch({
   label = "Find location",
   onSelectionChange,
   onQueryChange,
+  initialSelection,
+  placeholder = "Search a city or area",
 }: {
   center: Coordinates;
   onLocationSelected?: (coordinates: Coordinates) => void;
   label?: string;
   onSelectionChange?: (selection: { locationId: string; location: string } | null) => void;
   onQueryChange?: (query: string) => void;
+  initialSelection?: { locationId: string; location: string };
+  placeholder?: string;
 }) {
   const inputId = useId();
   const suggestionsId = `${inputId}-suggestions`;
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialSelection?.location ?? "");
   const [latitude, longitude] = center;
   const [suggestions, setSuggestions] = useState<LocationSearchResult[]>([]);
   const [searchedQuery, setSearchedQuery] = useState("");
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
   const [selectedPlace, setSelectedPlace] = useState<LocationSearchResult | null>(null);
-  const [hasSelection, setHasSelection] = useState(false);
+  const [hasSelection, setHasSelection] = useState(Boolean(initialSelection));
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [detailsError, setDetailsError] = useState("");
   const detailsRequestVersion = useRef(0);
@@ -153,7 +157,7 @@ export default function ExploreLocationSearch({
         autoComplete="off"
         id={inputId}
         onChange={(event) => handleChange(event.target.value)}
-        placeholder="Search a city or area"
+        placeholder={placeholder}
         role="combobox"
         value={query}
       />

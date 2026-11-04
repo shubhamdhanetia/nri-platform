@@ -16,6 +16,7 @@ import app.models.saved_post
 import app.models.ride
 import app.models.carpool
 import app.models.notification
+import app.models.housing
 
 config = context.config
 if config.config_file_name is not None:

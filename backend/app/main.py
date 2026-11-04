@@ -8,6 +8,7 @@ from app.api.rides import router as rides_router
 from app.api.carpools import router as carpools_router
 from app.api.notifications import router as notifications_router
 from app.api.users import router as users_router
+from app.api.housing import router as housing_router
 from app.api.posts import (
     router as posts_router
 )
@@ -55,3 +56,4 @@ app.include_router(
 app.include_router(rides_router, prefix="/rides", tags=["Rides"])
 app.include_router(carpools_router, prefix="/rides/carpools", tags=["Carpools"])
 app.include_router(notifications_router, prefix="/notifications", tags=["Notifications"])
+app.include_router(housing_router, prefix="/housing", tags=["Housing"])

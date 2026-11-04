@@ -35,6 +35,7 @@ import PostReactions from "../../components/PostReactions";
 import EditPostButton from "../../components/EditPostButton";
 import DeletePostButton from "../../components/DeletePostButton";
 import PostVisibilityButton from "../../components/PostVisibilityButton";
+import PostStatusButton from "../../components/PostStatusButton";
 import MedicalSupportNotice from "../../components/MedicalSupportNotice";
 import CategoryFilter, { CATEGORY_ICONS } from "../../components/CategoryFilter";
 import { locationSearchBounds } from "../../lib/map";
@@ -402,7 +403,7 @@ export default function CommunityPage() {
 
   function updatePost(post: Post) {
     setPosts((current) =>
-      post.is_private
+      post.is_private || post.status === "CLOSED"
         ? current.filter((item) => item.id !== post.id)
         : current.map((item) => (item.id === post.id ? post : item)),
     );
@@ -442,8 +443,8 @@ export default function CommunityPage() {
       >
         <header className="community-heading">
           <div>
-            <p className="eyebrow">YOUR PEOPLE. YOUR PLACES.</p>
             <h1>Community</h1>
+            <p className="muted">What&apos;s happening around you? Share a question, recommendation, or local update.</p>
           </div>
           <div className="community-heading-actions">
             <button
@@ -843,6 +844,7 @@ export default function CommunityPage() {
                             onChanged={updatePost}
                             post={post}
                           />
+                          <PostStatusButton onChanged={updatePost} post={post} />
                           <EditPostButton onUpdated={updatePost} post={post} />
                           <DeletePostButton
                             onDeleted={(postId) => {

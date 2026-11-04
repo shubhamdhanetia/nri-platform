@@ -178,6 +178,24 @@ class RideAPITests(unittest.TestCase):
             response = self.create(**updates)
             self.assertEqual(response.status_code, 422, response.text)
 
+    def test_optional_preferred_amount_is_soft_and_validated(self):
+        without_preference = self.create()
+        self.assertEqual(without_preference.status_code, 201, without_preference.text)
+        self.assertIsNone(without_preference.json()["preferred_amount"])
+
+        with_preference = self.create(preferred_amount="25.50")
+        self.assertEqual(with_preference.status_code, 201, with_preference.text)
+        self.assertEqual(with_preference.json()["preferred_amount"], "25.50")
+        ride_id = with_preference.json()["id"]
+        self.assertEqual(self.driver().status_code, 200)
+        offer = self.offer(ride_id, amount="30.00")
+        self.assertEqual(offer.status_code, 201, offer.text)
+        self.assertEqual(offer.json()["request"]["preferred_amount"], "25.50")
+
+        for value in ("-0.01", "10000", "1.001", "NaN", "not-a-number"):
+            with self.subTest(preferred_amount=value):
+                self.assertEqual(self.create(preferred_amount=value).status_code, 422)
+
     def test_provider_failure_does_not_create_request(self):
         with patch("app.services.rides.resolve_post_location", side_effect=HTTPException(502, "Location provider failed")):
             response = self.create()

@@ -10,6 +10,7 @@ import { locationSearchBounds } from "../lib/map";
 import { rideDate, rideError, rideMoney, type LocationSelection } from "../lib/rides";
 import CarpoolCard from "./CarpoolCard";
 import ExploreLocationSearch from "./ExploreLocationSearch";
+import TripMapLegend from "./TripMapLegend";
 
 const CarpoolMap = dynamic(() => import("./CommunityMap"), {
   ssr: false,
@@ -256,12 +257,12 @@ export default function CarpoolList({ mine = false }: { mine?: boolean }) {
     },
   })), [page]);
 
-  if (!mine) return <section className={`community-page rides-browse rides-map-browser carpool-browse${fullscreen ? " community-expanded" : ""}`} aria-label="Find a carpool">
+  if (!mine) return <section className={`community-page rides-browse rides-map-browser carpool-browse${fullscreen ? " community-expanded" : ""}`} aria-label="Find a ride">
     <header className="community-heading">
-      <div><p className="eyebrow">GOING THE SAME WAY</p><h1>Find a carpool</h1></div>
+      <div><p className="eyebrow">GOING THE SAME WAY</p><h1>Find a ride</h1><p className="muted">Join a planned carpool. No suitable trip? Request a ride so a driver can respond.</p></div>
       <div className="community-heading-actions">
         <button className="button button-secondary" aria-pressed={fullscreen} onClick={toggleFullscreen}>{fullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}{fullscreen ? "Exit full screen" : "Full screen map"}</button>
-        <Link className="button button-primary" href="/rides/carpools/new"><Plus size={18} />Offer a carpool</Link>
+        <Link className="button button-primary" href="/rides/new"><Plus size={18} />Request a ride</Link>
       </div>
     </header>
     <div className="community-controls">
@@ -295,16 +296,18 @@ export default function CarpoolList({ mine = false }: { mine?: boolean }) {
           {selectedId !== null && !resultsLoading && !error && <button className="community-icon-button" title="Show both locations" aria-label="Show both locations" onClick={() => setSelectionVersion(version => version + 1)}><MapIcon size={19} /></button>}
           <button className="community-icon-button" title={fullscreen ? "Exit full screen" : "Full screen map"} aria-label={fullscreen ? "Exit full screen" : "Full screen map"} onClick={toggleFullscreen}>{fullscreen ? <Minimize2 size={19} /> : <Maximize2 size={19} />}</button>
         </div>
+        <TripMapLegend hasSelection={!resultsLoading && !error && !!page?.trips.some(trip => trip.id === selectedId)}
+          onClearSelection={clearMapSelection} />
       </div>}
       <section className={`community-results${view === "map" && !resultsOpen ? " community-results-collapsed" : ""}`} aria-label="Available carpools" aria-busy={resultsLoading}>
         <div className="community-results-heading"><div><h2>Available carpools</h2><span aria-live="polite">{resultsLoading ? "Searching..." : error ? "Search unavailable" : !page ? "" : `${page.trips.length}${page.has_more ? "+" : ""} trips`}</span></div>{view === "map" && <button className="community-icon-button community-sheet-toggle" aria-label={resultsOpen ? "Collapse carpools" : "Expand carpools"} aria-expanded={resultsOpen} onClick={() => setResultsOpen(!resultsOpen)}>{resultsOpen ? <ChevronDown size={20} /> : <ChevronUp size={20} />}</button>}</div>
         <div className="community-result-body">
           {resultsLoading ? <div className="community-state" role="status"><span className="spinner" /><p>{locating ? "Finding your location..." : "Searching carpools..."}</p></div> : error ? <div className="community-state" role="alert"><h3>Could not load carpools</h3><p>{error}</p><button className="button button-secondary" onClick={() => void refresh(offset)}>Try again</button></div> : !page ? <div className="community-state"><MapPin size={30} /><h3>{scope === "destination" ? "Choose a destination" : "Choose a pickup area"}</h3></div> : !page.trips.length ? <div className="community-state"><Car size={30} /><h3>No matching carpools</h3><Link className="button button-secondary" href="/rides/new">Request a ride</Link></div> : page.trips.map(trip => <article className={`community-post rides-result${selectedId === trip.id ? " is-selected" : ""}`} key={trip.id} onClick={event => {
             if ((event.target as HTMLElement).closest("a, button") || window.getSelection()?.toString()) return;
-            if (view === "feed") selectTrip(trip.id); else selectMapTrip(trip.id);
+            selectTrip(trip.id);
           }}>
             <div className="community-post-top"><span className="community-category-icon"><Car size={21} /></span><div className="community-post-context"><Link className="member-profile-link" href={`/profile/${trip.driver.id}`}>{trip.driver.name}</Link><time dateTime={trip.pickup_start}>{rideDate(trip.pickup_start, trip.timezone)}</time></div><span className="post-type-pill">{trip.status}</span></div>
-            <h3><Link href={`/rides/carpools/${trip.id}`}>{trip.pickup.city} to {trip.dropoff.city}<ArrowUpRight size={18} /></Link></h3>
+            <h3><button type="button" className="ride-result-select" aria-label={`Select ${trip.driver.name}'s carpool on map`} aria-pressed={selectedId === trip.id} onClick={() => selectTrip(trip.id)}>{trip.pickup.city} to {trip.dropoff.city}</button></h3>
             <dl className="rides-result-route"><div><dt>Meeting point</dt><dd>{trip.pickup.location}</dd></div><div><dt>Drop-off point</dt><dd>{trip.dropoff.location}</dd></div></dl>
             <p className="rides-result-window">Until {rideDate(trip.pickup_end, trip.timezone)} ({trip.timezone})</p>
             <p className="carpool-price"><strong>{rideMoney(trip.amount, trip.currency)}</strong> / person</p><p className="field-hint">{trip.vehicle}</p>
@@ -318,14 +321,14 @@ export default function CarpoolList({ mine = false }: { mine?: boolean }) {
     <div className="carpool-pagination"><button className="community-icon-button" title="Previous carpools" aria-label="Previous carpools" disabled={resultsLoading || !!error || offset === 0} onClick={() => void refresh(offset - 20)}><ArrowLeft size={18} /></button><span>Page {offset / 20 + 1}</span><button className="community-icon-button" title="Next carpools" aria-label="Next carpools" disabled={resultsLoading || !!error || !page?.has_more} onClick={() => void refresh(offset + 20)}><ArrowRight size={18} /></button></div>
     <p className="ride-notice">Fixed cost-sharing contributions are per passenger, per direction. Payment is arranged outside the app. Drivers and phone numbers are not verified; transport is not guaranteed.</p>
   </section>;
-  return <section aria-label={mine ? "My carpools" : "Find a carpool"}>
+  return <section aria-label={mine ? "My carpools" : "Find a ride"}>
     <div className="ride-between"><h2>{mine ? "My carpools" : "Available carpools"}</h2><Link className="button button-primary" href="/rides/carpools/new">Offer a carpool</Link></div>
     <p className="muted">Trips you published and directions you requested. Outbound and return approvals are independent.</p>
     <button className="button button-secondary" disabled={busy} onClick={() => void refresh(offset)}>Refresh carpools</button>
     {error && <p className="form-error" role="alert">{error}</p>}
     {busy ? <p role="status">Loading carpools...</p> : page && (
       page.trips.length ? <div className="ride-grid">{page.trips.map(trip => <CarpoolCard key={trip.id} trip={trip} role={mine ? (trip.my_request_status ? "Passenger" : "Driver") : undefined} />)}</div> :
-        <div className="state-card"><p>{mine ? "No carpools yet. Offer your planned trip or request seats on a community trip." : "No available carpools match. Try another date or area, or request a ride instead."}</p><Link className="text-link" href={mine ? "/rides/carpools" : "/rides/new"}>{mine ? "Find a carpool" : "Request a ride"}</Link></div>
+        <div className="state-card"><p>{mine ? "No carpools yet. Offer your planned trip or request seats on a community trip." : "No available carpools match. Try another date or area, or request a ride instead."}</p><Link className="text-link" href={mine ? "/rides" : "/rides/new"}>{mine ? "Find a ride" : "Request a ride"}</Link></div>
     )}
     <div className="form-actions"><button className="button button-secondary" disabled={busy || offset === 0} onClick={() => void refresh(offset - 20)}>Previous carpools</button><button className="button button-secondary" disabled={busy || !page?.has_more} onClick={() => void refresh(offset + 20)}>Next carpools</button></div>
   </section>;

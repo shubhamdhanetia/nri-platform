@@ -8,6 +8,12 @@ import CommentActions from "../../../components/CommentActions";
 import PostReactions from "../../../components/PostReactions";
 import SavePostButton from "../../../components/SavePostButton";
 import MedicalSupportNotice from "../../../components/MedicalSupportNotice";
+import ParkingNotice from "../../../components/ParkingNotice";
+import CommunityRideNotice from "../../../components/CommunityRideNotice";
+import CommunityHousingNotice from "../../../components/CommunityHousingNotice";
+import PostStatus, { postClosedLabel } from "../../../components/PostStatus";
+import PostStatusButton from "../../../components/PostStatusButton";
+import PostVisibilityButton from "../../../components/PostVisibilityButton";
 import {
   apiRequest,
   isUuid,
@@ -214,11 +220,23 @@ function PostDetailsContent({ postId }: { postId: string }) {
                   {POST_TYPE_LABELS[post.post_type]}
                 </span>
                 {post.is_private && <span className="visibility-private-pill">Only me</span>}
+                <PostStatus post={post} />
               </div>
               <span className="post-location"><span aria-hidden="true">⌖</span> {post.location}</span>
             </div>
             <h1>{post.title}</h1>
+            {post.status === "CLOSED" && <p className="post-closed-notice" role="status">
+              {postClosedLabel(post)}. This {post.post_type === "REQUEST" ? "request" : "offer"} is closed
+              and is no longer shown in Community discovery.
+            </p>}
+            {post.user_id === currentUserId && <div className="form-actions">
+              <PostStatusButton post={post} onChanged={updated => setPost(current => current ? { ...current, ...updated } : current)} />
+              <PostVisibilityButton post={post} onChanged={updated => setPost(current => current ? { ...current, ...updated } : current)} />
+            </div>}
             {post.category === "MEDICAL_SUPPORT" && <MedicalSupportNotice />}
+            {post.category === "HOUSING" && <CommunityHousingNotice postType={post.post_type} compact />}
+            {post.category === "PARKING" && <ParkingNotice postType={post.post_type} compact />}
+            {post.category === "RIDES_CARPOOL" && <CommunityRideNotice postType={post.post_type} compact />}
             <p className="post-detail-description">{post.description}</p>
             <div className="post-detail-author">
               <Link href={`/profile/${post.author.id}`} aria-label={`View ${post.author.name}'s profile`}>
@@ -262,7 +280,7 @@ function PostDetailsContent({ postId }: { postId: string }) {
               </div>
             </div>
 
-            <form className="comment-form" onSubmit={submitComment}>
+            {post.status === "CLOSED" ? <p className="post-closed-notice">This post is closed. New comments are disabled.</p> : <form className="comment-form" onSubmit={submitComment}>
               <label className="form-field">
                 <span>Add a comment</span>
                 <textarea
@@ -289,7 +307,7 @@ function PostDetailsContent({ postId }: { postId: string }) {
                   {submitting ? "Posting…" : "Post comment"}
                 </button>
               </div>
-            </form>
+            </form>}
 
             {commentsLoading ? (
               <div className="state-card"><span className="spinner" /> Loading comments…</div>
@@ -303,8 +321,8 @@ function PostDetailsContent({ postId }: { postId: string }) {
             ) : comments.length === 0 ? (
               <div className="empty-state comments-empty">
                 <span className="empty-icon">✦</span>
-                <h3>Start the conversation</h3>
-                <p className="muted">There are no comments yet. Add the first one.</p>
+                <h3>{post.status === "CLOSED" ? "No comments" : "Start the conversation"}</h3>
+                <p className="muted">{post.status === "CLOSED" ? "There are no comments on this closed post." : "There are no comments yet. Add the first one."}</p>
               </div>
             ) : (
               <div className="comment-list">

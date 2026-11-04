@@ -61,6 +61,7 @@ class RideRequestInput(BaseModel):
     notes: Annotated[str, StringConstraints(strip_whitespace=True, max_length=500)] = ""
     rider_phone: Phone
     currency: Currency
+    preferred_amount: Decimal | None = Field(default=None, ge=0, le=9999.99, max_digits=6, decimal_places=2, allow_inf_nan=False)
     exact_location_consent: Literal[True]
 
     @field_validator("rider_phone")
@@ -110,6 +111,7 @@ class RideRequestResponse(UTCResponse):
     bags: int
     notes: str
     currency: Currency
+    preferred_amount: Decimal | None = None
     status: Literal["OPEN", "CONFIRMED", "CANCELLED", "EXPIRED"]
     booking_status: Literal["CONFIRMED", "COMPLETED", "CANCELLED"] | None = None
     my_offer_status: Literal["PENDING", "ACCEPTED", "WITHDRAWN", "NOT_SELECTED", "EXPIRED"] | None = None

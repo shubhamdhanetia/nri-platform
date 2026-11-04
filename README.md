@@ -16,8 +16,8 @@ or dispatch service.
 
 ## Features
 
-The main navigation has two sections: **Posts** for map-based community
-discovery and **Rides** for scheduled trips. Posts is the destination after
+The main navigation has three sections: **Community** for map-based community
+discovery, **Rides** for scheduled trips, and **Housing** for places and roommates. Community is the destination after
 sign-in and when selecting the brand. **Create a post** is available inside
 Posts, including fullscreen map mode. Profile, saved posts, and logout are in
 the account menu. The existing `/feed` route remains available as a secondary
@@ -47,6 +47,26 @@ the previous navigation labels.
   filters and collapsible results.
 - Browser geolocation with a city-search fallback.
 
+### Housing and roommates
+
+- **Find a place** shows available rooms/homes only. **Find people** shows housing
+  requests and people looking together, with no overlap between the tabs.
+- Filter by city, area/keywords, space, rent/budget, dates, arrangement, and
+  optional practical household details.
+- Switch between List and clustered Map discovery with the same filters; select
+  locations using autocomplete or opt-in geolocation, then Search this area.
+  Housing uses indexed H3 candidates plus precise map bounds. Public posts
+  display their original selected address and exact point; requests label it as
+  a preferred search area.
+- List rentals, household shares, sublets, and lease takeovers, including short stays.
+- Save posts, exchange private inquiries, and report suspicious or inaccurate posts.
+- Manage filled/resolved, archived, private, and expired posts; renew availability
+  for another 30 days.
+- Optional HTTPS photo links; no image uploads, bookings, payments, screening,
+  or automated verification. Reports require manual operator review.
+- Existing Community Housing posts remain unchanged. The dedicated feature
+  requires database migrations through `0008`.
+
 ### Scheduled community rides
 
 1. A rider requests a ride with exact pickup/drop-off locations, a pickup
@@ -70,7 +90,7 @@ Members can track requests, offers, cancellations, and completion in **My rides*
 
 ### Planned-trip carpools
 
-- **Find a carpool** in Rides searches driver-published journeys by pickup area,
+- **Find a ride**, the Rides landing page, searches driver-published carpools by pickup area,
   destination area, departure date, and seats needed.
 - **Offer a carpool** publishes a future departure window, public meeting
   points, available passenger seats, luggage allowance, and a fixed contribution
@@ -96,8 +116,8 @@ Members can track requests, offers, cancellations, and completion in **My rides*
 > after confirmation. Drivers and phone numbers are not verified or vetted.
 > Carpools require consent to publishing public meeting points to signed-in
 > members. Ride and carpool notifications are in-app only.
-> This version does not provide payments,
-> chat, email/SMS/push notifications, or live tracking. Destination-area search
+> Rides does not provide payments,
+> chat, email/SMS/push notifications, or live tracking. Housing has separate private inquiries. Destination-area search
 > is available for carpools. Use a public meeting point when appropriate.
 
 ### Shared notifications

@@ -9,7 +9,7 @@ from app.db.dependencies import get_db
 from app.api.dependencies import get_current_user
 from app.core.edit_window import EditWindowExpiredError, is_within_edit_window
 
-from app.models.post import Post
+from app.models.post import Post, PostStatus, PostType
 from app.models.user import User
 
 from app.schemas.post import (
@@ -22,6 +22,7 @@ from app.schemas.post import (
     PostSearchRequest,
     PostSearchResponse,
     UpdatePostVisibilityRequest,
+    UpdatePostStatusRequest,
     UpdatePostRequest
 )
 from app.models.reaction import PostReactionType
@@ -49,6 +50,7 @@ from app.repositories.post_repository import (
     unsave_post,
     set_post_visibility,
     PostOwnerReactionError,
+    PostLifecycleError,
 )
 from app.repositories.comment_repository import (
     create_comment,
@@ -244,6 +246,27 @@ def unsave(
 
 
 @router.put(
+    "/{post_id}/status",
+    response_model=PostResponse,
+)
+def update_status(
+    post_id: UUID,
+    request: UpdatePostStatusRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    post = db.query(Post).filter(Post.id == post_id, Post.user_id == user.id).with_for_update().first()
+    if post is None:
+        raise HTTPException(status_code=404, detail="Post not found")
+    if post.post_type == PostType.DISCUSSION:
+        raise HTTPException(status_code=409, detail="Discussions do not have a completion status.")
+    post.status = request.status
+    db.commit()
+    db.refresh(post)
+    return _post_responses(db, [post], user.id)[0]
+
+
+@router.put(
     "/{post_id}/visibility",
     response_model=PostResponse,
 )
@@ -344,7 +367,12 @@ def create_post_comment(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user)
 ):
-    _get_visible_post_or_404(db, post_id, user.id)
+    # Serialize comment creation with closing so no new comments commit after closure.
+    post = db.query(Post).filter(Post.id == post_id).with_for_update().first()
+    if post is None or (post.is_private and post.user_id != user.id):
+        raise HTTPException(status_code=404, detail="Post not found")
+    if post.status == PostStatus.CLOSED:
+        raise HTTPException(status_code=409, detail="This post is closed. New comments are disabled.")
     return create_comment(
         db=db,
         content=request.content,
@@ -449,6 +477,8 @@ def update(
             status_code=403,
             detail="Posts can only be edited within 30 minutes of creation"
         ) from error
+    except PostLifecycleError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
     if post is None:
         raise HTTPException(
             status_code=404,

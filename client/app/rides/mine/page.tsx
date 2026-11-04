@@ -47,11 +47,11 @@ function MyRidesContent() {
     (next === "carpools" ? carpoolTab : requestTab).current?.focus();
   }
   return <>
-    <section className="page-heading"><div><p className="eyebrow">Your journeys</p><h1>My rides</h1><p className="muted">Manage planned carpools separately from ride requests and driver offers.</p></div></section>
+    <section className="page-heading"><div><p className="eyebrow">Your journeys</p><h1>My rides</h1><p className="muted">Manage the carpools you publish or join, your ride requests, and your offers to drive.</p></div><Link className="button button-secondary" href="/rides/driver">Driver settings</Link></section>
     <p className="ride-notice">Ride and carpool updates are in your <Link className="text-link" href="/notifications">notifications</Link>. Use the bell beside your profile from anywhere in the app, or refresh here for current trip details.</p>
     <div className="my-rides-tabs" role="tablist" aria-label="My rides sections">
       <button ref={carpoolTab} id="my-carpools-tab" role="tab" type="button" aria-selected={tab === "carpools"} aria-controls="my-carpools-panel" tabIndex={tab === "carpools" ? 0 : -1} onClick={() => selectTab("carpools")} onKeyDown={navigateTabs}>Carpools</button>
-      <button ref={requestTab} id="my-requests-tab" role="tab" type="button" aria-selected={tab === "requests"} aria-controls="my-requests-panel" tabIndex={tab === "requests" ? 0 : -1} onClick={() => selectTab("requests")} onKeyDown={navigateTabs}>Requests &amp; offers</button>
+      <button ref={requestTab} id="my-requests-tab" role="tab" type="button" aria-selected={tab === "requests"} aria-controls="my-requests-panel" tabIndex={tab === "requests" ? 0 : -1} onClick={() => selectTab("requests")} onKeyDown={navigateTabs}>Ride requests &amp; driver offers</button>
     </div>
     <div id="my-carpools-panel" role="tabpanel" aria-labelledby="my-carpools-tab" tabIndex={0} hidden={tab !== "carpools"}><CarpoolList mine /></div>
     <div id="my-requests-panel" role="tabpanel" aria-labelledby="my-requests-tab" tabIndex={0} hidden={tab !== "requests"}><MyRideRequests /></div>
@@ -86,7 +86,7 @@ function MyRideRequests() {
     <p className="muted">Requests you published and trips you offered to drive. Open a ride for offers and booking details.</p>
     <button className="button button-secondary" disabled={busy} onClick={() => refresh(offset)}>Refresh rides</button>
     {error && <p className="form-error" role="alert">{error}</p>}
-    {busy ? <p role="status">Loading your rides...</p> : rides.length ? <div className="ride-grid">{rides.map(ride => <RideCard key={ride.id} ride={ride} role={ride.my_offer_status ? "Driver" : "Passenger"} />)}</div> : !error && <div className="state-card"><h2>No requests or offers yet</h2><p>Request a ride, or offer to drive someone from the community ride requests.</p><div className="form-actions"><Link className="button button-primary" href="/rides/new">Request a ride</Link><Link className="button button-secondary" href="/rides">Ride requests</Link></div></div>}
+    {busy ? <p role="status">Loading your rides...</p> : rides.length ? <div className="ride-grid">{rides.map(ride => <RideCard key={ride.id} ride={ride} role={ride.my_offer_status ? "Driver" : "Passenger"} />)}</div> : !error && <div className="state-card"><h2>No requests or offers yet</h2><p>Request a ride, or find passengers who need a driver.</p><div className="form-actions"><Link className="button button-primary" href="/rides/new">Request a ride</Link><Link className="button button-secondary" href="/rides/requests">Find passengers</Link></div></div>}
     <div className="form-actions"><button className="button button-secondary" disabled={busy || offset === 0} onClick={() => refresh(offset - 20)}>Previous</button><button className="button button-secondary" disabled={busy || !more} onClick={() => refresh(offset + 20)}>Next</button></div>
   </section>;
 }

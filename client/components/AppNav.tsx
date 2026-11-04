@@ -9,6 +9,7 @@ import NotificationBell from "./NotificationBell";
 const links = [
   { href: "/explore", label: "Community" },
   { href: "/rides", label: "Rides" },
+  { href: "/housing", label: "Housing" },
 ];
 
 export default function AppNav() {
@@ -16,7 +17,8 @@ export default function AppNav() {
   const router = useRouter();
   const activeSection = pathname === "/explore" || pathname === "/feed" || pathname === "/create-post" || pathname.startsWith("/posts/")
     ? "/explore"
-    : pathname === "/rides" || pathname.startsWith("/rides/") ? "/rides" : null;
+    : pathname === "/rides" || pathname.startsWith("/rides/") ? "/rides"
+      : pathname === "/housing" || pathname.startsWith("/housing/") ? "/housing" : null;
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [failedPicture, setFailedPicture] = useState<string | null>(null);

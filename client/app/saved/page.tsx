@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import ProtectedPage from "../../components/ProtectedPage";
 import SavePostButton from "../../components/SavePostButton";
+import PostStatus from "../../components/PostStatus";
 import {
   apiRequest,
   POST_CATEGORY_LABELS,
@@ -102,6 +103,7 @@ export default function SavedPostsPage() {
                   <span className={`post-type-pill post-type-${post.post_type.toLowerCase()}`}>
                     {POST_TYPE_LABELS[post.post_type]}
                   </span>
+                  <PostStatus post={post} />
                   {post.is_private && <span className="visibility-private-pill">Only me</span>}
                 </div>
                 <span className="post-location">

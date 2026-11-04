@@ -4,7 +4,7 @@ from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, Enum as SQLAlchemyEnum, Float, ForeignKey, String, Text, false, func, select
+from sqlalchemy import Boolean, CheckConstraint, DateTime, Enum as SQLAlchemyEnum, Float, ForeignKey, String, Text, false, func, select
 from sqlalchemy.orm import Mapped, column_property, mapped_column, relationship
 
 from app.db.base import Base
@@ -20,6 +20,8 @@ if TYPE_CHECKING:
 class PostCategory(str, Enum):
     HOUSING = "HOUSING"
     TRAVEL = "TRAVEL"
+    RIDES_CARPOOL = "RIDES_CARPOOL"
+    PARKING = "PARKING"
     JOBS = "JOBS"
     FOOD = "FOOD"
     EVENTS = "EVENTS"
@@ -36,8 +38,16 @@ class PostType(str, Enum):
     DISCUSSION = "DISCUSSION"
 
 
+class PostStatus(str, Enum):
+    ACTIVE = "ACTIVE"
+    CLOSED = "CLOSED"
+
+
 class Post(Base):
     __tablename__ = "posts"
+    __table_args__ = (
+        CheckConstraint("status = 'ACTIVE' OR post_type != 'DISCUSSION'", name="post_discussion_active"),
+    )
 
     id: Mapped[UUID] = mapped_column(
         primary_key=True, default=uuid4,
@@ -79,6 +89,17 @@ class Post(Base):
         Boolean,
         default=False,
         server_default=false(),
+        nullable=False,
+    )
+
+    status: Mapped[PostStatus] = mapped_column(
+        SQLAlchemyEnum(
+            PostStatus, native_enum=False, create_constraint=True,
+            values_callable=lambda statuses: [status.value for status in statuses],
+            name="post_status",
+        ),
+        default=PostStatus.ACTIVE,
+        server_default=PostStatus.ACTIVE.value,
         nullable=False,
     )
 

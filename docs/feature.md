@@ -14,24 +14,135 @@ application.
 - The client stores the access token in browser local storage and sends it as a
   Bearer token for authenticated API requests.
 - Protected pages redirect unauthenticated visitors to `/login`.
-- Main navigation contains Posts and Rides. Posts uses the existing `/explore`
+- Main navigation contains Community, Rides, and Housing. Community uses the existing `/explore`
   map route and is the post-login and brand-link destination. Feed remains
   accessible at `/feed` without a top-level navigation link.
-- The main Rides link opens `/rides` (Ride requests). Ride tabs are ordered
-  Ride requests, Find a carpool, Request a ride, Offer a carpool, My rides, Driver profile.
-  Request a ride opens the existing creation form at `/rides/new`.
-  Offer a carpool opens the existing publishing form at `/rides/carpools/new`.
-  Ride requests describes people looking for transportation, with guidance to
-  offer to drive someone going your way.
+- The main Rides link opens `/rides` (Find a ride), which browses planned carpools.
+  The three main tabs are Find a ride, Find passengers, and My rides.
+  Request a ride is a page action on Find a ride and opens `/rides/new`.
+  Find passengers at `/rides/requests` browses people looking for transportation.
+  Its Offer a carpool action opens `/rides/carpools/new` for drivers with a planned trip.
+  Creation pages highlight their respective discovery tab; details and Driver
+  settings highlight My rides. Driver settings at `/rides/driver` is linked from
+  My rides and contextual driver-setup guidance, not a primary tab.
   A notification bell beside the profile button opens the shared inbox at
   `/notifications`; it is not a Rides-specific tab.
-  Discovery remains at `/rides`; members without
-  a driver profile see setup guidance there. My rides includes request creation
-  and empty-state links to request a ride or browse requests.
+  Find passengers links to driver setup, which is required to view ride requests.
+  My rides separates Carpools from Ride requests & driver offers and includes
+  creation and empty-state discovery links. Members can be both passengers and
+  drivers; no permanent role selection is required.
 - Create a post is a page action in normal and fullscreen Posts views. Post
   details, creation, and the legacy feed keep Posts highlighted in navigation.
   My profile, Saved posts, and Log out are available in the account menu.
   Signing out removes the local access token.
+
+### Dedicated Housing
+
+Housing is separate from Community posts; existing Housing-category posts are
+preserved. All Housing APIs and screens require sign-in.
+
+#### Discovery and posting
+
+- `/housing`: Find a place, containing only available listings (`LISTING`) for
+  shared/private rooms, entire homes, sublets, transfers, and temporary stays.
+- `/housing/people`: Find people, containing only housing requests (`REQUEST`)
+  and people searching together (`TOGETHER`). Entire-home requests are included.
+  The Looking for selector narrows these two post types. Available listings
+  never appear here; the discovery views do not overlap.
+- `/housing/roommates` redirects to `/housing/people` for existing links.
+  Search API views are `PLACES` and `PEOPLE`; legacy `ROOMMATES` remains accepted
+  with the new people-only semantics. Incompatible view/kind combinations return
+  422 with guidance. No stored posts are modified or duplicated.
+- `/housing/new`: publish a place (`LISTING`), housing request (`REQUEST`), or
+  search-together post (`TOGETHER`). `/housing/{id}/edit`: owner-only content editing.
+- Space, rental arrangement, and stay length are independent dimensions:
+  shared/private/entire space; household/rental/sublet/lease takeover; short/long/flexible.
+- Price always has a currency and month/week/night period. Deposits, fees,
+  utilities, available dates, minimum stay, spaces, and current occupants are explicit.
+- Optional household facts describe shared kitchen food policies, smoking,
+  alcohol, pets, parking, laundry, kitchen access, work-from-home suitability,
+  quiet hours/cleaning/guest notes, and accessibility. Identity eligibility
+  filters are intentionally not provided.
+- New and edited posts require a selected location-provider ID. The backend
+  resolves city/state/country, postal code, original address, exact coordinates,
+  and resolution-8 H3; client-supplied derived fields are rejected.
+  Public posts expose the selected address/coordinates to signed-in members
+  without approximation. Requests and searching-together posts label the location
+  as a preferred area, not an available property. Landmark notes remain optional.
+  Up to eight optional HTTPS photo URLs load from external hosts; there is no
+  upload service. Owners must have permission to share those photos.
+- Search is paginated server-side and filters active, public, unexpired posts.
+  Price ranges require currency and period. Dates and structured household
+  filters are applied by the backend, not to an already downloaded page.
+- Map/List discovery shares applied filters, selected search area, and pagination.
+  Map is the initial view; preference is remembered within the browser session.
+  Like Rides, entry requests browser location, centers the map, then searches its
+  viewport without an initial unbounded fetch. Denial/unavailability shows an
+  explicit manual-search alternative; autocomplete works without permission.
+  Current-location icons appear inline in the location input and on the map.
+  Fullscreen preserves the viewport and provides Escape to exit.
+  Subsequent panning/zooming never fetches automatically.
+  Search this area applies current bounds; Search housing applies form filters
+  plus the current map viewport (or existing bounds in List). Reset filters
+  retains the area; Search all areas clears bounds.
+- The shared Leaflet map clusters locations and synchronizes markers/cards.
+  Markers represent only the current result page; more-results messaging and
+  Next/Previous prevent implying that the loaded markers are all matching homes.
+  Search uses an H3 index for candidate cells and exact coordinate bounds,
+  including antimeridian crossing. Oversized areas explicitly require zooming in.
+
+#### Lifecycle, privacy, and inquiries
+
+- `/housing/mine`, `/housing/saved`, and `/housing/inquiries` manage owned posts,
+  saved items, and private inquiry threads.
+- `ACTIVE`, `FILLED`, and `ARCHIVED` status is independent from visibility.
+  Active posts expire from discovery after 30 days. Owners explicitly renew
+  freshness, reopen for 30 days, or mark filled/resolved.
+- Saved/detail links to public inactive posts remain usable. Private posts and
+  their inquiry threads are owner-only; saving never bypasses privacy. Deletion
+  removes associated saves, inquiries/messages, and reports.
+- Members cannot inquire on their own or unavailable posts. Inquiry threads are
+  accessible only to their two participants while visibility permits. Existing
+  threads can continue after filling/expiry; new inquiries cannot.
+- Inquiries do not reserve accommodation, and there are no bookings, platform
+  payments, screening, or verified landlord-approval claims.
+- New inquiries create a `housing.inquiry_received` notification for the owner;
+  subsequent messages through either sending endpoint create a
+  `housing.reply_received` notification for the other participant only. Message
+  and notification writes commit together. Notifications contain no message
+  contents and link to `/housing/inquiries?inquiry_id=<id>`, which loads that
+  conversation regardless of pagination and enforces current access permissions.
+  Deleted or inaccessible threads return 404. Existing messages are not backfilled.
+  The shared bell checks every 30 seconds and on focus; refresh the thread to load
+  new replies. Read state uses the shared inbox's explicit mark-read actions,
+  not message read receipts. There are no housing email or push alerts.
+- Scam, inaccuracy, discrimination, and other reports are stored for manual
+  operator review. Submission does not automatically remove a post.
+  **Operational requirement:** an operator must review `housing_reports` in the
+  database and handle reports; no moderation dashboard or automated process exists.
+- Apply migrations through `0008` before serving Housing. Revision `0007` adds independent
+  housing, save, inquiry/message, and report tables without moving Community data.
+  Revision `0008` adds nullable location fields and an H3 index, preserving existing
+  Housing posts without inventing coordinates. Such posts remain in unrestricted
+  listings and saved/details, but bounded searches exclude them until edited.
+  Downgrading `0008` refuses to discard populated locations.
+
+#### Housing API
+
+| Method | Path | Purpose |
+|---|---|---|
+| POST | `/housing/search` | Paginated filtered discovery |
+| POST | `/housing` | Create housing post |
+| GET | `/housing/me`, `/housing/saved` | Paginated owned/saved posts |
+| GET / PUT / DELETE | `/housing/{id}` | View, edit, delete |
+| PUT | `/housing/{id}/status` | Fill/resolve, archive, reopen |
+| POST | `/housing/{id}/renew` | Confirm active availability for 30 days |
+| PUT | `/housing/{id}/visibility` | Set public / Only me |
+| PUT / DELETE | `/housing/{id}/saved` | Save / unsave |
+| POST | `/housing/{id}/inquiries` | Start or continue an inquiry |
+| GET | `/housing/inquiries` | Paginated participant-only threads; optional `inquiry_id` selects one accessible thread, ignoring offset |
+| POST | `/housing/inquiries/{id}/messages` | Reply in an accessible thread |
+| POST | `/housing/{id}/reports` | Record a report for manual review |
 
 ### Posts
 
@@ -66,6 +177,29 @@ application.
   of comment creation.
 - Comment content is trimmed and must contain 1–2,000 characters.
 - Post responses include a comment count.
+
+### Community post lifecycle
+
+- Every post has `status: ACTIVE | CLOSED`, independent of public/private
+  visibility. Existing posts become Active in migration `0005`.
+- Across all categories, owners can Mark unavailable for offers or Mark resolved
+  for requests, then Reopen at any time, including after the content edit window.
+  Discussion posts remain Active and have no completion action.
+- Closing hides the post from feed/map/search and member-profile listings. My
+  posts retains it and offers All/Active/Closed filters.
+- A closed public post remains accessible by its detail link and in saved posts,
+  labeled No longer available (offer) or Resolved (request). It does not expose
+  any recipient or agreement information.
+- Saving never overrides privacy. Making the post private denies access to other
+  members and removes it from their saved list; deleting it removes saved
+  associations. Closing never changes visibility.
+- Existing comments and reactions are preserved. New comments return HTTP 409
+  while closed, including for the owner. Reopening permits new comments again.
+- Editing content or changing visibility preserves status. Converting a closed
+  post to Discussion requires reopening first (HTTP 409 otherwise).
+- Migration `0005_add_post_status` preserves existing posts and adds lifecycle
+  constraints. Downgrade requires reopening closed posts first to avoid silently
+  discarding their completion state. Rides booking statuses are unaffected.
 
 ### Reactions
 
@@ -325,17 +459,41 @@ application.
 | `/saved` | Current user's saved posts |
 | `/profile` | Current user's profile and posts |
 | `/notifications` | Shared private inbox for platform notifications |
-| `/rides` | Driver-only map discovery of open ride pickups and exact locations |
+| `/rides` | Find a ride: discover planned carpools and request seats |
+| `/rides/requests` | Find passengers: driver-only discovery of open ride requests |
 | `/rides/new` | Request a scheduled ride |
-| `/rides/driver` | Register/update the current user's driver profile |
+| `/rides/driver` | Driver settings: register/update the current user's driver profile |
 | `/rides/mine` | Own carpools, seat requests, rider requests, and driver offers |
 | `/rides/[id]` | Request details, offers, confirmation and booking management |
-| `/rides/carpools` | Search driver-published planned trips |
 | `/rides/carpools/new` | Publish an outbound trip and optional linked return |
 | `/rides/carpools/[id]` | Trip details, seat requests, approvals, and cancellation |
 | `/rides/carpools/inbox` | Legacy redirect to `/notifications` |
 
 ## Backend API
+
+### Parking community category
+
+- `PARKING` is a Community post category, not a separate rental or booking service.
+- Existing `OFFER`, `REQUEST`, and `DISCUSSION` types support parking available,
+  parking wanted, and general parking questions.
+- Create/edit pickers, category discovery, and post labels support Parking.
+- Parking creation/editing guidance is specific to the post type: Offering asks
+  for availability, price/period, restrictions, and permission to rent out the
+  space; Looking for asks for preferred area, dates/duration, budget/period, and
+  vehicle size. No notice appears for discussions or an unselected post type.
+  Members may include
+  contact details and choose their selected location; both follow the post's
+  visibility setting. A nearby landmark is an optional alternative to an exact
+  address. Never publish gate codes or access credentials.
+  This feature does not automatically anonymize coordinates or add private messaging.
+- Discovery shows no Parking notice. Offer/request details show only a brief
+  reminder to confirm availability and arrangements; a post is not a reservation.
+  Discussion details show no rental-specific notice.
+- Members must confirm availability and arrangements directly and check permission
+  to rent. Posting does not reserve a space. No new messaging or payment flow is added.
+- Apply `0004_add_parking_category` with `alembic upgrade head` before deploying
+  the updated application. It extends the existing check constraint without
+  rewriting posts. Downgrade refuses to remove Parking while such posts remain.
 
 Base URL defaults to `http://localhost:8000`. API documentation generated by
 FastAPI is available at `/docs` while the backend is running.
@@ -528,6 +686,7 @@ compatibility but is no longer used by the Ride requests discovery page.
 | `GET` | `/posts/{post_id}` | Get a post and its author details |
 | `PUT` | `/posts/{post_id}` | Edit an owned post within the 30-minute edit window |
 | `PUT` | `/posts/{post_id}/visibility` | Change visibility of an owned post at any time |
+| `PUT` | `/posts/{post_id}/status` | Owner-only close/reopen an offer or request with `{"status":"CLOSED"}` or `{"status":"ACTIVE"}` |
 | `DELETE` | `/posts/{post_id}` | Delete an owned post |
 | `POST` | `/posts/{post_id}/save` | Save a post |
 | `DELETE` | `/posts/{post_id}/save` | Remove a post from saved posts |
