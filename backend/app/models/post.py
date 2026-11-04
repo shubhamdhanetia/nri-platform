@@ -20,6 +20,7 @@ if TYPE_CHECKING:
 class PostCategory(str, Enum):
     HOUSING = "HOUSING"
     TRAVEL = "TRAVEL"
+    RIDES_CARPOOL = "RIDES_CARPOOL"
     PARKING = "PARKING"
     JOBS = "JOBS"
     FOOD = "FOOD"

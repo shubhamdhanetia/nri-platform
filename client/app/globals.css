@@ -7,7 +7,13 @@
 
 .medical-support-notice, .parking-notice { padding: 16px 18px; margin: 16px 0; border: 1px solid #d5e3db; border-radius: 8px; background: #edf4ef; color: #243a32; font-size: 13px; line-height: 1.6; }
 .medical-support-notice p, .parking-notice p { margin: 8px 0 0; }
-.edit-fields-grid > :is(.medical-support-notice, .parking-notice) { grid-column: 1 / -1; }
+.community-ride-notice, .community-housing-notice { padding: 16px 18px; margin: 16px 0; border: 1px solid #d5e3db; border-radius: 8px; background: #edf4ef; color: #243a32; font-size: 13px; line-height: 1.6; }
+.community-ride-notice p, .community-housing-notice p { margin: 8px 0 0; }
+.community-ride-notice-actions, .community-housing-notice-actions { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 10px; }
+.community-ride-notice-actions a, .community-housing-notice-actions a { color: var(--green-dark); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.community-ride-notice.is-compact, .community-housing-notice.is-compact { padding: 12px 14px; }
+.community-ride-note { color: #586b60; font-size: 12px; }
+.edit-fields-grid > :is(.medical-support-notice, .parking-notice, .community-ride-notice) { grid-column: 1 / -1; }
 
 .ride-tabs { display:flex; gap:clamp(12px, 3vw, 25px); border-bottom:1px solid #e0e6dc; margin-bottom:28px; }
 .ride-tabs a { padding:15px 0; white-space:nowrap; color:#64736b; font-size:clamp(14px, 2vw, 16px); font-weight:600; }
@@ -2182,7 +2188,7 @@ a {
 .member-profile-form textarea { resize: vertical; }
 .profile-field-hint { text-align: right; font-size: 12px; color: var(--muted); }
 .profile-save-status { font-size: 13px; color: var(--green); }
-.member-post-footer { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; justify-content: space-between; font-size: 12px; }
+.member-post-footer { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; justify-content: space-between; margin-top: auto; padding-top: 14px; border-top: 1px solid #f0f2ef; font-size: 12px; }
 .member-load-more { margin-top: 20px; }
 @media (max-width: 600px) {
   .member-identity { gap: 14px; align-items: flex-start; }

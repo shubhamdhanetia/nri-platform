@@ -9,6 +9,8 @@ import PostReactions from "../../../components/PostReactions";
 import SavePostButton from "../../../components/SavePostButton";
 import MedicalSupportNotice from "../../../components/MedicalSupportNotice";
 import ParkingNotice from "../../../components/ParkingNotice";
+import CommunityRideNotice from "../../../components/CommunityRideNotice";
+import CommunityHousingNotice from "../../../components/CommunityHousingNotice";
 import PostStatus, { postClosedLabel } from "../../../components/PostStatus";
 import PostStatusButton from "../../../components/PostStatusButton";
 import PostVisibilityButton from "../../../components/PostVisibilityButton";
@@ -232,7 +234,9 @@ function PostDetailsContent({ postId }: { postId: string }) {
               <PostVisibilityButton post={post} onChanged={updated => setPost(current => current ? { ...current, ...updated } : current)} />
             </div>}
             {post.category === "MEDICAL_SUPPORT" && <MedicalSupportNotice />}
+            {post.category === "HOUSING" && <CommunityHousingNotice postType={post.post_type} compact />}
             {post.category === "PARKING" && <ParkingNotice postType={post.post_type} compact />}
+            {post.category === "RIDES_CARPOOL" && <CommunityRideNotice postType={post.post_type} compact />}
             <p className="post-detail-description">{post.description}</p>
             <div className="post-detail-author">
               <Link href={`/profile/${post.author.id}`} aria-label={`View ${post.author.name}'s profile`}>

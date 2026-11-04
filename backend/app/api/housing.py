@@ -90,6 +90,10 @@ def search_housing(payload: HousingSearch, db: Session = Depends(get_db), user: 
         value = getattr(payload, key)
         if value is not None:
             statement = statement.where(getattr(HousingPost, key) == value)
+    if payload.min_bedrooms is not None:
+        statement = statement.where(HousingPost.bedroom_count >= payload.min_bedrooms)
+    if payload.min_bathrooms is not None:
+        statement = statement.where(HousingPost.bathroom_count >= payload.min_bathrooms)
     if payload.city:
         city = payload.city.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
         statement = statement.where(HousingPost.city.ilike(city, escape="\\"))
@@ -104,6 +108,10 @@ def search_housing(payload: HousingSearch, db: Session = Depends(get_db), user: 
         statement = statement.where(HousingPost.amount >= payload.min_amount)
     if payload.max_amount is not None:
         statement = statement.where(HousingPost.amount <= payload.max_amount)
+    if payload.min_bedrooms is not None:
+        statement = statement.where(HousingPost.bedroom_count >= payload.min_bedrooms)
+    if payload.min_bathrooms is not None:
+        statement = statement.where(HousingPost.bathroom_count >= payload.min_bathrooms)
     if payload.available_from:
         statement = statement.where(
             HousingPost.available_from <= payload.available_from,

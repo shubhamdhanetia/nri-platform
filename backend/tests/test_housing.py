@@ -99,6 +99,47 @@ class HousingTests(unittest.TestCase):
         self.assertEqual(item["minimum_stay_days"], 30)
         self.assertEqual(self.client.get(f"/housing/{item['id']}").status_code, 200)
 
+    def test_optional_layout_counts_and_minimum_filters(self):
+        studio = self.create(title="Transit studio home", bedroom_count=0, bathroom_count="1.0")
+        larger = self.create(title="Two-bedroom home", bedroom_count=2, bathroom_count="1.5")
+        older_style = self.create(title="Unspecified layout home")
+        self.assertEqual(studio["bedroom_count"], 0)
+        self.assertEqual(studio["bathroom_count"], "1.0")
+        self.assertIsNone(older_style["bedroom_count"])
+        self.assertIsNone(older_style["bathroom_count"])
+        self.assertEqual([item["id"] for item in self.search(min_bedrooms=2, min_bathrooms="1.5")["items"]], [larger["id"]])
+        self.assertEqual({item["id"] for item in self.search(min_bedrooms=0, min_bathrooms="1")["items"]}, {studio["id"], larger["id"]})
+        for field, value in (("bedroom_count", -1), ("bedroom_count", 21), ("bedroom_count", 1.5),
+                             ("bathroom_count", "0"), ("bathroom_count", "20.5"), ("bathroom_count", "1.25"),
+                             ("min_bedrooms", -1), ("min_bathrooms", "1.25")):
+            with self.subTest(field=field, value=value):
+                if field.startswith("min_"):
+                    response = self.client.post("/housing/search", json={field: value})
+                else:
+                    response = self.client.post("/housing", json=self.payload(**{field: value}))
+                self.assertEqual(response.status_code, 422, response.text)
+
+    def test_optional_bedroom_and_bathroom_counts(self):
+        studio = self.create(title="Studio near transit", bedroom_count=0, bathroom_count="1.0")
+        larger = self.create(title="Two-bedroom home", bedroom_count=2, bathroom_count="1.5")
+        self.assertEqual(studio["bedroom_count"], 0)
+        self.assertEqual(studio["bathroom_count"], "1.0")
+        self.assertEqual(larger["bedroom_count"], 2)
+        self.assertEqual(larger["bathroom_count"], "1.5")
+        self.assertIsNone(self.create().get("bedroom_count"))
+        self.assertEqual([item["id"] for item in self.search(min_bedrooms=2, min_bathrooms="1.5")["items"]], [larger["id"]])
+        self.assertEqual({item["id"] for item in self.search(min_bedrooms=0, min_bathrooms="1")["items"]}, {studio["id"], larger["id"]})
+        for field, value in (("bedroom_count", -1), ("bedroom_count", 21), ("bedroom_count", 1.5),
+                             ("bathroom_count", "0"), ("bathroom_count", "20.5"),
+                             ("bathroom_count", "1.25"), ("min_bedrooms", -1),
+                             ("min_bathrooms", "1.25")):
+            with self.subTest(field=field, value=value):
+                if field.startswith("min_"):
+                    response = self.client.post("/housing/search", json={field: value})
+                else:
+                    response = self.client.post("/housing", json=self.payload(**{field: value}))
+                self.assertEqual(response.status_code, 422, response.text)
+
     def test_schema_validation(self):
         for changes in (
             {"amount": "-1"}, {"amount": "1.001"}, {"amount": "NaN"},

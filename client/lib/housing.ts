@@ -23,6 +23,8 @@ export interface HousingDraft {
   description: string;
   kind: HousingKind;
   room_type: keyof typeof ROOM_TYPES;
+  bedroom_count: number | null;
+  bathroom_count: number | null;
   arrangement: keyof typeof ARRANGEMENTS;
   stay_type: keyof typeof STAY_TYPES;
   location_id: string;
@@ -72,6 +74,22 @@ export interface HousingItem extends Omit<HousingDraft, "location_id"> {
   h3_cell_id: string | null;
   state: string | null;
   postal_code: string | null;
+}
+
+export function housingLayout(item: Pick<HousingItem, "kind" | "bedroom_count" | "bathroom_count">): string {
+  const details: string[] = [];
+  if (item.bedroom_count !== null) {
+    details.push(item.kind === "LISTING"
+      ? item.bedroom_count === 0 ? "Studio" : `${item.bedroom_count} ${item.bedroom_count === 1 ? "bedroom" : "bedrooms"}`
+      : item.bedroom_count === 0 ? "Studio or larger wanted" : `At least ${item.bedroom_count} ${item.bedroom_count === 1 ? "bedroom" : "bedrooms"} wanted`);
+  }
+  if (item.bathroom_count !== null) {
+    const count = Number(item.bathroom_count);
+    details.push(item.kind === "LISTING"
+      ? `${count} ${count === 1 ? "bathroom" : "bathrooms"}`
+      : `At least ${count} ${count === 1 ? "bathroom" : "bathrooms"} wanted`);
+  }
+  return details.join(" · ");
 }
 export interface HousingCollection { items: HousingItem[]; has_more: boolean }
 export interface HousingInquiry {

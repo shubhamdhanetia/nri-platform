@@ -27,6 +27,8 @@ class HousingContent(BaseModel):
     description: str = Field(min_length=10, max_length=5000)
     kind: Kind
     room_type: Room
+    bedroom_count: int | None = Field(default=None, ge=0, le=20)
+    bathroom_count: Decimal | None = Field(default=None, ge=Decimal("0.5"), le=Decimal("20"), max_digits=3, decimal_places=1, multiple_of=Decimal("0.5"))
     arrangement: Arrangement
     stay_type: Stay
     area: str = Field(default="", max_length=150)
@@ -139,6 +141,8 @@ class HousingSearch(BaseModel):
     bounds: PostSearchBounds | None = None
     kind: Kind | None = None
     room_type: Room | None = None
+    min_bedrooms: int | None = Field(default=None, ge=0, le=20)
+    min_bathrooms: Decimal | None = Field(default=None, ge=Decimal("0.5"), le=Decimal("20"), max_digits=3, decimal_places=1, multiple_of=Decimal("0.5"))
     arrangement: Arrangement | None = None
     stay_type: Stay | None = None
     min_amount: Money | None = None

@@ -6,6 +6,8 @@ import ProtectedPage from "../../components/ProtectedPage";
 import LocationAutocomplete from "../../components/LocationAutocomplete";
 import MedicalSupportNotice from "../../components/MedicalSupportNotice";
 import ParkingNotice from "../../components/ParkingNotice";
+import CommunityRideNotice from "../../components/CommunityRideNotice";
+import CommunityHousingNotice from "../../components/CommunityHousingNotice";
 import {
   apiRequest,
   POST_CATEGORIES,
@@ -135,7 +137,9 @@ export default function CreatePostPage() {
           </label>
         </div>
         {category === "MEDICAL_SUPPORT" && <MedicalSupportNotice />}
+        {category === "HOUSING" && <CommunityHousingNotice postType={postType} />}
         {category === "PARKING" && <ParkingNotice postType={postType} />}
+        {category === "RIDES_CARPOOL" && <CommunityRideNotice postType={postType} />}
         <label className="form-field post-visibility-field">
           <span>Who can see this post?</span>
           <select

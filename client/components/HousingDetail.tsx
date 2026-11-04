@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { apiRequest, type User } from "../lib/api";
-import { ALCOHOL, APPROVALS, ARRANGEMENTS, BATHROOMS, FURNISHINGS, HOUSING_KINDS, KITCHENS, PETS, ROOM_TYPES, SMOKING, STAY_TYPES, UTILITIES, housingDate, housingError, housingExpired, housingMoney, useHousingResource, type HousingInquiry, type HousingItem } from "../lib/housing";
+import { ALCOHOL, APPROVALS, ARRANGEMENTS, BATHROOMS, FURNISHINGS, HOUSING_KINDS, KITCHENS, PETS, ROOM_TYPES, SMOKING, STAY_TYPES, UTILITIES, housingDate, housingError, housingExpired, housingLayout, housingMoney, useHousingResource, type HousingInquiry, type HousingItem } from "../lib/housing";
 import { HousingStatusBadge } from "./HousingCard";
 import HousingGallery from "./HousingGallery";
 import { HousingLoadState, HousingOwnerActions, HousingSaveButton } from "./HousingControls";
@@ -62,6 +62,8 @@ export default function HousingDetail({ id }: { id: string }) {
   const unavailable = item.status !== "ACTIVE" || housingExpired(item);
   const facts: [string, string][] = [
     ["Space", ROOM_TYPES[item.room_type]], ["Arrangement", ARRANGEMENTS[item.arrangement]],
+    ...(item.bedroom_count !== null ? [[item.kind === "LISTING" ? "Bedrooms in home" : "Minimum bedrooms wanted", housingLayout({ kind: item.kind, bedroom_count: item.bedroom_count, bathroom_count: null })] as [string, string]] : []),
+    ...(item.bathroom_count !== null ? [[item.kind === "LISTING" ? "Bathrooms in home" : "Minimum bathrooms wanted", housingLayout({ kind: item.kind, bedroom_count: null, bathroom_count: item.bathroom_count })] as [string, string]] : []),
     ["Stay", STAY_TYPES[item.stay_type]], ["Furnishing", FURNISHINGS[item.furnishing]],
     ["Bathroom", BATHROOMS[item.bathroom]], ["Utilities", UTILITIES[item.utilities]],
     ["Minimum stay", `${item.minimum_stay_days} days`], ["Spaces available / needed", String(item.available_spaces)],

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { CalendarDays, MapPin } from "lucide-react";
 import HousingGallery from "./HousingGallery";
-import { HOUSING_KINDS, ROOM_TYPES, UTILITIES, housingDate, housingExpired, housingMoney, type HousingItem } from "../lib/housing";
+import { HOUSING_KINDS, ROOM_TYPES, UTILITIES, housingDate, housingExpired, housingLayout, housingMoney, type HousingItem } from "../lib/housing";
 
 export function HousingStatusBadge({ item }: { item: HousingItem }) {
   const label = item.status === "FILLED" ? (item.kind === "LISTING" ? "No longer available" : "Resolved")
@@ -19,7 +19,7 @@ export default function HousingCard({ item, children }: { item: HousingItem; chi
       <h2><Link href={`/housing/${item.id}`}>{item.title}</Link></h2>
       <p className="housing-card-location"><MapPin size={14} aria-hidden="true" />{item.kind !== "LISTING" ? "Preferred area: " : ""}{item.location || [item.area, item.city, item.country_code].filter(Boolean).join(", ")}</p>
       <p className="housing-price">{housingMoney(item.amount, item.currency)} <span>/ {item.price_period.toLowerCase()}{item.kind !== "LISTING" ? " budget" : ""}</span></p>
-      <div className="housing-facts"><span>{ROOM_TYPES[item.room_type]}</span><span>{UTILITIES[item.utilities]}</span></div>
+      <div className="housing-facts"><span>{ROOM_TYPES[item.room_type]}</span>{housingLayout(item) && <span>{housingLayout(item)}</span>}<span>{UTILITIES[item.utilities]}</span></div>
       <p className="housing-card-location"><CalendarDays size={14} aria-hidden="true" />{item.kind === "LISTING" ? "Available" : "Move-in"} {housingDate(item.available_from)}{item.available_until ? ` – ${housingDate(item.available_until)}` : ""}</p>
       <p className="housing-card-excerpt">{item.description}</p>
       {children || <Link className="text-link" href={`/housing/${item.id}`}>View details &rarr;</Link>}

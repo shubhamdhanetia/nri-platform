@@ -57,7 +57,7 @@ class MigrationConfigurationTests(unittest.TestCase):
         self.assertIn("CREATE TABLE ride_bookings", sql)
         self.assertIn("ix_ride_requests_pickup_h3", sql)
         self.assertIn("INSERT INTO alembic_version", sql)
-        self.assertEqual(sql.count("CONSTRAINT post_category CHECK"), 4)
+        self.assertEqual(sql.count("CONSTRAINT post_category CHECK"), 5)
         self.assertEqual(sql.count("CONSTRAINT post_type CHECK"), 1)
         self.assertEqual(sql.count("CONSTRAINT post_reaction_type CHECK"), 1)
 
@@ -123,7 +123,7 @@ class PostgreSQLMigrationTests(unittest.TestCase):
                 command.upgrade(config, "0002")
                 connection.execute(text("UPDATE posts SET category = 'RIDES'"))
                 connection.commit()
-                command.upgrade(config, "0007")
+                command.upgrade(config, "0008")
                 housing_id = uuid4()
                 connection.execute(HousingPost.__table__.insert().values(
                         id=housing_id, owner_id=user_id, city="Fremont", country_code="US",
@@ -142,7 +142,7 @@ class PostgreSQLMigrationTests(unittest.TestCase):
                 self.assertEqual(connection.scalar(select(HousingPost.amount)), 950)
                 self.assertIsNone(connection.scalar(select(HousingPost.location_id)))
                 connection.commit()
-                command.downgrade(config, "0007")
+                command.downgrade(config, "0008")
                 self.assertNotIn("location_id", {column["name"] for column in inspect(connection).get_columns("housing_posts")})
                 self.assertEqual(connection.scalar(text("SELECT title FROM housing_posts WHERE id=:id"), {"id": housing_id}), "Migration housing")
                 connection.commit()
@@ -151,7 +151,7 @@ class PostgreSQLMigrationTests(unittest.TestCase):
                     command.downgrade(config, "0006")
                 connection.rollback()
                 self.assertEqual(connection.scalar(select(HousingPost.id)), housing_id)
-                self.assertEqual(connection.scalar(text("SELECT version_num FROM alembic_version")), "0008")
+                self.assertEqual(connection.scalar(text("SELECT version_num FROM alembic_version")), "0010")
                 self.assertIsNone(connection.scalar(select(HousingPost.location_id)))
                 self.assertIn("ix_housing_posts_h3_cell_id", {index["name"] for index in inspect(connection).get_indexes("housing_posts")})
                 with self.assertRaises(IntegrityError):
@@ -181,7 +181,7 @@ class PostgreSQLMigrationTests(unittest.TestCase):
                 )
                 self.assertEqual(
                     connection.scalar(text("SELECT version_num FROM alembic_version")),
-                    "0008",
+                    "0010",
                 )
                 self.assertEqual(connection.scalar(select(Post.status)), PostStatus.ACTIVE)
                 connection.commit()
@@ -195,7 +195,7 @@ class PostgreSQLMigrationTests(unittest.TestCase):
                     command.downgrade(config, "0004")
                 connection.rollback()
                 self.assertEqual(connection.scalar(select(Post.status)), PostStatus.CLOSED)
-                self.assertEqual(connection.scalar(text("SELECT version_num FROM alembic_version")), "0008")
+                self.assertEqual(connection.scalar(text("SELECT version_num FROM alembic_version")), "0010")
                 connection.execute(text("UPDATE posts SET status = 'ACTIVE'"))
                 connection.commit()
                 indexes = {index["name"] for index in inspect(connection).get_indexes("ride_requests")}
@@ -211,6 +211,15 @@ class PostgreSQLMigrationTests(unittest.TestCase):
                 connection.commit()
                 self.assertEqual(connection.scalar(select(Post.category)), PostCategory.TRAVEL)
                 self.assertEqual(connection.scalar(select(Post.id)), post_id)
+                connection.execute(text("UPDATE posts SET category = 'RIDES_CARPOOL'"))
+                connection.commit()
+                with self.assertRaises(DBAPIError):
+                    command.downgrade(config, "0008")
+                connection.rollback()
+                self.assertEqual(connection.scalar(select(Post.category)), PostCategory.RIDES_CARPOOL)
+                self.assertEqual(connection.scalar(text("SELECT version_num FROM alembic_version")), "0010")
+                connection.execute(text("UPDATE posts SET category = 'GENERAL'"))
+                connection.commit()
                 with self.assertRaises(IntegrityError):
                     with connection.begin_nested():
                         connection.execute(text("UPDATE posts SET category = 'RIDES'"))
@@ -224,7 +233,7 @@ class PostgreSQLMigrationTests(unittest.TestCase):
                     command.downgrade(config, "0003")
                 connection.rollback()
                 self.assertEqual(
-                    connection.scalar(text("SELECT version_num FROM alembic_version")), "0008"
+                    connection.scalar(text("SELECT version_num FROM alembic_version")), "0010"
                 )
                 self.assertEqual(connection.scalar(select(Post.category)), PostCategory.PARKING)
                 connection.execute(text("UPDATE posts SET category = 'TRAVEL'"))
@@ -251,7 +260,7 @@ class PostgreSQLMigrationTests(unittest.TestCase):
                     command.downgrade(config, "0001")
                 connection.rollback()
                 self.assertEqual(
-                    connection.scalar(text("SELECT version_num FROM alembic_version")), "0008"
+                    connection.scalar(text("SELECT version_num FROM alembic_version")), "0010"
                 )
                 self.assertEqual(connection.scalar(select(Post.category)), PostCategory.SPORTS)
                 connection.execute(text("UPDATE posts SET category = 'GENERAL'"))

@@ -16,6 +16,8 @@ class HousingPost(Base):
         CheckConstraint("kind IN ('LISTING','REQUEST','TOGETHER')", name="housing_kind"),
         CheckConstraint("status IN ('ACTIVE','FILLED','ARCHIVED')", name="housing_status"),
         CheckConstraint("room_type IN ('SHARED','PRIVATE','ENTIRE','ANY')", name="housing_room_type"),
+        CheckConstraint("bedroom_count IS NULL OR bedroom_count BETWEEN 0 AND 20", name="housing_bedroom_count"),
+        CheckConstraint("bathroom_count IS NULL OR bathroom_count BETWEEN 0.5 AND 20", name="housing_bathroom_count"),
         CheckConstraint("arrangement IN ('HOUSEHOLD','RENTAL','SUBLET','TAKEOVER','ANY')", name="housing_arrangement"),
         CheckConstraint("kind != 'LISTING' OR (room_type != 'ANY' AND arrangement != 'ANY')", name="housing_listing_space"),
         CheckConstraint("stay_type IN ('SHORT_TERM','LONG_TERM','FLEXIBLE')", name="housing_stay"),
@@ -52,6 +54,8 @@ class HousingPost(Base):
     description: Mapped[str] = mapped_column(Text)
     kind: Mapped[str] = mapped_column(String(10))
     room_type: Mapped[str] = mapped_column(String(10))
+    bedroom_count: Mapped[int | None] = mapped_column(nullable=True)
+    bathroom_count: Mapped[Decimal | None] = mapped_column(Numeric(3, 1), nullable=True)
     arrangement: Mapped[str] = mapped_column(String(12))
     stay_type: Mapped[str] = mapped_column(String(12))
     city: Mapped[str] = mapped_column(String(100))

@@ -443,8 +443,8 @@ export default function CommunityPage() {
       >
         <header className="community-heading">
           <div>
-            <p className="eyebrow">YOUR PEOPLE. YOUR PLACES.</p>
             <h1>Community</h1>
+            <p className="muted">What&apos;s happening around you? Share a question, recommendation, or local update.</p>
           </div>
           <div className="community-heading-actions">
             <button

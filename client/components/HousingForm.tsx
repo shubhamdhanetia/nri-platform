@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { MapPin } from "lucide-react";
 import { apiRequest } from "../lib/api";
-import { ALCOHOL, APPROVALS, ARRANGEMENTS, BATHROOMS, FURNISHINGS, HOUSING_KINDS, KITCHENS, PETS, PRICE_PERIODS, ROOM_TYPES, SMOKING, STAY_TYPES, UTILITIES, housingError, type HousingDraft, type HousingItem, type HousingKind } from "../lib/housing";
+import { ALCOHOL, APPROVALS, ARRANGEMENTS, BATHROOMS, FURNISHINGS, KITCHENS, PETS, PRICE_PERIODS, ROOM_TYPES, SMOKING, STAY_TYPES, UTILITIES, housingError, type HousingDraft, type HousingItem, type HousingKind } from "../lib/housing";
 import { HousingSelect } from "./HousingBrowse";
 import ExploreLocationSearch from "./ExploreLocationSearch";
 
@@ -46,6 +46,7 @@ export default function HousingForm({ item, initialKind = "LISTING" }: { item?: 
         kind, title: text(data, "title"), description: text(data, "description"),
         location_id: selection.locationId, area: text(data, "area"),
         room_type: choice(data, "room_type", ROOM_TYPES), arrangement: choice(data, "arrangement", ARRANGEMENTS),
+        bedroom_count: optionalNumber(data, "bedroom_count"), bathroom_count: optionalNumber(data, "bathroom_count"),
         stay_type: choice(data, "stay_type", STAY_TYPES), amount: text(data, "amount"), currency: text(data, "currency").toUpperCase(),
         price_period: choice(data, "price_period", PRICE_PERIODS), available_from: text(data, "available_from"),
         available_until: text(data, "available_until") || null, minimum_stay_days: Number(text(data, "minimum_stay_days")),
@@ -64,14 +65,28 @@ export default function HousingForm({ item, initialKind = "LISTING" }: { item?: 
     } catch (failure) { setError(housingError(failure)); } finally { setBusy(false); }
   }
   return <>
-    <section className="page-heading"><div><p className="eyebrow">Housing, your way</p><h1>{item ? "Edit housing post" : "Share a place or a housing need"}</h1><p className="muted">Share useful details, choose a location, and arrange the next steps through inquiries.</p></div></section>
+    <section className="page-heading"><div><p className="eyebrow">Housing, your way</p><h1>{item ? "Edit housing post" : "Create a housing post"}</h1><p className="muted">Choose what you need first. You can update your selection as you fill out the details.</p></div></section>
     <form className="housing-form form-card" onSubmit={submit}>
       <fieldset disabled={busy}>
-        <legend>1. The basics</legend>
-        <label className="form-field"><span>What would you like to post?</span><select value={kind} onChange={event => {
-          const value = event.target.value;
-          if (value === "LISTING" || value === "REQUEST" || value === "TOGETHER") setKind(value);
-        }}>{Object.entries(HOUSING_KINDS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+        <legend>1. Choose your post</legend>
+        <div className="housing-kind-choice" role="radiogroup" aria-labelledby="housing-kind-label">
+          <p id="housing-kind-label" className="housing-kind-prompt">What would you like to do?</p>
+          <div className="housing-kind-options">
+            <label className="housing-kind-option">
+              <input type="radio" name="kind" value="LISTING" checked={kind === "LISTING"} onChange={() => setKind("LISTING")} required />
+              <span><strong>I have a place</strong><small>List a room, home, sublet, or lease takeover.</small></span>
+            </label>
+            <label className="housing-kind-option">
+              <input type="radio" name="kind" value="REQUEST" checked={kind === "REQUEST"} onChange={() => setKind("REQUEST")} />
+              <span><strong>I&apos;m looking for a place</strong><small>Share your budget, area, and move-in needs.</small></span>
+            </label>
+            <label className="housing-kind-option">
+              <input type="radio" name="kind" value="TOGETHER" checked={kind === "TOGETHER"} onChange={() => setKind("TOGETHER")} />
+              <span><strong>I want to find roommates</strong><small>Find people to search for a place together.</small></span>
+            </label>
+          </div>
+        </div>
+        <h2 className="housing-basics-heading">2. Add the details</h2>
         <label className="form-field"><span>Title</span><input name="title" required minLength={5} maxLength={150} defaultValue={item?.title} placeholder="e.g. Furnished private room near downtown" /></label>
         <label className="form-field"><span>Description</span><textarea name="description" rows={5} required minLength={10} maxLength={5000} defaultValue={item?.description} placeholder="Describe the place or what you are looking for. Do not include access codes." /></label>
         <div className="housing-location-field">
@@ -91,12 +106,14 @@ export default function HousingForm({ item, initialKind = "LISTING" }: { item?: 
         </div>
         <div className="housing-filter-grid">
           <label className="form-field"><span>Neighborhood / landmark note (optional)</span><input name="area" maxLength={150} defaultValue={item?.area} placeholder="e.g. Near BART, walking distance to shops" /></label>
-          <HousingSelect name="room_type" label="Space" anyLabel="" options={kind === "LISTING" ? { SHARED: ROOM_TYPES.SHARED, PRIVATE: ROOM_TYPES.PRIVATE, ENTIRE: ROOM_TYPES.ENTIRE } : ROOM_TYPES} defaultValue={item?.room_type ?? "PRIVATE"} />
+          <HousingSelect name="room_type" label="Space offered / wanted" anyLabel="" options={kind === "LISTING" ? { SHARED: ROOM_TYPES.SHARED, PRIVATE: ROOM_TYPES.PRIVATE, ENTIRE: ROOM_TYPES.ENTIRE } : ROOM_TYPES} defaultValue={item?.room_type ?? "PRIVATE"} />
+          <label className="form-field"><span>{kind === "LISTING" ? "Bedrooms in home" : "Minimum bedrooms desired"}</span><input name="bedroom_count" type="number" min="0" max="20" step="1" defaultValue={item?.bedroom_count ?? ""} placeholder="Optional" /><span className="field-hint">{kind === "LISTING" ? "Enter 0 for a studio; this is the total in the home." : "Enter the minimum number of bedrooms you need."}</span></label>
+          <label className="form-field"><span>{kind === "LISTING" ? "Bathrooms in home" : "Minimum bathrooms desired"}</span><input name="bathroom_count" type="number" min="0.5" max="20" step="0.5" defaultValue={item?.bathroom_count ?? ""} placeholder="Optional" /></label>
           <HousingSelect name="arrangement" label="Arrangement" anyLabel="" options={kind === "LISTING" ? { HOUSEHOLD: ARRANGEMENTS.HOUSEHOLD, RENTAL: ARRANGEMENTS.RENTAL, SUBLET: ARRANGEMENTS.SUBLET, TAKEOVER: ARRANGEMENTS.TAKEOVER } : ARRANGEMENTS} defaultValue={item?.arrangement ?? "HOUSEHOLD"} />
           <HousingSelect name="stay_type" label="Stay length" anyLabel="" options={STAY_TYPES} defaultValue={item?.stay_type ?? "FLEXIBLE"} />
         </div>
       </fieldset>
-      <fieldset disabled={busy}><legend>2. Price & availability</legend>
+      <fieldset disabled={busy}><legend>3. Price & availability</legend>
         <p className="field-hint">For requests and searching together, enter your budget. For available places, enter rent per space offered. Currency and price period always travel with the amount.</p>
         <div className="housing-filter-grid">
           <label className="form-field"><span>{kind === "LISTING" ? "Rent amount" : "Budget amount"}</span><input name="amount" type="number" min="0" max="999999.99" step="0.01" required defaultValue={item?.amount} /></label>
@@ -114,7 +131,7 @@ export default function HousingForm({ item, initialKind = "LISTING" }: { item?: 
         </div>
         <p className="field-hint">Sublets and lease takeovers may require permission. State the actual approval status; the platform does not verify it. Short-term inquiries do not reserve dates.</p>
       </fieldset>
-      <fieldset disabled={busy}><legend>3. Home & household</legend>
+      <fieldset disabled={busy}><legend>4. Home & household</legend>
         <p className="field-hint">Optional practical details, not identity-based eligibility. Follow local fair-housing rules. Describe shared-space practices rather than excluding people by background.</p>
         <div className="housing-filter-grid">
           <HousingSelect name="furnishing" label="Furnishing" anyLabel="" options={FURNISHINGS} defaultValue={item?.furnishing ?? "UNSPECIFIED"} />
@@ -129,7 +146,7 @@ export default function HousingForm({ item, initialKind = "LISTING" }: { item?: 
         <label className="form-field"><span>Household notes (optional)</span><textarea name="household_notes" rows={3} maxLength={2000} defaultValue={item?.household_notes} placeholder="Quiet hours, cleaning expectations, guests, parking costs, kitchen use..." /></label>
         <label className="form-field"><span>Accessibility details (optional)</span><textarea name="accessibility_notes" rows={2} maxLength={1000} defaultValue={item?.accessibility_notes} placeholder="Step-free entry, stairs, lift, doorway details..." /></label>
       </fieldset>
-      <fieldset disabled={busy}><legend>4. Photos & visibility</legend>
+      <fieldset disabled={busy}><legend>5. Photos & visibility</legend>
         <label className="form-field"><span>Photo links (optional, up to 8)</span><textarea name="photo_urls" rows={3} defaultValue={item?.photo_urls.join("\n")} placeholder="https://...&#10;One direct image URL per line" /><span className="field-hint">Use HTTPS links to photos you have permission to share. Images load from the linked host; do not include private documents, people without consent, or access codes. Uploads are not available yet.</span></label>
         <label className="ride-check"><input name="is_private" type="checkbox" defaultChecked={item?.is_private} /><span>Only me — keep this post private. Others cannot view it or send inquiries.</span></label>
         <p className="housing-callout">Public active posts appear for 30 days. Renew to confirm availability, or mark them filled/resolved when done. Existing saved links remain accessible unless private or deleted.</p>

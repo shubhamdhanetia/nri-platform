@@ -3,7 +3,7 @@
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
-import { List, LocateFixed, Map as MapIcon, MapPin, Maximize2, Minimize2, Search, SlidersHorizontal } from "lucide-react";
+import { List, LocateFixed, Map as MapIcon, MapPin, Maximize2, Minimize2, Plus, Search, SlidersHorizontal } from "lucide-react";
 import { apiRequest, type PostSearchBounds } from "../lib/api";
 import { ARRANGEMENTS, BATHROOMS, FURNISHINGS, KITCHENS, PRICE_PERIODS, ROOM_TYPES, STAY_TYPES, housingError, type HousingCollection, type HousingItem } from "../lib/housing";
 import { locationSearchBounds } from "../lib/map";
@@ -19,10 +19,6 @@ function subscribeView(listener: () => void) {
 }
 function readView(): "map" | "list" { return sessionStorage.getItem("housing-view") === "list" ? "list" : "map"; }
 function serverView(): "map" | "list" { return "map"; }
-function sameBounds(first?: PostSearchBounds | null, second?: PostSearchBounds | null): boolean {
-  return !!first && !!second && (["north", "south", "east", "west"] as const).every(key => Math.abs(first[key] - second[key]) < 0.000001);
-}
-
 export function HousingSelect({ name, label, options, defaultValue = "", anyLabel = "Any" }: {
   name: string; label: string; options: Record<string, string>; defaultValue?: string; anyLabel?: string;
 }) {
@@ -62,7 +58,6 @@ export default function HousingBrowse({ people = false }: { people?: boolean }) 
   const browserPanel = useRef<HTMLElement>(null);
   const selectedCard = useRef<HTMLDivElement>(null);
   const appliedBounds = typeof params.bounds === "object" ? params.bounds : null;
-  const mapDirty = !sameBounds(mapBounds, appliedBounds);
   const onBoundsChange = useCallback((bounds: PostSearchBounds) => setMapBounds(bounds), []);
   const onCenterChange = useCallback((center: [number, number]) => setSearchCenter(center), []);
   const onViewportChange = useCallback((center: [number, number], zoom: number) => { viewport.current = { center, zoom }; }, []);
@@ -176,7 +171,7 @@ export default function HousingBrowse({ people = false }: { people?: boolean }) 
     else if (appliedBounds) filters.bounds = appliedBounds;
     for (const [key, value] of data.entries()) {
       if (typeof value !== "string" || !value.trim()) continue;
-      filters[key] = key === "min_amount" || key === "max_amount" ? Number(value)
+      filters[key] = key === "min_amount" || key === "max_amount" || key === "min_bedrooms" || key === "min_bathrooms" ? Number(value)
         : key === "parking" || key === "laundry" ? value === "true" : value.trim();
     }
     if ((filters.min_amount !== undefined || filters.max_amount !== undefined) && (!filters.currency || !filters.price_period)) {
@@ -198,7 +193,7 @@ export default function HousingBrowse({ people = false }: { people?: boolean }) 
         <p className="muted">{people ? "Meet people looking for accommodation or wanting to find a home together." : "Browse available rooms, homes, sublets, lease takeovers, and temporary stays."}</p></div>
       <div className="housing-actions">
         <button ref={fullscreenButton} className="button button-secondary" type="button" aria-pressed={fullscreen} onClick={() => { if (view !== "map") changeView("map"); setFullscreen(value => !value); }}>{fullscreen ? <Minimize2 size={18} aria-hidden="true" /> : <Maximize2 size={18} aria-hidden="true" />}{fullscreen ? "Exit full screen" : "Full screen map"}</button>
-        <Link className="button button-primary" href="/housing/new">List a place</Link><Link className="button button-secondary" href="/housing/new?kind=REQUEST">Post a housing request</Link>
+        <Link className="button button-primary" href={`/housing/new?kind=${people ? "TOGETHER" : "LISTING"}`}><Plus size={17} aria-hidden="true" />Post housing</Link>
       </div>
     </header>
     <p className="housing-callout">{people ? <>Have a room to fill, or want someone to rent with? Browse housing needs below. <Link href="/housing/new?kind=TOGETHER">Post that you want to search together</Link>. For available rooms and homes, use <Link href="/housing">Find a place</Link>.</> : <>These posts offer accommodation. To find potential tenants or people to rent with, use <Link href="/housing/people">Find people</Link>.</>}</p>
@@ -215,6 +210,8 @@ export default function HousingBrowse({ people = false }: { people?: boolean }) 
         {people && <HousingSelect name="kind" label="Looking for" options={{ REQUEST: "People needing a place", TOGETHER: "People searching together" }} anyLabel="All housing needs" />}
         <label className="form-field"><span>Keywords</span><input name="query" maxLength={200} placeholder="Title, address, description" /></label>
         <HousingSelect name="room_type" label="Space" options={ROOM_TYPES} />
+        <HousingSelect name="min_bedrooms" label="Minimum bedrooms" options={{ 1: "1+", 2: "2+", 3: "3+", 4: "4+" }} />
+        <HousingSelect name="min_bathrooms" label="Minimum bathrooms" options={{ 0.5: "0.5+", 1: "1+", 1.5: "1.5+", 2: "2+", 2.5: "2.5+", 3: "3+" }} />
         <label className="form-field"><span>Move-in date</span><input name="available_from" type="date" /></label>
       </div>
       <details className="housing-filters-more">
@@ -257,7 +254,6 @@ export default function HousingBrowse({ people = false }: { people?: boolean }) 
           <button className="community-icon-button" type="button" title={fullscreen ? "Exit full screen" : "Full screen map"} aria-label={fullscreen ? "Exit full screen" : "Full screen map"} aria-pressed={fullscreen} onClick={() => setFullscreen(value => !value)}>{fullscreen ? <Minimize2 size={19} aria-hidden="true" /> : <Maximize2 size={19} aria-hidden="true" />}</button>
           {selectedId && <button className="button button-secondary" onClick={() => setSelectedId(null)}>Clear selection</button>}
         </div>
-        {mapDirty && <p className="housing-map-hint">Move or zoom the map, then select Search this area.</p>}
       </div>
       <section className="housing-map-results" aria-label="Housing map results" aria-busy={loading}>
         {fullscreen && <div className="community-results-heading"><div><h2>{people ? "People looking for housing" : "Available places"}</h2><span aria-live="polite">{loading ? "Searching..." : error ? "Search unavailable" : `${result?.items.length ?? 0}${result?.has_more ? "+" : ""} matches`}</span></div></div>}

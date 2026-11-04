@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Bookmark } from "lucide-react";
+import { Bookmark, BookmarkCheck } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiRequest } from "../lib/api";
@@ -17,7 +17,7 @@ export function HousingSaveButton({ item, onChanged }: { item: HousingItem; onCh
       onChanged({ ...item, my_saved: result.saved });
     } catch (failure) { setError(housingError(failure)); } finally { setBusy(false); }
   }
-  return <span className="housing-control"><button className="button button-secondary" type="button" disabled={busy} aria-pressed={item.my_saved} onClick={() => void save()}><Bookmark size={16} aria-hidden="true" />{busy ? "Updating..." : item.my_saved ? "Saved" : "Save"}</button>{error && <span className="form-error" role="alert">{error}</span>}</span>;
+  return <span className="housing-control"><button className={`button button-secondary housing-save-button${item.my_saved ? " is-saved" : ""}`} type="button" disabled={busy} aria-pressed={item.my_saved} aria-label={item.my_saved ? "Remove from saved housing" : "Save housing"} onClick={() => void save()}>{item.my_saved ? <BookmarkCheck size={16} aria-hidden="true" /> : <Bookmark size={16} aria-hidden="true" />}{busy ? "Updating..." : item.my_saved ? "Saved" : "Save"}</button>{error && <span className="form-error" role="alert">{error}</span>}</span>;
 }
 
 export function HousingOwnerActions({ item, onChanged, onDeleted }: {

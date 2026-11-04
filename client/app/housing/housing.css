@@ -20,6 +20,9 @@
 .housing-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .housing-actions > *, .housing-control { min-width: 0; }
 .housing-actions .button { min-height: 40px; white-space: normal; text-align: center; }
+.housing-control .housing-save-button { gap: 7px; transition: background .15s ease, color .15s ease, border-color .15s ease; }
+.housing-control .housing-save-button.is-saved { background: #226b55; color: #fff; }
+.housing-control .housing-save-button.is-saved:hover:not(:disabled) { background: #194e40; }
 .housing-callout {
   background: #edf4ef;
   border: 1px solid #dae7dd;
@@ -111,6 +114,17 @@
 .housing-form { max-width: none; }
 .housing-form fieldset { border: 0; border-bottom: 1px solid var(--line); padding: 0 0 22px; margin: 0 0 28px; min-width: 0; }
 .housing-form legend { font: 24px Georgia, serif; margin-bottom: 20px; }
+.housing-kind-choice { margin: 0 0 26px; }
+.housing-kind-prompt { margin: 0 0 12px; color: #37473e; font-size: 13px; font-weight: 700; }
+.housing-kind-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.housing-kind-option { display: flex; align-items: flex-start; gap: 10px; min-width: 0; padding: 14px; border: 1px solid #dfe5df; border-radius: 8px; background: #fff; cursor: pointer; transition: border-color .15s ease, background .15s ease, box-shadow .15s ease; }
+.housing-kind-option:has(input:checked) { border-color: var(--green); background: #f1f6f1; box-shadow: inset 0 0 0 1px var(--green); }
+.housing-kind-option:focus-within { outline: 2px solid var(--green); outline-offset: 2px; }
+.housing-kind-option input { width: 17px; height: 17px; margin: 2px 0 0; flex: 0 0 auto; accent-color: var(--green); }
+.housing-kind-option > span { display: grid; gap: 5px; min-width: 0; }
+.housing-kind-option strong { color: #293930; font-size: 13px; line-height: 1.4; }
+.housing-kind-option small { color: var(--muted); font-size: 12px; line-height: 1.5; }
+.housing-basics-heading { margin: 0 0 20px; color: #293930; font: 22px Georgia, serif; }
 .housing-form .housing-filter-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .housing-form .field-hint { line-height: 1.7; }
 .housing-form .form-field > .field-hint { font-weight: 400; }
@@ -206,6 +220,7 @@
   .housing-browser.community-expanded .housing-map-layout { grid-template-columns: minmax(0, 1fr); gap: 16px; }
   .housing-browser.community-expanded .housing-map-panel { height: 43dvh; min-height: 260px; }
   .housing-browser.community-expanded .housing-map-results { height: auto; max-height: 55dvh; min-height: 0; }
+  .housing-kind-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 600px) {
   .housing-grid { grid-template-columns: minmax(0, 1fr); }
@@ -213,5 +228,6 @@
   .housing-card-body { padding: 20px; }
   .housing-filter-grid, .housing-form .housing-filter-grid { grid-template-columns: minmax(0, 1fr); }
   .housing-form legend { font-size: 22px; }
+  .housing-kind-options { grid-template-columns: minmax(0, 1fr); }
   .housing-map-toolbar { left: 48px; }
 }
