@@ -271,6 +271,42 @@ Migration commands need only `DATABASE_URL`; they do not need a Google client ID
 or JWT secret. The shell variable overrides the local backend environment file.
 Restoring it afterward prevents accidentally using production during local work.
 
+### Household language release (`0014`)
+
+Apply `alembic upgrade head` and verify `alembic current` / `alembic check` before
+deploying the backend and then the frontend containing household language fields.
+Revision `0014` adds `housing_posts.household_languages` as a non-null JSON array
+with an empty-array default, preserving existing posts and their data. Do not
+reset a database to apply this change.
+
+The API accepts optional language-code arrays (`en`, `es`, `hi`, `gu`, `te`, `ta`,
+`pa`, `bn`, `mr`, `ml`, `kn`, `ur`). Duplicate selections are deduplicated;
+invalid codes are rejected. Search matches at least one selected language.
+No selections means no language restriction, including posts without language
+information. These fields describe communication, not eligibility to inquire.
+Spanish uses `es`; adding this option requires deploying the backend validation
+and frontend options, but no new database migration beyond `0014`.
+
+Rollback refuses to remove this column while any post has language selections.
+Export/preserve those selections and explicitly clear them before downgrading
+to `0013`; do not bypass the guard. The older application remains compatible
+with the added column during the migration-first rollout.
+
+### Hall / living-room space release (`0015`)
+
+Apply `alembic upgrade head` and verify the revision and schema before deploying
+the updated backend, then the frontend. Revision `0015` adds `HALL` to the
+`housing_room_type` check constraint without changing existing posts or bedroom
+counts. No database reset is required.
+
+Downgrade to `0014` refuses while any housing post (including private, expired,
+or closed posts and requests) uses `HALL`. Explicitly reclassify those posts to
+an accurate supported space before rollback; do not bypass this guard.
+
+Deploy both application updates before allowing hall-space posts: older
+backends do not accept `HALL`, and older frontends do not label it. The space
+option is not verification of lease permission or legal sleeping accommodation.
+
 ### 5.3 Existing databases created with create_all
 
 An existing local database may already have all the tables but no

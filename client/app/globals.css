@@ -2577,8 +2577,9 @@ a {
 .rides-time-toggle input { accent-color: var(--green); }
 .rides-time-fields { display: flex; gap: 8px; }
 .rides-map-status { border-bottom: 1px solid var(--line); margin-bottom: 16px; }
-.rides-search-summary { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 22px; }
-.rides-search-summary .field-hint { margin: 0; }
+.rides-search-summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.rides-search-summary .field-hint { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.rides-search-summary > .community-icon-button { flex-shrink: 0; }
 .community-content.rides-feed { grid-template-columns: minmax(0, 1fr); }
 .rides-result .community-category-icon { color: #357c88; background: #e5f1f4; }
 .rides-result-route { display: grid; gap: 12px; margin: 14px 0; padding-left: 12px; border-left: 2px solid #d5e3db; }

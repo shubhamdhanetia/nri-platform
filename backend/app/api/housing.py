@@ -2,7 +2,8 @@ from datetime import timedelta
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import and_, delete, or_, select
+from sqlalchemy import and_, cast, delete, func, or_, select
+from sqlalchemy.dialects.postgresql import JSONB, array
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.api.dependencies import get_current_user
@@ -90,6 +91,19 @@ def search_housing(payload: HousingSearch, db: Session = Depends(get_db), user: 
         value = getattr(payload, key)
         if value is not None:
             statement = statement.where(getattr(HousingPost, key) == value)
+    if payload.household_languages:
+        dialect = db.get_bind().dialect.name
+        if dialect == "postgresql":
+            statement = statement.where(
+                cast(HousingPost.household_languages, JSONB).has_any(array(payload.household_languages)),
+            )
+        elif dialect == "sqlite":
+            languages = func.json_each(HousingPost.household_languages).table_valued("key", "value")
+            statement = statement.where(
+                select(1).select_from(languages).where(languages.c.value.in_(payload.household_languages)).exists(),
+            )
+        else:
+            raise RuntimeError(f"Household language filtering is not supported for {dialect}.")
     if payload.min_bedrooms is not None:
         statement = statement.where(HousingPost.bedroom_count >= payload.min_bedrooms)
     if payload.min_bathrooms is not None:

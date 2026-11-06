@@ -2,16 +2,17 @@
 
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ChangeEventHandler, type FormEvent } from "react";
 import { List, LocateFixed, Map as MapIcon, MapPin, Maximize2, Minimize2, Plus, Search, SlidersHorizontal } from "lucide-react";
 import { apiRequest, type PostSearchBounds } from "../lib/api";
-import { ARRANGEMENTS, BATHROOMS, FURNISHINGS, KITCHENS, PRICE_PERIODS, ROOM_TYPES, STAY_TYPES, housingError, type HousingCollection, type HousingItem } from "../lib/housing";
+import { ARRANGEMENTS, BATHROOMS, CURRENCIES, FURNISHINGS, KITCHENS, PRICE_PERIODS, ROOM_TYPES, STAY_TYPES, housingError, readHouseholdLanguages, type HouseholdLanguage, type HousingCollection, type HousingItem } from "../lib/housing";
 import { locationSearchBounds } from "../lib/map";
 import ExploreLocationSearch from "./ExploreLocationSearch";
 import HousingCard from "./HousingCard";
+import HousingLanguages from "./HousingLanguages";
 
 const HousingMap = dynamic(() => import("./HousingMap"), { ssr: false, loading: () => <div className="explore-map-loading">Loading housing map...</div> });
-type SearchParams = Record<string, string | number | boolean | PostSearchBounds>;
+type SearchParams = Record<string, string | number | boolean | PostSearchBounds | HouseholdLanguage[]>;
 const VIEW_EVENT = "housing-view-change";
 function subscribeView(listener: () => void) {
   window.addEventListener(VIEW_EVENT, listener);
@@ -19,10 +20,10 @@ function subscribeView(listener: () => void) {
 }
 function readView(): "map" | "list" { return sessionStorage.getItem("housing-view") === "list" ? "list" : "map"; }
 function serverView(): "map" | "list" { return "map"; }
-export function HousingSelect({ name, label, options, defaultValue = "", anyLabel = "Any" }: {
-  name: string; label: string; options: Record<string, string>; defaultValue?: string; anyLabel?: string;
+export function HousingSelect({ name, label, options, defaultValue = "", anyLabel = "Any", onChange }: {
+  name: string; label: string; options: Record<string, string>; defaultValue?: string; anyLabel?: string; onChange?: ChangeEventHandler<HTMLSelectElement>;
 }) {
-  return <label className="form-field"><span>{label}</span><select name={name} defaultValue={defaultValue}>
+  return <label className="form-field"><span>{label}</span><select name={name} defaultValue={defaultValue} onChange={onChange}>
     {anyLabel && <option value="">{anyLabel}</option>}
     {Object.entries(options).map(([value, text]) => <option key={value} value={value}>{text}</option>)}
   </select></label>;
@@ -50,6 +51,7 @@ export default function HousingBrowse({ people = false }: { people?: boolean }) 
   const [locating, setLocating] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectionVersion, setSelectionVersion] = useState(0);
+  const [languageVersion, setLanguageVersion] = useState(0);
   const viewport = useRef<{ center: [number, number]; zoom: number } | null>(null);
   const locationRequest = useRef(0);
   const locationStarted = useRef(false);
@@ -76,13 +78,18 @@ export default function HousingBrowse({ people = false }: { people?: boolean }) 
   }, [params, revision, ready]);
 
   function search(next: SearchParams) {
+    if (!next.bounds || typeof next.bounds !== "object") {
+      setFormError("Choose a location or switch to Map and select Search this area before searching.");
+      return;
+    }
+    setFormError("");
     locationRequest.current += 1;
     setLocating(false); setAutoSearchPending(false); setReady(true);
     setError(""); setSelectedId(null); setLoading(true); setParams(next);
   }
   const chooseArea = useCallback((center: [number, number]) => {
     locationRequest.current += 1;
-    setLocating(false); setLocationError(""); setMapBounds(null);
+    setLocating(false); setLocationError(""); setFormError(""); setMapBounds(null);
     setMapCenter(center); setSearchCenter(center); setZoom(11); setMapVersion(value => value + 1);
     viewport.current = null;
     setError(""); setSelectedId(null); setLoading(true); setReady(false);
@@ -156,21 +163,21 @@ export default function HousingBrowse({ people = false }: { people?: boolean }) 
     setMapCenter([item.latitude, item.longitude]); setZoom(13);
     setSelectedId(item.id); setSelectionVersion(value => value + 1);
   }
-  function clearArea() {
-    locationRequest.current += 1; setLocating(false); setLocationError(""); setAreaLabel("");
-    setLocationVersion(value => value + 1);
-    const next: SearchParams = { ...params, offset: 0 };
-    delete next.bounds;
-    search(next);
-  }
   function apply(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     const filters: SearchParams = { view: people ? "PEOPLE" : "PLACES", limit: 20, offset: 0 };
     if (view === "map" && mapBounds) filters.bounds = mapBounds;
     else if (appliedBounds) filters.bounds = appliedBounds;
+    try {
+      const languages = readHouseholdLanguages(data);
+      if (languages.length) filters.household_languages = languages;
+    } catch (failure) {
+      setFormError(housingError(failure));
+      return;
+    }
     for (const [key, value] of data.entries()) {
-      if (typeof value !== "string" || !value.trim()) continue;
+      if (key === "household_languages" || typeof value !== "string" || !value.trim()) continue;
       filters[key] = key === "min_amount" || key === "max_amount" || key === "min_bedrooms" || key === "min_bathrooms" ? Number(value)
         : key === "parking" || key === "laundry" ? value === "true" : value.trim();
     }
@@ -203,30 +210,35 @@ export default function HousingBrowse({ people = false }: { people?: boolean }) 
         <button className="community-icon-button" type="button" title="Use my current location" aria-label="Use my current location" onClick={locate} disabled={locating}>{locating ? <span className="spinner" /> : <LocateFixed size={19} aria-hidden="true" />}</button>
       </div>
       {locationError && <p className="form-error" role="alert">{locationError}</p>}
-      <p className="field-hint housing-area-caption" role="status">{locating ? "Finding your location..." : appliedBounds ? `Searching: ${areaLabel || "selected area"}` : ready ? "Searching all areas. Choose a location to narrow your results." : "Choose a location or search the map to find nearby housing."}{appliedBounds && <button className="text-link" type="button" onClick={clearArea}>Search all areas</button>}</p>
+      <p className="field-hint housing-area-caption" role="status">{locating ? "Finding your location..." : appliedBounds ? `Searching: ${areaLabel || "selected area"}` : "Choose a location or search the map to find nearby housing."}</p>
     </div>
     <form className="housing-search" aria-label="Housing filters" onSubmit={apply}>
       <div className="housing-filter-grid">
         {people && <HousingSelect name="kind" label="Looking for" options={{ REQUEST: "People needing a place", TOGETHER: "People searching together" }} anyLabel="All housing needs" />}
-        <label className="form-field"><span>Keywords</span><input name="query" maxLength={200} placeholder="Title, address, description" /></label>
         <HousingSelect name="room_type" label="Space" options={ROOM_TYPES} />
-        <HousingSelect name="min_bedrooms" label="Minimum bedrooms" options={{ 1: "1+", 2: "2+", 3: "3+", 4: "4+" }} />
-        <HousingSelect name="min_bathrooms" label="Minimum bathrooms" options={{ 0.5: "0.5+", 1: "1+", 1.5: "1.5+", 2: "2+", 2.5: "2.5+", 3: "3+" }} />
         <label className="form-field"><span>Move-in date</span><input name="available_from" type="date" /></label>
+        <HousingSelect name="kitchen" label="Shared kitchen food policy" options={KITCHENS} anyLabel="Any policy" />
+        <HousingLanguages key={languageVersion}
+          label={people ? "Languages spoken" : "Languages spoken in the household"}
+          emptyLabel="Any language"
+          hint="Optional. Matches at least one selected language; no selection includes all languages and unspecified households. Language information is self-reported, not eligibility to inquire."
+        />
       </div>
       <details className="housing-filters-more">
-        <summary><SlidersHorizontal size={15} aria-hidden="true" /> Budget, stay & household filters</summary>
+        <summary><SlidersHorizontal size={15} aria-hidden="true" /> Additional filters</summary>
         <div className="housing-filter-grid">
+          <label className="form-field"><span>Search listing text</span><input name="query" maxLength={200} placeholder="e.g. BART, balcony, separate entrance" /></label>
+          <HousingSelect name="min_bedrooms" label={people ? "Minimum bedrooms wanted" : "Bedrooms in home: minimum"} options={{ 1: "1+", 2: "2+", 3: "3+", 4: "4+" }} />
+          <HousingSelect name="min_bathrooms" label={people ? "Minimum bathrooms wanted" : "Bathrooms in home: minimum"} options={{ 0.5: "0.5+", 1: "1+", 1.5: "1.5+", 2: "2+", 2.5: "2.5+", 3: "3+" }} />
           <label className="form-field"><span>Minimum rent / budget</span><input name="min_amount" type="number" min="0" step="0.01" /></label>
           <label className="form-field"><span>Maximum rent / budget</span><input name="max_amount" type="number" min="0" step="0.01" /></label>
-          <HousingSelect name="currency" label="Currency" options={{ USD: "USD", CAD: "CAD", GBP: "GBP", INR: "INR", AUD: "AUD", EUR: "EUR", SGD: "SGD", AED: "AED" }} />
+          <HousingSelect name="currency" label="Currency" options={CURRENCIES} />
           <HousingSelect name="price_period" label="Price period" options={PRICE_PERIODS} />
           <HousingSelect name="arrangement" label="Arrangement" options={ARRANGEMENTS} />
           <HousingSelect name="stay_type" label="Stay length" options={STAY_TYPES} />
           <label className="form-field"><span>Stay through</span><input name="available_until" type="date" /></label>
           <HousingSelect name="furnishing" label="Furnishing" options={FURNISHINGS} />
           <HousingSelect name="bathroom" label="Bathroom" options={BATHROOMS} />
-          <HousingSelect name="kitchen" label="Shared kitchen food policy" options={KITCHENS} />
           <HousingSelect name="parking" label="Parking" options={{ true: "Available", false: "Not available" }} />
           <HousingSelect name="laundry" label="Laundry" options={{ true: "Available", false: "Not available" }} />
         </div>
@@ -234,7 +246,7 @@ export default function HousingBrowse({ people = false }: { people?: boolean }) 
       </details>
       {formError && <p className="form-error" role="alert">{formError}</p>}
       <div className="housing-actions"><button className="button button-primary" disabled={loading}><Search size={16} aria-hidden="true" /> Search housing</button>
-        <button className="button button-secondary" type="reset" onClick={() => { setFormError(""); search({ view: people ? "PEOPLE" : "PLACES", limit: 20, offset: 0, ...(appliedBounds ? { bounds: appliedBounds } : {}) }); }}>Reset filters</button></div>
+        <button className="button button-secondary" type="reset" onClick={() => { setFormError(""); setLanguageVersion(value => value + 1); search({ view: people ? "PEOPLE" : "PLACES", limit: 20, offset: 0, ...(appliedBounds ? { bounds: appliedBounds } : {}) }); }}>Reset filters</button></div>
     </form>
     <div className="housing-results-heading"><h2>{people ? "People looking for housing" : "Available places"}</h2>
       <div className="housing-view-toggle" role="group" aria-label="Housing view">
@@ -245,6 +257,7 @@ export default function HousingBrowse({ people = false }: { people?: boolean }) 
     <p className="field-hint">{people ? "Markers show preferred search areas, not available properties. " : ""}Selected addresses and exact map points are visible while public. Results are newest first.</p>
     {error && <div className="state-card error-state" role="alert"><p>{error}</p><button className="button button-secondary" type="button" onClick={() => { setLoading(true); setRevision(value => value + 1); }}>Retry search</button></div>}
     {loading && <p className="housing-loading" role="status">Finding housing...</p>}
+    {view === "list" && !loading && !error && !ready && <div className="state-card"><p>Choose a location or switch to Map and select Search this area to find nearby housing.</p></div>}
     {view === "map" && <div className="housing-map-layout">
       <div className="housing-map-panel">
         <HousingMap key={mapVersion} fullscreen={fullscreen} items={error || loading ? [] : result?.items ?? []} center={mapCenter} initialZoom={zoom} selectedPostId={selectedId} selectionVersion={selectionVersion}
@@ -277,6 +290,5 @@ export default function HousingBrowse({ people = false }: { people?: boolean }) 
         )}
         {!fullscreen && pagination}
       </>}
-    <p className="field-hint housing-footer-note">Housing connects members, not bookings. Availability, permission to sublet, fees, and household details are not verified. Confirm arrangements directly before paying.</p>
   </section>;
 }

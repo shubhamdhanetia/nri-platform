@@ -10,7 +10,7 @@ from uuid import uuid4
 
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import create_engine, inspect, select, text
+from sqlalchemy import MetaData, Table, create_engine, inspect, select, text
 from sqlalchemy.exc import DBAPIError, IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy.schema import CreateSchema, DropSchema
@@ -21,7 +21,8 @@ from app.db.url import parse_database_url
 from app.models.user import User
 from app.models.post import Post, PostCategory, PostStatus
 from app.models.housing import HousingPost
-from app.schemas.housing import HousingContent
+from app.schemas.housing import HousingContent, HousingSearch
+from app.api.housing import search_housing
 
 
 BACKEND = Path(__file__).resolve().parents[1]
@@ -125,15 +126,16 @@ class PostgreSQLMigrationTests(unittest.TestCase):
                 connection.commit()
                 command.upgrade(config, "0011")
                 housing_id = uuid4()
-                connection.execute(HousingPost.__table__.insert().values(
+                connection.execute(Table("housing_posts", MetaData(), autoload_with=connection).insert().values(
                         id=housing_id, owner_id=user_id, city="Fremont", country_code="US",
+                        created_at=datetime.now(),
                         **HousingContent(
                             title="Migration housing", description="Housing migration retention test",
                             kind="LISTING", room_type="PRIVATE", arrangement="HOUSEHOLD",
                             stay_type="LONG_TERM", area="Central",
                             amount=950, currency="USD", price_period="MONTH",
                             available_from=date.today(),
-                        ).model_dump(),
+                        ).model_dump(exclude={"household_languages"}),
                         expires_at=datetime.now() + timedelta(days=30),
                 ))
                 connection.commit()
@@ -151,7 +153,7 @@ class PostgreSQLMigrationTests(unittest.TestCase):
                     command.downgrade(config, "0006")
                 connection.rollback()
                 self.assertEqual(connection.scalar(select(HousingPost.id)), housing_id)
-                self.assertEqual(connection.scalar(text("SELECT version_num FROM alembic_version")), "0013")
+                self.assertEqual(connection.scalar(text("SELECT version_num FROM alembic_version")), "0015")
                 self.assertIsNone(connection.scalar(select(HousingPost.location_id)))
                 self.assertIn("ix_housing_posts_h3_cell_id", {index["name"] for index in inspect(connection).get_indexes("housing_posts")})
                 with self.assertRaises(IntegrityError):
@@ -181,7 +183,7 @@ class PostgreSQLMigrationTests(unittest.TestCase):
                 )
                 self.assertEqual(
                     connection.scalar(text("SELECT version_num FROM alembic_version")),
-                    "0013",
+                    "0015",
                 )
                 self.assertEqual(connection.scalar(select(Post.status)), PostStatus.ACTIVE)
                 connection.commit()
@@ -195,7 +197,7 @@ class PostgreSQLMigrationTests(unittest.TestCase):
                     command.downgrade(config, "0004")
                 connection.rollback()
                 self.assertEqual(connection.scalar(select(Post.status)), PostStatus.CLOSED)
-                self.assertEqual(connection.scalar(text("SELECT version_num FROM alembic_version")), "0013")
+                self.assertEqual(connection.scalar(text("SELECT version_num FROM alembic_version")), "0015")
                 connection.execute(text("UPDATE posts SET status = 'ACTIVE'"))
                 connection.commit()
                 indexes = {index["name"] for index in inspect(connection).get_indexes("ride_requests")}
@@ -217,7 +219,7 @@ class PostgreSQLMigrationTests(unittest.TestCase):
                     command.downgrade(config, "0008")
                 connection.rollback()
                 self.assertEqual(connection.scalar(select(Post.category)), PostCategory.RIDES_CARPOOL)
-                self.assertEqual(connection.scalar(text("SELECT version_num FROM alembic_version")), "0013")
+                self.assertEqual(connection.scalar(text("SELECT version_num FROM alembic_version")), "0015")
                 connection.execute(text("UPDATE posts SET category = 'HOUSEHOLD_HELP'"))
                 connection.commit()
                 with self.assertRaises(DBAPIError):
@@ -239,7 +241,7 @@ class PostgreSQLMigrationTests(unittest.TestCase):
                     command.downgrade(config, "0003")
                 connection.rollback()
                 self.assertEqual(
-                    connection.scalar(text("SELECT version_num FROM alembic_version")), "0013"
+                    connection.scalar(text("SELECT version_num FROM alembic_version")), "0015"
                 )
                 self.assertEqual(connection.scalar(select(Post.category)), PostCategory.PARKING)
                 connection.execute(text("UPDATE posts SET category = 'TRAVEL'"))
@@ -266,7 +268,7 @@ class PostgreSQLMigrationTests(unittest.TestCase):
                     command.downgrade(config, "0001")
                 connection.rollback()
                 self.assertEqual(
-                    connection.scalar(text("SELECT version_num FROM alembic_version")), "0013"
+                    connection.scalar(text("SELECT version_num FROM alembic_version")), "0015"
                 )
                 self.assertEqual(connection.scalar(select(Post.category)), PostCategory.SPORTS)
                 connection.execute(text("UPDATE posts SET category = 'GENERAL'"))
@@ -277,6 +279,180 @@ class PostgreSQLMigrationTests(unittest.TestCase):
                 command.upgrade(config, "head")
                 command.downgrade(config, "base")
                 self.assertEqual(inspect(connection).get_table_names(), ["alembic_version"])
+                connection.commit()
+                command.upgrade(config, "head")
+                command.check(config)
+                connection.commit()
+        finally:
+            with engine.begin() as connection:
+                connection.execute(DropSchema(schema, cascade=True))
+
+    def test_household_languages_upgrade_search_and_guarded_downgrade(self):
+        engine = create_engine(parse_database_url(settings.DATABASE_URL))
+        self.addCleanup(engine.dispose)
+        schema = "migration_test_" + uuid4().hex
+        with engine.begin() as connection:
+            connection.execute(CreateSchema(schema))
+        try:
+            with engine.connect() as connection:
+                connection.execute(text(f'SET search_path TO "{schema}"'))
+                connection.commit()
+                config = migration_config()
+                config.attributes["connection"] = connection
+                command.upgrade(config, "0013")
+                user_id, old_id = uuid4(), uuid4()
+                with Session(connection) as db:
+                    db.add(User(id=user_id, email="languages@example.test", name="Languages test",
+                                provider="test", provider_id=str(user_id)))
+                    db.commit()
+                content = HousingContent(
+                    title="Existing household", description="Languages migration retention test",
+                    kind="LISTING", room_type="PRIVATE", arrangement="HOUSEHOLD",
+                    stay_type="LONG_TERM", amount=950, currency="USD", price_period="MONTH",
+                    available_from=date.today(), kitchen="VEGETARIAN",
+                ).model_dump(exclude={"household_languages"})
+                old_table = Table("housing_posts", MetaData(), autoload_with=connection)
+                connection.execute(old_table.insert().values(
+                    id=old_id, owner_id=user_id, city="Fremont", country_code="US", **content,
+                    created_at=datetime.now(),
+                    expires_at=datetime.now() + timedelta(days=30),
+                ))
+                connection.commit()
+                command.upgrade(config, "head")
+                self.assertEqual(connection.scalar(select(HousingPost.household_languages)), [])
+                self.assertEqual(connection.scalar(select(HousingPost.title)), "Existing household")
+                connection.commit()
+                command.upgrade(config, "head")
+                command.check(config)
+                connection.commit()
+                with Session(connection) as db:
+                    user = db.get(User, user_id)
+                    assert user is not None
+                    first = HousingPost(
+                        owner_id=user_id, city="Fremont", country_code="US", **content,
+                        household_languages=["en", "gu"],
+                        created_at=datetime.now() - timedelta(seconds=2),
+                        expires_at=datetime.now() + timedelta(days=30),
+                    )
+                    second = HousingPost(
+                        owner_id=user_id, city="Fremont", country_code="US", **content,
+                        household_languages=["te"],
+                        created_at=datetime.now() - timedelta(seconds=1),
+                        expires_at=datetime.now() + timedelta(days=30),
+                    )
+                    private = HousingPost(
+                        owner_id=user_id, city="Fremont", country_code="US",
+                        **{**content, "is_private": True}, household_languages=["gu"],
+                        expires_at=datetime.now() + timedelta(days=30),
+                    )
+                    db.add_all([first, second, private])
+                    db.commit()
+                    all_results = search_housing(HousingSearch(), db, user)
+                    self.assertEqual({row.id for row in all_results.items}, {old_id, first.id, second.id})
+                    filters = {"household_languages": ["gu", "te"], "kitchen": "VEGETARIAN", "limit": 1}
+                    page1 = search_housing(HousingSearch(**filters), db, user)
+                    page2 = search_housing(HousingSearch(**filters, offset=1), db, user)
+                    self.assertEqual([row.id for row in page1.items], [second.id])
+                    self.assertTrue(page1.has_more)
+                    self.assertEqual([row.id for row in page2.items], [first.id])
+                    self.assertFalse(page2.has_more)
+                    self.assertEqual(search_housing(HousingSearch(household_languages=["kn"]), db, user).items, [])
+                    self.assertEqual(search_housing(HousingSearch(household_languages=["gu"], kitchen="UNRESTRICTED"), db, user).items, [])
+                connection.commit()
+                with self.assertRaises(DBAPIError):
+                    command.downgrade(config, "0013")
+                connection.rollback()
+                self.assertEqual(connection.scalar(text("SELECT version_num FROM alembic_version")), "0015")
+                self.assertEqual(connection.scalar(text("SELECT count(*) FROM housing_posts WHERE household_languages::jsonb <> '[]'::jsonb")), 3)
+                connection.execute(text("UPDATE housing_posts SET household_languages = '[]'"))
+                connection.commit()
+                command.downgrade(config, "0013")
+                self.assertNotIn("household_languages", {column["name"] for column in inspect(connection).get_columns("housing_posts")})
+                self.assertEqual(connection.scalar(text("SELECT count(*) FROM housing_posts")), 4)
+                connection.commit()
+                command.upgrade(config, "head")
+                command.check(config)
+                connection.commit()
+        finally:
+            with engine.begin() as connection:
+                connection.execute(DropSchema(schema, cascade=True))
+
+    def test_hall_space_upgrade_retention_search_and_guarded_downgrade(self):
+        engine = create_engine(parse_database_url(settings.DATABASE_URL))
+        self.addCleanup(engine.dispose)
+        schema = "migration_test_" + uuid4().hex
+        with engine.begin() as connection:
+            connection.execute(CreateSchema(schema))
+        try:
+            with engine.connect() as connection:
+                connection.execute(text(f'SET search_path TO "{schema}"'))
+                connection.commit()
+                config = migration_config()
+                config.attributes["connection"] = connection
+                command.upgrade(config, "0014")
+                user_id = uuid4()
+                with Session(connection) as db:
+                    user = User(id=user_id, email="hall@example.test", name="Hall test",
+                                provider="test", provider_id=str(user_id))
+                    db.add(user)
+                    db.commit()
+                    content = HousingContent(
+                        title="Existing private room", description="Hall migration retention test",
+                        kind="LISTING", room_type="PRIVATE", arrangement="HOUSEHOLD",
+                        stay_type="LONG_TERM", amount=950, currency="USD", price_period="MONTH",
+                        available_from=date.today(), bedroom_count=2, household_languages=["es"],
+                    ).model_dump()
+                    original = HousingPost(
+                        owner_id=user_id, city="Fremont", country_code="US", **content,
+                        expires_at=datetime.now() + timedelta(days=30),
+                    )
+                    db.add(original)
+                    db.commit()
+                    original_id = original.id
+                with self.assertRaises(IntegrityError):
+                    with connection.begin_nested():
+                        connection.execute(text("UPDATE housing_posts SET room_type='HALL'"))
+                connection.commit()
+                command.upgrade(config, "head")
+                command.upgrade(config, "head")
+                command.check(config)
+                connection.commit()
+                with Session(connection) as db:
+                    user = db.get(User, user_id)
+                    assert user is not None
+                    retained = db.get(HousingPost, original_id)
+                    assert retained is not None
+                    self.assertEqual(retained.room_type, "PRIVATE")
+                    self.assertEqual(retained.bedroom_count, 2)
+                    self.assertEqual(retained.household_languages, ["es"])
+                    hall = HousingPost(
+                        owner_id=user_id, city="Fremont", country_code="US",
+                        **{**content, "room_type": "HALL"},
+                        expires_at=datetime.now() + timedelta(days=30),
+                    )
+                    db.add(hall)
+                    db.commit()
+                    self.assertEqual(
+                        [row.id for row in search_housing(HousingSearch(room_type="HALL", min_bedrooms=2), db, user).items],
+                        [hall.id],
+                    )
+                    hall.is_private = True
+                    hall.status = "ARCHIVED"
+                    db.commit()
+                connection.commit()
+                with self.assertRaises(DBAPIError):
+                    command.downgrade(config, "0014")
+                connection.rollback()
+                self.assertEqual(connection.scalar(text("SELECT version_num FROM alembic_version")), "0015")
+                self.assertEqual(connection.scalar(text("SELECT count(*) FROM housing_posts WHERE room_type='HALL'")), 1)
+                connection.execute(text("UPDATE housing_posts SET room_type='SHARED' WHERE room_type='HALL'"))
+                connection.commit()
+                command.downgrade(config, "0014")
+                self.assertEqual(connection.scalar(text("SELECT count(*) FROM housing_posts")), 2)
+                self.assertEqual(connection.scalar(text("SELECT bedroom_count FROM housing_posts WHERE id=:id"), {"id": original_id}), 2)
+                with self.assertRaises(IntegrityError):
+                    with connection.begin_nested():
+                        connection.execute(text("UPDATE housing_posts SET room_type='HALL'"))
                 connection.commit()
                 command.upgrade(config, "head")
                 command.check(config)

@@ -2,15 +2,30 @@ import { useEffect, useState } from "react";
 import { apiRequest } from "./api";
 
 export const HOUSING_KINDS = { LISTING: "I have a place available", REQUEST: "I'm looking for a place", TOGETHER: "I want to find a place together" } as const;
-export const ROOM_TYPES = { SHARED: "Shared room", PRIVATE: "Private room", ENTIRE: "Entire place", ANY: "Flexible / any space" } as const;
+export const ROOM_TYPES = { SHARED: "Shared room", PRIVATE: "Private room", HALL: "Hall / living-room space", ENTIRE: "Entire place", ANY: "Flexible / any space" } as const;
 export const ARRANGEMENTS = { HOUSEHOLD: "Join an existing household", RENTAL: "New rental", SUBLET: "Sublet", TAKEOVER: "Lease takeover", ANY: "Flexible arrangement" } as const;
 export const STAY_TYPES = { SHORT_TERM: "Short-term", LONG_TERM: "Long-term", FLEXIBLE: "Flexible" } as const;
 export const PRICE_PERIODS = { MONTH: "Month", WEEK: "Week", NIGHT: "Night" } as const;
+export const CURRENCIES = { USD: "USD", CAD: "CAD", GBP: "GBP", INR: "INR", AUD: "AUD", EUR: "EUR", SGD: "SGD", AED: "AED" } as const;
 export const FURNISHINGS = { UNSPECIFIED: "Not specified", FURNISHED: "Furnished", PARTLY: "Partly furnished", UNFURNISHED: "Unfurnished" } as const;
 export const BATHROOMS = { UNSPECIFIED: "Not specified", PRIVATE: "Private bathroom", SHARED: "Shared bathroom" } as const;
 export const UTILITIES = { UNKNOWN: "Ask about utilities", INCLUDED: "Utilities included", EXTRA: "Utilities extra", PARTLY: "Some utilities included" } as const;
 export const APPROVALS = { NOT_APPLICABLE: "Not applicable", REQUIRED: "Approval required", PENDING: "Approval pending", OBTAINED: "Approval obtained (owner-reported)" } as const;
 export const KITCHENS = { UNSPECIFIED: "Not specified", VEGETARIAN: "Vegetarian cooking only", EGGS_ALLOWED: "Vegetarian cooking + eggs", UNRESTRICTED: "No food restrictions" } as const;
+export const HOUSEHOLD_LANGUAGES = { en: "English", es: "Spanish", hi: "Hindi", gu: "Gujarati", te: "Telugu", ta: "Tamil", pa: "Punjabi", bn: "Bengali", mr: "Marathi", ml: "Malayalam", kn: "Kannada", ur: "Urdu" } as const;
+export type HouseholdLanguage = keyof typeof HOUSEHOLD_LANGUAGES;
+export function readHouseholdLanguages(data: FormData): HouseholdLanguage[] {
+  const languages: HouseholdLanguage[] = [];
+  for (const value of data.getAll("household_languages")) {
+    const language = Object.keys(HOUSEHOLD_LANGUAGES).find((key): key is HouseholdLanguage => key === value);
+    if (!language) throw new Error("Choose a valid household language.");
+    if (!languages.includes(language)) languages.push(language);
+  }
+  return languages;
+}
+export function housingLanguages(languages: HouseholdLanguage[]): string {
+  return languages.length ? languages.map(language => HOUSEHOLD_LANGUAGES[language]).join(", ") : "Languages not specified";
+}
 export const SMOKING = { UNSPECIFIED: "Not specified", NO: "No smoking / vaping", OUTSIDE: "Outside only", YES: "Smoking allowed" } as const;
 export const ALCOHOL = { UNSPECIFIED: "Not specified", NO: "No alcohol", YES: "Alcohol allowed" } as const;
 export const PETS = { UNSPECIFIED: "Not specified", NO: "No pets", ALLOWED: "Pets allowed", PRESENT: "Pets already in the home" } as const;
@@ -51,6 +66,7 @@ export interface HousingDraft {
   laundry: boolean | null;
   kitchen_access: boolean | null;
   work_from_home: boolean | null;
+  household_languages: HouseholdLanguage[];
   household_notes: string;
   accessibility_notes: string;
   photo_urls: string[];

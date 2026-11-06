@@ -15,7 +15,7 @@ class HousingPost(Base):
     __table_args__ = (
         CheckConstraint("kind IN ('LISTING','REQUEST','TOGETHER')", name="housing_kind"),
         CheckConstraint("status IN ('ACTIVE','FILLED','ARCHIVED')", name="housing_status"),
-        CheckConstraint("room_type IN ('SHARED','PRIVATE','ENTIRE','ANY')", name="housing_room_type"),
+        CheckConstraint("room_type IN ('SHARED','PRIVATE','HALL','ENTIRE','ANY')", name="housing_room_type"),
         CheckConstraint("bedroom_count IS NULL OR bedroom_count BETWEEN 0 AND 20", name="housing_bedroom_count"),
         CheckConstraint("bathroom_count IS NULL OR bathroom_count BETWEEN 0.5 AND 20", name="housing_bathroom_count"),
         CheckConstraint("arrangement IN ('HOUSEHOLD','RENTAL','SUBLET','TAKEOVER','ANY')", name="housing_arrangement"),
@@ -90,6 +90,7 @@ class HousingPost(Base):
     laundry: Mapped[bool | None]
     kitchen_access: Mapped[bool | None]
     work_from_home: Mapped[bool | None]
+    household_languages: Mapped[list[str]] = mapped_column(JSON, default=list, server_default="[]")
     household_notes: Mapped[str] = mapped_column(Text)
     accessibility_notes: Mapped[str] = mapped_column(Text)
     photo_urls: Mapped[list[str]] = mapped_column(JSON)

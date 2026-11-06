@@ -10,7 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from app.schemas.post import PostSearchBounds
 
 Kind = Literal["LISTING", "REQUEST", "TOGETHER"]
-Room = Literal["SHARED", "PRIVATE", "ENTIRE", "ANY"]
+Room = Literal["SHARED", "PRIVATE", "HALL", "ENTIRE", "ANY"]
 Arrangement = Literal["HOUSEHOLD", "RENTAL", "SUBLET", "TAKEOVER", "ANY"]
 Stay = Literal["SHORT_TERM", "LONG_TERM", "FLEXIBLE"]
 Period = Literal["MONTH", "WEEK", "NIGHT"]
@@ -19,9 +19,19 @@ Bathroom = Literal["PRIVATE", "SHARED", "UNSPECIFIED"]
 Kitchen = Literal["VEGETARIAN", "EGGS_ALLOWED", "UNRESTRICTED", "UNSPECIFIED"]
 Status = Literal["ACTIVE", "FILLED", "ARCHIVED"]
 Money = Annotated[Decimal, Field(ge=0, le=Decimal("999999.99"), max_digits=8, decimal_places=2)]
+HouseholdLanguage = Literal["en", "es", "hi", "gu", "te", "ta", "pa", "bn", "mr", "ml", "kn", "ur"]
 
 
-class HousingContent(BaseModel):
+class HouseholdLanguageFields(BaseModel):
+    household_languages: list[HouseholdLanguage] = Field(default_factory=list, max_length=12)
+
+    @field_validator("household_languages")
+    @classmethod
+    def unique_household_languages(cls, values: list[HouseholdLanguage]) -> list[HouseholdLanguage]:
+        return list(dict.fromkeys(values))
+
+
+class HousingContent(HouseholdLanguageFields):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
     title: str = Field(min_length=5, max_length=150)
     description: str = Field(min_length=10, max_length=5000)
@@ -133,7 +143,7 @@ class HousingCollection(BaseModel):
     has_more: bool
 
 
-class HousingSearch(BaseModel):
+class HousingSearch(HouseholdLanguageFields):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
     view: Literal["PLACES", "PEOPLE", "ROOMMATES"] = "PLACES"
     query: str | None = Field(default=None, max_length=200)

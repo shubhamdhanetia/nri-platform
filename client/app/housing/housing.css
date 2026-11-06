@@ -85,6 +85,42 @@
 .housing-filters-more { border-top: 1px solid var(--line); padding-top: 14px; margin: 0 0 18px; }
 .housing-filters-more summary { display: flex; align-items: center; gap: 7px; color: var(--green); font-size: 13px; font-weight: 600; cursor: pointer; }
 .housing-filters-more[open] summary { margin-bottom: 20px; }
+.housing-languages { position: relative; min-width: 0; }
+.housing-language-trigger { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; height: 44px; box-sizing: border-box; padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; background: white; color: inherit; font: inherit; font-size: 14px; text-align: left; cursor: pointer; }
+.housing-language-trigger > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.housing-language-trigger > svg { flex-shrink: 0; }
+.housing-language-trigger:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+.housing-language-trigger[aria-expanded="true"] { border-color: var(--green); box-shadow: 0 0 0 2px #226b5514; }
+.housing-language-trigger[aria-expanded="true"] > svg { transform: rotate(180deg); }
+.housing-language-panel { position: absolute; top: calc(100% + 6px); left: 0; width: 100%; box-sizing: border-box; max-height: min(420px, 70dvh); overflow-y: auto; z-index: 600; border: 1px solid var(--line); border-radius: 10px; background: white; padding: 10px; box-shadow: 0 12px 32px #172e2526; color: #354b40; font-size: 13px; }
+.housing-language-search { display: flex; align-items: center; gap: 8px; padding: 0 10px; border: 1px solid var(--line); border-radius: 6px; background: #f7f9f7; }
+.housing-language-search > svg { flex-shrink: 0; color: var(--muted); }
+.housing-languages .housing-language-panel .housing-language-search input[type="search"] { width: 100%; min-width: 0; height: 38px; min-height: 38px; margin: 0; padding: 0; border: 0; background: transparent; font: inherit; box-shadow: none; }
+.housing-language-search:focus-within { outline: 2px solid var(--green); outline-offset: 1px; }
+.housing-languages .housing-language-panel .housing-language-search input[type="search"]:focus { outline: none; }
+.housing-language-footer { border-top: 1px solid var(--line); padding: 10px 2px 0; }
+.housing-language-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12px; }
+.housing-language-actions > span { margin-right: auto; color: var(--muted); }
+.housing-language-actions button { cursor: pointer; font: inherit; }
+.housing-language-actions button:disabled { cursor: default; opacity: .5; }
+.housing-language-done { border: 0; border-radius: 6px; background: var(--green); color: white; padding: 8px 12px; }
+.housing-language-actions button:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+.housing-language-info { margin-top: 10px; font-size: 11px; font-weight: 400; color: var(--muted); }
+.housing-language-info > summary { cursor: pointer; }
+.housing-language-info p { margin: 8px 0 2px; line-height: 1.6; }
+.housing-language-empty { padding: 12px 8px; font-size: 13px; color: var(--muted); }
+.housing-browser.community-expanded .housing-language-trigger { height: 25px; padding: 0; border: 0; font-size: 13px; }
+.housing-browser.community-expanded .housing-language-panel { top: calc(100% + 4px); }
+.housing-language-options { display: flex; flex-direction: column; gap: 2px; max-height: 216px; overflow-y: auto; overscroll-behavior: contain; margin: 8px 0; }
+.housing-language-option { display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 4px 8px; border-radius: 6px; box-sizing: border-box; cursor: pointer; font-size: 13px; }
+.housing-language-option:hover { background: #f2f6f2; }
+.housing-language-option:has(input:checked) { background: #edf4ef; color: var(--green); }
+.housing-language-option > span { min-width: 0; overflow-wrap: anywhere; }
+.housing-languages .housing-language-panel .housing-language-option input[type="checkbox"] { appearance: auto; width: 16px; height: 16px; min-height: 16px; flex: 0 0 16px; margin: 0; padding: 0; border: 0; border-radius: 3px; box-shadow: none; accent-color: var(--green); cursor: pointer; }
+.housing-languages .housing-language-panel .housing-language-option input[type="checkbox"]:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+@media (max-width: 640px) {
+  .housing-language-option { min-height: 44px; }
+}
 .housing-results-heading { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin: 26px 0 18px; }
 .housing-results-heading h2 { font: 24px Georgia, serif; margin: 0; }
 .housing-results-heading > .muted { font-size: 12px; }
@@ -128,6 +164,20 @@
 .housing-form .housing-filter-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .housing-form .field-hint { line-height: 1.7; }
 .housing-form .form-field > .field-hint { font-weight: 400; }
+.housing-required { display: inline-block; margin-left: 6px; color: #53675b; font-size: 10px; font-weight: 600; }
+.housing-form-section { margin-bottom: 12px; border: 1px solid var(--line); border-radius: 10px; background: white; }
+.housing-form-section > summary { padding: 14px 16px; min-height: 44px; color: #293930; font-size: 14px; font-weight: 600; cursor: pointer; }
+.housing-form-section > summary > span { float: right; margin-left: 8px; color: var(--muted); font-size: 12px; font-weight: 400; }
+.housing-form-section > summary:focus-visible, .housing-property-help > summary:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+.housing-form .housing-form-section > fieldset { margin: 0; padding: 0 16px 16px; border: 0; }
+.housing-property-help { margin: 12px 0 18px; }
+.housing-property-help > summary { padding: 10px 0; color: #53675b; font-size: 13px; cursor: pointer; }
+.housing-form-compact fieldset { margin-bottom: 18px; padding-bottom: 16px; }
+.housing-form-compact legend { font-size: 20px; margin-bottom: 14px; }
+.housing-form-compact .housing-kind-choice { margin-bottom: 18px; }
+.housing-form-compact .housing-basics-heading { font-size: 20px; margin-bottom: 14px; }
+.housing-form-compact textarea { resize: vertical; }
+.housing-form-compact textarea[name="description"] { min-height: 90px; }
 .housing-manage-links { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 0 0 24px; }
 .housing-manage-links a { color: var(--green); font-size: 13px; font-weight: 600; text-decoration: underline; text-underline-offset: 4px; padding: 8px 0; }
 .housing-status-select { max-width: 240px; }

@@ -53,19 +53,43 @@ the previous navigation labels.
   requests and people looking together, with no overlap between the tabs.
 - Filter by city, area/keywords, space, rent/budget, dates, arrangement, and
   optional practical household details.
+- Primary filters include space, move-in date, shared kitchen
+  food policy, and languages spoken. Listing text search, budget, minimum bedrooms/
+  bathrooms in the home, and other household details are in Additional filters.
+- Optional languages spoken in a household (or by a person seeking housing)
+  are self-reported communication information, not community-based eligibility.
+  Select multiple languages for multilingual homes; an empty list means not
+  specified. Language searches match at least one selected language, before
+  pagination; leaving the filter empty includes unspecified households.
+  Search and posting forms use compact searchable multi-select dropdowns,
+  including Spanish. Closed controls show the selected languages or a count;
+  Clear selections returns search to Any language.
 - Switch between List and clustered Map discovery with the same filters; select
   locations using autocomplete or opt-in geolocation, then Search this area.
+  Browsing searches require a selected location or map area; resetting filters
+  preserves the selected area. There is no Search all areas action.
   Housing uses indexed H3 candidates plus precise map bounds. Public posts
   display their original selected address and exact point; requests label it as
   a preferred search area.
 - List rentals, household shares, sublets, and lease takeovers, including short stays.
+- Housing requests and roommate requests keep essentials visible with explicit
+  Required labels. Space/stay, household preferences, and more details are
+  collapsed optional sections; default values and edited values remain submitted
+  when closed. Invalid fields open their section and show inline feedback.
+  Optional sections also start collapsed for available-place listings.
+- Space options distinguish shared rooms, private rooms, hall / living-room
+  spaces, and entire places. Flexible / any space is available on housing
+  requests only. Hall space is not an extra bedroom or verified sleeping
+  accommodation; describe privacy, passage, storage, and shared facilities,
+  and confirm lease, occupancy, and local safety requirements.
 - Save posts, exchange private inquiries, and report suspicious or inaccurate posts.
 - Manage filled/resolved, archived, private, and expired posts; renew availability
   for another 30 days.
 - Optional HTTPS photo links; no image uploads, bookings, payments, screening,
   or automated verification. Reports require manual operator review.
 - Existing Community Housing posts remain unchanged. The dedicated feature
-  requires database migrations through `0008`.
+  requires database migrations through `0015` for hall / living-room spaces
+  (`0014` adds household languages).
 
 ### Scheduled community rides
 

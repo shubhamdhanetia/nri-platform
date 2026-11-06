@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { apiRequest, type User } from "../lib/api";
-import { ALCOHOL, APPROVALS, ARRANGEMENTS, BATHROOMS, FURNISHINGS, HOUSING_KINDS, KITCHENS, PETS, ROOM_TYPES, SMOKING, STAY_TYPES, UTILITIES, housingDate, housingError, housingExpired, housingLayout, housingMoney, useHousingResource, type HousingInquiry, type HousingItem } from "../lib/housing";
+import { ALCOHOL, APPROVALS, ARRANGEMENTS, BATHROOMS, FURNISHINGS, HOUSING_KINDS, KITCHENS, PETS, ROOM_TYPES, SMOKING, STAY_TYPES, UTILITIES, housingDate, housingError, housingExpired, housingLanguages, housingLayout, housingMoney, useHousingResource, type HousingInquiry, type HousingItem } from "../lib/housing";
 import { HousingStatusBadge } from "./HousingCard";
 import HousingGallery from "./HousingGallery";
 import { HousingLoadState, HousingOwnerActions, HousingSaveButton } from "./HousingControls";
@@ -73,6 +73,7 @@ export default function HousingDetail({ id }: { id: string }) {
     ["Approval", APPROVALS[item.approval]],
   ];
   const household: [string, string][] = [
+    [item.kind === "LISTING" ? "Languages spoken in the household" : "Languages spoken", housingLanguages(item.household_languages)],
     ["Kitchen food policy", KITCHENS[item.kitchen]], ["Smoking / vaping", SMOKING[item.smoking]],
     ["Alcohol", ALCOHOL[item.alcohol]], ["Pets", PETS[item.pets]], ["Parking", yesNo(item.parking)],
     ["Laundry", yesNo(item.laundry)], ["Kitchen access", yesNo(item.kitchen_access)], ["Work-from-home suitable", yesNo(item.work_from_home)],
@@ -98,7 +99,7 @@ export default function HousingDetail({ id }: { id: string }) {
       <aside className="housing-detail-sidebar">
         <HousingLoadState loading={user.loading} error={user.error} retry={user.reload} />
         {!user.loading && !user.error && !owner && !unavailable && <HousingInquiryForm item={item} />}
-        <section className="housing-panel housing-safety"><h2>Before you commit</h2><p>Confirm the place, total charges, agreement, and permission to rent or sublet. Prices, photos, addresses, and approval claims are provided by members, not verified by the platform.</p><p>No booking, deposit collection, payments, or screening happens here. Share access instructions and contact details deliberately in private inquiries.</p></section>
+        <section className="housing-panel housing-safety"><h2>Before you commit</h2><p>Confirm the place, total charges, agreement, and permission to rent or sublet. Prices, photos, addresses, and approval claims are provided by members, not verified by the platform.</p>{item.room_type === "HALL" && <p>Hall / living-room space is not a bedroom. Confirm privacy or partitions, passage through the space, storage, shared facilities, lease permission, occupancy limits, and local safety requirements. Listing this option does not verify approval for sleeping.</p>}<p>No booking, deposit collection, payments, or screening happens here. Share access instructions and contact details deliberately in private inquiries.</p></section>
         {!user.loading && !user.error && !owner && <HousingReportForm id={item.id} />}
       </aside>
     </div>

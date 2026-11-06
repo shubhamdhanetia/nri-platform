@@ -119,6 +119,99 @@ class HousingTests(unittest.TestCase):
                     response = self.client.post("/housing", json=self.payload(**{field: value}))
                 self.assertEqual(response.status_code, 422, response.text)
 
+    def test_hall_space_create_edit_search_and_bedroom_counts(self):
+        hall = self.create(room_type="HALL", bedroom_count=2, description="Partitioned living-room space with shared kitchen access.")
+        private = self.create(room_type="PRIVATE")
+        path = f"/housing/{hall['id']}"
+        self.assertEqual(hall["room_type"], "HALL")
+        self.assertEqual(self.client.get(path).json()["room_type"], "HALL")
+        self.assertEqual(hall["bedroom_count"], 2)
+        self.assertEqual([row["id"] for row in self.search(room_type="HALL")["items"]], [hall["id"]])
+        self.assertEqual(self.search(room_type="HALL", min_bedrooms=3)["items"], [])
+        self.assertEqual({row["id"] for row in self.search()["items"]}, {hall["id"], private["id"]})
+        request = self.create(kind="REQUEST", room_type="HALL", bedroom_count=0)
+        together = self.create(kind="TOGETHER", room_type="HALL")
+        self.assertEqual({row["id"] for row in self.search(view="PEOPLE", room_type="HALL")["items"]}, {request["id"], together["id"]})
+        self.create(room_type="HALL", is_private=True)
+        closed = self.create(room_type="HALL")
+        self.client.put(f"/housing/{closed['id']}/status", json={"status": "FILLED"})
+        self.assertEqual([row["id"] for row in self.search(room_type="HALL")["items"]], [hall["id"]])
+        changed = self.client.put(path, json=self.payload(room_type="PRIVATE", bedroom_count=2))
+        self.assertEqual(changed.status_code, 200, changed.text)
+        self.assertEqual(changed.json()["room_type"], "PRIVATE")
+        self.assertEqual(changed.json()["bedroom_count"], 2)
+        changed_back = self.client.put(path, json=self.payload(room_type="HALL", bedroom_count=2))
+        self.assertEqual(changed_back.status_code, 200, changed_back.text)
+        self.assertEqual(changed_back.json()["room_type"], "HALL")
+        self.assertEqual(self.client.post("/housing", json=self.payload(room_type="ANY")).status_code, 422)
+        for value in ("hall", "LIVING_ROOM", "INVALID"):
+            with self.subTest(value=value):
+                self.assertEqual(self.client.post("/housing", json=self.payload(room_type=value)).status_code, 422)
+                self.assertEqual(self.client.post("/housing/search", json={"room_type": value}).status_code, 422)
+
+    def test_household_languages_round_trip_edit_and_validation(self):
+        unspecified = self.create()
+        self.assertEqual(unspecified["household_languages"], [])
+        item = self.create(household_languages=["en", "gu", "gu", "te"])
+        self.assertEqual(item["household_languages"], ["en", "gu", "te"])
+        path = f"/housing/{item['id']}"
+        self.assertEqual(self.client.get(path).json()["household_languages"], ["en", "gu", "te"])
+        edited = self.client.put(path, json=self.payload(household_languages=["ta", "en"]))
+        self.assertEqual(edited.status_code, 200, edited.text)
+        self.assertEqual(edited.json()["household_languages"], ["ta", "en"])
+        self.assertEqual([row["id"] for row in self.search(household_languages=["ta"])["items"]], [item["id"]])
+        self.assertEqual(self.search(household_languages=["gu"])["items"], [])
+        cleared = self.client.put(path, json=self.payload(household_languages=[]))
+        self.assertEqual(cleared.status_code, 200, cleared.text)
+        self.assertEqual(cleared.json()["household_languages"], [])
+        for value in (None, "gu", ["Gujarati"], ["mixed"], ["GU"], [""], [1], ["gu"] * 13):
+            with self.subTest(value=value):
+                self.assertEqual(self.client.post("/housing", json=self.payload(household_languages=value)).status_code, 422)
+                self.assertEqual(self.client.put(path, json=self.payload(household_languages=value)).status_code, 422)
+                self.assertEqual(self.client.post("/housing/search", json={"household_languages": value}).status_code, 422)
+
+    def test_spanish_language_create_edit_search_and_all_options(self):
+        item = self.create(household_languages=["es", "en", "es"])
+        self.assertEqual(item["household_languages"], ["es", "en"])
+        self.assertEqual(self.client.get(f"/housing/{item['id']}").json()["household_languages"], ["es", "en"])
+        self.assertEqual([row["id"] for row in self.search(household_languages=["es"])["items"]], [item["id"]])
+        self.assertEqual([row["id"] for row in self.search(household_languages=["gu", "es"])["items"]], [item["id"]])
+        languages = ["en", "es", "hi", "gu", "te", "ta", "pa", "bn", "mr", "ml", "kn", "ur"]
+        edited = self.client.put(f"/housing/{item['id']}", json=self.payload(household_languages=languages))
+        self.assertEqual(edited.status_code, 200, edited.text)
+        self.assertEqual(edited.json()["household_languages"], languages)
+
+    def test_household_language_any_match_before_pagination_and_visibility(self):
+        gujarati = self.create(household_languages=["en", "gu"], kitchen="VEGETARIAN")
+        telugu = self.create(household_languages=["te"], kitchen="VEGETARIAN")
+        tamil = self.create(household_languages=["ta"], kitchen="UNRESTRICTED")
+        unspecified = self.create()
+        self.create(household_languages=["gu"], is_private=True)
+        closed = self.create(household_languages=["gu"])
+        self.client.put(f"/housing/{closed['id']}/status", json={"status": "FILLED"})
+        expired = self.create(household_languages=["gu"])
+        with Session(self.engine) as db:
+            db.get(HousingPost, UUID(expired["id"])).expires_at = utc_now_naive() - timedelta(seconds=1)
+            db.commit()
+        request = self.create(kind="REQUEST", household_languages=["gu"])
+        together = self.create(kind="TOGETHER", household_languages=["te"])
+        filters = {"household_languages": ["gu", "te"], "kitchen": "VEGETARIAN", "limit": 1}
+        first = self.search(**filters)
+        second = self.search(**filters, offset=1)
+        self.assertEqual([row["id"] for row in first["items"]], [telugu["id"]])
+        self.assertTrue(first["has_more"])
+        self.assertEqual([row["id"] for row in second["items"]], [gujarati["id"]])
+        self.assertFalse(second["has_more"])
+        self.assertEqual(self.search(household_languages=["kn"])["items"], [])
+        self.assertEqual(
+            {row["id"] for row in self.search(household_languages=[])["items"]},
+            {gujarati["id"], telugu["id"], tamil["id"], unspecified["id"]},
+        )
+        self.assertEqual(
+            {row["id"] for row in self.search(view="PEOPLE", household_languages=["gu", "te"])["items"]},
+            {request["id"], together["id"]},
+        )
+
     def test_optional_bedroom_and_bathroom_counts(self):
         studio = self.create(title="Studio near transit", bedroom_count=0, bathroom_count="1.0")
         larger = self.create(title="Two-bedroom home", bedroom_count=2, bathroom_count="1.5")
