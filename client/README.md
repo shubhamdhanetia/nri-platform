@@ -118,6 +118,33 @@ Inactive and private cases are intentionally absent from public discovery;
 inspect them in My housing. Re-running preserves existing demo posts and owner edits.
 It never creates other members, messages, saves, bookings, or notifications.
 
+### Local ride and carpool samples
+
+From `backend`, run
+`.\.venv\Scripts\python.exe -m scripts.seed_rides --email "existing-user@example.com"`.
+The script requires local PostgreSQL (no host/service overrides), the current
+Alembic migration head, and an existing owner with an acknowledged, valid driver
+profile. If the profile is missing, complete it locally with the user's real
+details first; the script never invents or changes phone numbers, vehicles,
+license plates, eligibility acknowledgements, or other account information.
+The existing profile phone is reused privately for the owner's ride requests.
+
+It inserts six OPEN carpools (including a linked same-day return) and six OPEN
+ride requests across public Bay Area and Los Angeles-area landmarks. Examples
+vary seats within the real driver's capacity, passengers, luggage, pickup
+windows, and USD amounts (including free and unspecified preferred budgets).
+All notes prominently label fictional samples, not actual offers or requests.
+New departures are 3–14 days ahead in `America/Los_Angeles`; landmark coordinates
+are resolved through the existing location provider, so provider access is needed
+on first seed. Only landmark queries, not user/profile details, go to the provider.
+
+One transaction commits the complete batch or nothing. Deterministic owner-scoped
+IDs make reruns insert only missing samples and preserve existing dates, status,
+and owner edits; rerunning does not refresh samples after they expire. No other
+users, offers, seat requests, bookings, messages, or notifications are created.
+Validate with
+`.\.venv\Scripts\python.exe -m unittest discover -s tests -p test_ride_seed.py`.
+
 Ride addresses are visible to signed-in members with a driver profile after
 explicit rider consent. Phone numbers are unverified and shared only with
 booking participants after confirmation. The notification bell beside the profile

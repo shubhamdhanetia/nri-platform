@@ -122,7 +122,7 @@ export default function HousingGallery({ urls, title, detail = false }: { urls: 
   const suppressClick = useRef(false);
   const current = Math.min(index, Math.max(0, urls.length - 1));
   function move(next: number) { setIndex(Math.max(0, Math.min(urls.length - 1, next))); }
-  if (!urls.length) return <HousingPhoto title={title} />;
+  if (!urls.length) return null;
   return <div className={`housing-photo-gallery${detail ? " housing-photo-gallery-detail" : ""}`}>
     <div className="housing-photo-preview">
       <button className="housing-photo-open" type="button" aria-label={`Open photo ${current + 1} of ${urls.length}: ${title}`} onClick={() => {
@@ -152,7 +152,11 @@ export default function HousingGallery({ urls, title, detail = false }: { urls: 
       {urls.length > 1 && <div className="housing-photo-thumbnails" aria-label="Choose a photo">{urls.map((url, photoIndex) => <button key={`${photoIndex}-${url}`} type="button" aria-label={`Show photo ${photoIndex + 1}`} aria-pressed={current === photoIndex} onClick={() => move(photoIndex)}>
         <HousingPhoto url={url} title={`Photo ${photoIndex + 1}`} />
       </button>)}</div>}
-      <button className="button button-secondary" type="button" onClick={() => setOpen(true)}><Expand size={16} aria-hidden="true" />View all photos ({urls.length})</button>
+      <button className="housing-gallery-button" type="button" aria-label={urls.length === 1 ? "View photo" : `View all ${urls.length} photos`} onClick={() => setOpen(true)}>
+        <Expand size={18} aria-hidden="true" />
+        <span>{urls.length === 1 ? "View photo" : "View all photos"}</span>
+        <span className="housing-gallery-button-count" aria-hidden="true">{urls.length}</span>
+      </button>
     </>}
     {open && <PhotoViewer urls={urls} title={title} index={current} onChange={setIndex} onClose={() => setOpen(false)} />}
   </div>;

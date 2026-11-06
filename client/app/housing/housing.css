@@ -207,7 +207,11 @@
 .housing-photo-gallery-detail { margin-bottom: 24px; }
 .housing-photo-gallery-detail .housing-photo-preview { border-radius: 12px; }
 .housing-photo-gallery-detail .housing-photo-open .housing-photo { aspect-ratio: 16 / 10; object-fit: contain; max-height: 520px; }
-.housing-photo-gallery-detail > .button { margin-top: 12px; }
+.housing-gallery-button { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 44px; margin-top: 12px; padding: 8px 14px; border: 1px solid #cbd9d1; border-radius: 9px; background: white; color: var(--green); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s ease, border-color .15s ease; }
+.housing-gallery-button > svg { flex-shrink: 0; }
+.housing-gallery-button:hover { background: #f1f6f1; border-color: var(--green); }
+.housing-gallery-button:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; }
+.housing-gallery-button-count { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; min-height: 24px; padding: 0 6px; box-sizing: border-box; border-radius: 6px; background: #eaf1ec; font-size: 12px; }
 .housing-photo-thumbnails { display: flex; gap: 8px; overflow-x: auto; padding: 6px 3px; margin-top: 8px; }
 .housing-photo-thumbnails button { flex: 0 0 78px; padding: 2px; border: 2px solid transparent; border-radius: 7px; background: white; cursor: pointer; }
 .housing-photo-thumbnails button[aria-pressed="true"] { border-color: var(--green); }

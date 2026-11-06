@@ -151,8 +151,8 @@ def main() -> None:
     engine = create_engine(url)
     try:
         with Session(engine) as db:
-            if db.scalar(text("SELECT version_num FROM alembic_version")) != "0008":
-                raise SystemExit("Apply Housing migrations through 0008 before seeding.")
+            if db.scalar(text("SELECT version_num FROM alembic_version")) != "0015":
+                raise SystemExit("Apply migrations through 0015 before seeding.")
             owner = db.scalar(select(User).where(func.lower(User.email) == args.email.strip().lower()))
             if owner is None:
                 raise SystemExit("The requested user does not exist. Sign in locally first.")
