@@ -15,6 +15,7 @@ from app.schemas.post import PostAuthorResponse, PostLocationFields, PostSearchB
 ShortText = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=100)]
 Phone = Annotated[str, StringConstraints(strip_whitespace=True, min_length=8, max_length=30)]
 Currency = Literal["USD", "CAD", "INR", "GBP", "EUR", "AUD"]
+VehicleColor = Literal["Black", "Blue", "Brown", "Gold", "Gray", "Green", "Orange", "Other", "Purple", "Red", "Silver", "White", "Yellow"]
 
 
 def validate_pickup_window(start: datetime, end: datetime, pickup_id: str, dropoff_id: str) -> None:
@@ -30,8 +31,10 @@ def validate_pickup_window(start: datetime, end: datetime, pickup_id: str, dropo
 
 class DriverProfileInput(BaseModel):
     vehicle: ShortText
+    vehicle_color: VehicleColor | None = None
     passenger_capacity: int = Field(ge=1, le=8)
     phone: Phone
+    license_plate: Annotated[str, StringConstraints(strip_whitespace=True, min_length=2, max_length=20)] | None = None
     eligibility_acknowledged: Literal[True]
 
     @field_validator("phone")
@@ -41,13 +44,24 @@ class DriverProfileInput(BaseModel):
             raise ValueError("Use an international phone number, e.g. +14155550123")
         return value
 
+    @field_validator("license_plate", mode="before")
+    @classmethod
+    def normalize_license_plate(cls, value: str | None) -> str | None:
+        if value is None or (isinstance(value, str) and not value.strip()):
+            return None
+        if not isinstance(value, str) or not re.fullmatch(r"[A-Za-z0-9 -]{2,20}", value.strip()):
+            raise ValueError("Use 2 to 20 letters, numbers, spaces, or hyphens.")
+        return value.strip().upper()
+
 
 class DriverProfileResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     user_id: UUID
     vehicle: str
+    vehicle_color: VehicleColor | None = None
     passenger_capacity: int
     phone: str
+    license_plate: str | None = None
 
 
 class RideRequestInput(BaseModel):
@@ -127,6 +141,7 @@ class RideOfferResponse(UTCResponse):
     amount: Decimal
     message: str
     vehicle: str
+    vehicle_color: VehicleColor | None = None
     passenger_capacity: int
     status: Literal["PENDING", "ACCEPTED", "WITHDRAWN", "NOT_SELECTED", "EXPIRED"]
     created_at: datetime
@@ -141,8 +156,10 @@ class RideBookingResponse(UTCResponse):
     rider: PostAuthorResponse
     driver: PostAuthorResponse
     driver_phone: str
+    driver_license_plate: str | None = None
     rider_phone: str
     vehicle: str
+    vehicle_color: VehicleColor | None = None
     pickup_time: datetime
     amount: Decimal
     currency: Currency

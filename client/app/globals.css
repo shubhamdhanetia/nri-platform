@@ -2043,6 +2043,22 @@ a {
   margin: 7px 0 0;
 }
 
+.location-context-hint {
+  align-items: flex-start;
+  color: #68766d;
+  display: flex;
+  font-size: 11px;
+  gap: 7px;
+  line-height: 1.5;
+  margin: 2px 0 0;
+}
+
+.location-context-hint svg {
+  color: var(--green);
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
 .location-error {
   align-items: center;
   color: #a1443a;

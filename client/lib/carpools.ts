@@ -1,5 +1,5 @@
 import type { PostAuthor } from "./api";
-import type { RideLocation } from "./rides";
+import type { RideLocation, VehicleColor } from "./rides";
 
 export type SeatStatus = "PENDING" | "CONFIRMED" | "DECLINED" | "CANCELLED" | "EXPIRED";
 
@@ -20,6 +20,7 @@ export interface CarpoolTrip {
   amount: string;
   currency: string;
   vehicle: string;
+  vehicle_color: VehicleColor | null;
   notes: string;
   status: "OPEN" | "FULL" | "DEPARTED" | "CANCELLED";
   can_cancel: boolean;
@@ -37,6 +38,7 @@ export interface CarpoolSeatRequest {
   status: SeatStatus;
   rider_phone: string | null;
   driver_phone: string | null;
+  driver_license_plate: string | null;
   cancellation_reason: string | null;
 }
 

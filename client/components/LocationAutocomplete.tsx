@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { MapPin } from "lucide-react";
 import {
   apiRequest,
   type LocationDetailsResponse,
@@ -23,11 +24,13 @@ export default function LocationAutocomplete({
   onAddressSelected,
   initialSelection,
   label = "Location",
+  description,
   onQueryChange,
 }: {
   onAddressSelected: (selection: { locationId: string; location: string } | null) => void;
   initialSelection?: { locationId: string; location: string };
   label?: string;
+  description?: string;
   onQueryChange?: (query: string) => void;
 }) {
   const inputId = useId();
@@ -197,6 +200,7 @@ export default function LocationAutocomplete({
         role="combobox"
         value={value}
       />
+      {description && <p className="location-context-hint"><MapPin aria-hidden="true" size={14} /><span>{description}</span></p>}
       {locating && <p className="location-helper">Getting your location…</p>}
       {locationError && (
         <div className="location-helper location-error">

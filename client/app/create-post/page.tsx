@@ -155,7 +155,11 @@ export default function CreatePostPage() {
               : "Everyone in the community can see this post."}
           </span>
         </label>
-        <LocationAutocomplete onAddressSelected={setSelectedLocation} />
+        <LocationAutocomplete
+          description="Helps people find this post by area. This is separate from who can see it."
+          label="Post location"
+          onAddressSelected={setSelectedLocation}
+        />
         {error && <p className="form-error" role="alert">{error}</p>}
         <div className="form-actions">
           <button

@@ -82,7 +82,7 @@ class RideAPITests(unittest.TestCase):
         return self.client.post("/rides/requests", json=payload, headers=self.headers())
 
     def driver(self, user_id=2, **updates):
-        payload = {"vehicle": "Toyota Camry", "passenger_capacity": 3, "phone": f"+1415555010{user_id}", "eligibility_acknowledged": True}
+        payload = {"vehicle": "Toyota Camry", "vehicle_color": "Blue", "passenger_capacity": 3, "phone": f"+1415555010{user_id}", "license_plate": "ca 8abc234", "eligibility_acknowledged": True}
         payload.update(updates)
         return self.client.put("/rides/driver-profile", json=payload, headers=self.headers(user_id))
 
@@ -167,6 +167,22 @@ class RideAPITests(unittest.TestCase):
         self.assertEqual(self.create(rider_phone="not a number").status_code, 422)
         self.assertEqual(self.client.get("/rides/driver-profile", headers=self.headers(2)).json(), None)
 
+    def test_driver_license_plate_is_optional_normalized_and_validated(self):
+        saved = self.driver(license_plate=" ca 8abc234 ")
+        self.assertEqual(saved.status_code, 200, saved.text)
+        self.assertEqual(saved.json()["license_plate"], "CA 8ABC234")
+        self.assertEqual(self.driver(3, license_plate=" ").json()["license_plate"], None)
+        for plate in ("A", "X" * 21, "AB/123", "AB.123"):
+            with self.subTest(plate=plate):
+                self.assertEqual(self.driver(license_plate=plate).status_code, 422)
+
+    def test_driver_vehicle_color_is_optional_and_limited_to_palette(self):
+        saved = self.driver(vehicle_color="Silver")
+        self.assertEqual(saved.status_code, 200, saved.text)
+        self.assertEqual(saved.json()["vehicle_color"], "Silver")
+        self.assertIsNone(self.driver(3, vehicle_color=None).json()["vehicle_color"])
+        self.assertEqual(self.driver(vehicle_color="Chartreuse").status_code, 422)
+
     def test_invalid_request_windows_and_locations(self):
         for updates in (
             {"pickup_start": "2020-01-01T00:00:00Z"},
@@ -240,21 +256,28 @@ class RideAPITests(unittest.TestCase):
 
     def test_confirm_snapshot_contact_privacy_and_idempotency(self):
         ride_id, offer_id = self.seed_offer()
+        pending_detail = self.client.get(f"/rides/requests/{ride_id}", headers=self.headers()).json()
+        self.assertNotIn("license_plate", str(pending_detail))
         self.driver(3)
         second = self.offer(ride_id, 3).json()["offers"][0]["id"]
+        self.driver(license_plate="UPDATED 123", vehicle_color="Red")
         self.assertEqual(self.confirm(ride_id, offer_id, 2).status_code, 403)
         result = self.confirm(ride_id, offer_id)
         self.assertEqual(result.status_code, 200, result.text)
         booking = result.json()["booking"]
         self.assertEqual(booking["driver_phone"], "+14155550102")
+        self.assertEqual(booking["driver_license_plate"], "CA 8ABC234")
+        self.assertEqual(booking["vehicle_color"], "Blue")
         self.assertEqual(booking["rider_phone"], "+14155550101")
         self.assertEqual(booking["amount"], "12.50")
         self.assertEqual([offer["status"] for offer in result.json()["offers"]], ["ACCEPTED", "NOT_SELECTED"])
         self.assertEqual(self.confirm(ride_id, offer_id).json()["booking"]["id"], booking["id"])
         self.assertEqual(self.confirm(ride_id, second).status_code, 409)
-        self.driver(vehicle="New car", phone="+14155550999")
+        self.driver(vehicle="New car", phone="+14155550999", license_plate="NEW 999")
         driver_detail = self.client.get(f"/rides/requests/{ride_id}", headers=self.headers(2)).json()
         self.assertEqual(driver_detail["booking"]["driver_phone"], "+14155550102")
+        self.assertEqual(driver_detail["booking"]["driver_license_plate"], "CA 8ABC234")
+        self.assertEqual(driver_detail["booking"]["vehicle_color"], "Blue")
         self.assertEqual(driver_detail["booking"]["vehicle"], "Toyota Camry")
         losing_driver = self.client.get(f"/rides/requests/{ride_id}", headers=self.headers(3)).json()
         self.assertIsNone(losing_driver["booking"])
@@ -262,6 +285,9 @@ class RideAPITests(unittest.TestCase):
         self.driver(4)
         self.assertEqual(self.client.get(f"/rides/requests/{ride_id}", headers=self.headers(4)).status_code, 404)
         self.assertEqual(self.offer(ride_id, 3).status_code, 409)
+        self.assertEqual(self.client.post(f"/rides/requests/{ride_id}/booking/cancel", json={"reason": "Plans changed"}, headers=self.headers()).status_code, 200)
+        cancelled = self.client.get(f"/rides/requests/{ride_id}", headers=self.headers()).json()["booking"]
+        self.assertIsNone(cancelled["driver_license_plate"])
         with Session(self.engine) as db:
             self.assertEqual(len(list(db.scalars(select(RideBooking)))), 1)
 

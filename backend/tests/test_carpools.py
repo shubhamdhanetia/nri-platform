@@ -54,7 +54,7 @@ class CarpoolAPITests(unittest.TestCase):
         self.location_patch.start()
         self.assertEqual(self.client.put("/rides/driver-profile", headers=self.headers(1), json={
             "vehicle": "Toyota Camry", "passenger_capacity": 3,
-            "phone": "+14155550101", "eligibility_acknowledged": True,
+            "phone": "+14155550101", "license_plate": "ca 8abc234", "vehicle_color": "Blue", "eligibility_acknowledged": True,
         }).status_code, 200)
 
     def tearDown(self):
@@ -281,11 +281,18 @@ class CarpoolAPITests(unittest.TestCase):
         request = driver["requests"][0]
         self.assertIsNone(request["rider_phone"])
         self.assertIsNone(request["driver_phone"])
+        self.assertIsNone(request["driver_license_plate"])
         self.assertEqual(driver["trip"]["available_seats"], 3)
+        self.client.put("/rides/driver-profile", headers=self.headers(1), json={
+            "vehicle": "New car", "passenger_capacity": 3,
+            "phone": "+14155550101", "license_plate": "NEW 999", "vehicle_color": "Red", "eligibility_acknowledged": True,
+        })
         accepted = self.act(outbound, request["id"], "accept")
         self.assertEqual(accepted.status_code, 200, accepted.text)
         self.assertEqual(accepted.json()["trip"]["available_seats"], 2)
+        self.assertEqual(accepted.json()["trip"]["vehicle_color"], "Blue")
         self.assertEqual(self.detail(outbound).json()["requests"][0]["driver_phone"], "+14155550101")
+        self.assertEqual(self.detail(outbound).json()["requests"][0]["driver_license_plate"], "CA 8ABC234")
         self.assertEqual(self.detail(outbound, 3).json()["requests"], [])
         self.assertEqual(self.detail(returning).json()["requests"][0]["status"], "PENDING")
         self.assertEqual(self.detail(returning).json()["trip"]["available_seats"], 1)
@@ -293,6 +300,7 @@ class CarpoolAPITests(unittest.TestCase):
         self.assertEqual(cancelled.status_code, 200)
         self.assertEqual(cancelled.json()["trip"]["available_seats"], 3)
         self.assertIsNone(cancelled.json()["requests"][0]["driver_phone"])
+        self.assertIsNone(cancelled.json()["requests"][0]["driver_license_plate"])
         self.assertEqual(self.detail(returning).json()["requests"][0]["status"], "PENDING")
 
     def test_approval_capacity_permissions_and_idempotency(self):
@@ -399,10 +407,11 @@ class CarpoolAPITests(unittest.TestCase):
         request_id = self.request(trip_id).json()["requests"][0]["id"]
         self.act(trip_id, request_id, "accept")
         self.client.put("/rides/driver-profile", headers=self.headers(1), json={
-            "vehicle": "New car", "passenger_capacity": 1,
+            "vehicle": "New car", "passenger_capacity": 1, "license_plate": "NEW 999",
             "phone": "+14155550999", "eligibility_acknowledged": True,
         })
         self.assertEqual(self.detail(trip_id).json()["requests"][0]["driver_phone"], "+14155550101")
+        self.assertEqual(self.detail(trip_id).json()["requests"][0]["driver_license_plate"], "CA 8ABC234")
         self.assertEqual(self.detail(trip_id).json()["trip"]["vehicle"], "Toyota Camry")
         self.request(trip_id, user_id=3)
         with Session(self.engine) as db:

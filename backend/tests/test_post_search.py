@@ -166,6 +166,9 @@ class PostSearchTests(unittest.TestCase):
     def test_parking_category_can_be_created_updated_and_searched(self):
         self.check_category_create_update_search("PARKING")
 
+    def test_household_help_category_can_be_created_updated_and_searched(self):
+        self.check_category_create_update_search("HOUSEHOLD_HELP")
+
     def test_rides_carpool_category_can_be_created_updated_and_searched(self):
         self.check_category_create_update_search("RIDES_CARPOOL")
 

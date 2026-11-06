@@ -10,7 +10,7 @@ export default function CarpoolCard({ trip, role }: { trip: CarpoolTrip; role?: 
     <p><strong>{rideDate(trip.pickup_start, trip.timezone)}</strong></p>
     <p className="field-hint">Departure window ends {rideDate(trip.pickup_end, trip.timezone)}. Times in {trip.timezone}.</p>
     <div className="ride-meta"><span>{trip.available_seats} of {trip.seats} seats available</span><span>{rideMoney(trip.amount, trip.currency)} / person</span></div>
-    <p>{trip.vehicle} &middot; Up to {trip.bags_per_person} bag(s) per person</p>
+    <p>{trip.vehicle}{trip.vehicle_color ? ` · ${trip.vehicle_color}` : ""} &middot; Up to {trip.bags_per_person} bag(s) per person</p>
     {trip.linked_trip_id && <p className="field-hint">{trip.is_return ? "Return direction" : "Return trip available"} &middot; Each direction is booked separately.</p>}
     {trip.my_request_status && <p className="ride-notice">Your seat request: {trip.my_request_status}</p>}
     <Link className="button button-secondary" href={`/rides/carpools/${trip.id}`}>View carpool</Link>

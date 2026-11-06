@@ -33,8 +33,10 @@ class DriverProfile(Base):
 
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), primary_key=True)
     vehicle: Mapped[str] = mapped_column(String(100))
+    vehicle_color: Mapped[str | None] = mapped_column(String(20), nullable=True)
     passenger_capacity: Mapped[int]
     phone: Mapped[str] = mapped_column(String(30))
+    license_plate: Mapped[str | None] = mapped_column(String(20), nullable=True)
     acknowledgement_at: Mapped[datetime] = mapped_column(DateTime)
 
 
@@ -83,7 +85,9 @@ class RideOffer(Base):
     amount: Mapped[Decimal] = mapped_column(Numeric(6, 2))
     message: Mapped[str] = mapped_column(Text)
     vehicle: Mapped[str] = mapped_column(String(100))
+    vehicle_color: Mapped[str | None] = mapped_column(String(20), nullable=True)
     passenger_capacity: Mapped[int]
+    driver_license_plate: Mapped[str | None] = mapped_column(String(20), nullable=True)
     status: Mapped[OfferStatus] = mapped_column(String(12), default="PENDING")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now_naive)
 
@@ -100,8 +104,10 @@ class RideBooking(Base):
     rider_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), index=True)
     driver_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), index=True)
     driver_phone: Mapped[str] = mapped_column(String(30))
+    driver_license_plate: Mapped[str | None] = mapped_column(String(20), nullable=True)
     rider_phone: Mapped[str] = mapped_column(String(30))
     vehicle: Mapped[str] = mapped_column(String(100))
+    vehicle_color: Mapped[str | None] = mapped_column(String(20), nullable=True)
     pickup_time: Mapped[datetime] = mapped_column(DateTime)
     amount: Mapped[Decimal] = mapped_column(Numeric(6, 2))
     currency: Mapped[str] = mapped_column(String(3))

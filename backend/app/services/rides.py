@@ -38,8 +38,10 @@ def save_driver(db: Session, user_id: UUID, data: DriverProfileInput) -> DriverP
         profile = DriverProfile(user_id=user_id)
         db.add(profile)
     profile.vehicle = data.vehicle
+    profile.vehicle_color = data.vehicle_color
     profile.passenger_capacity = data.passenger_capacity
     profile.phone = data.phone
+    profile.license_plate = data.license_plate
     profile.acknowledgement_at = utc_now_naive()
     db.commit()
     db.refresh(profile)
@@ -117,7 +119,9 @@ def send_offer(db: Session, request_id: UUID, user_id: UUID, data: RideOfferInpu
     offer.amount = data.amount
     offer.message = data.message
     offer.vehicle = profile.vehicle
+    offer.vehicle_color = profile.vehicle_color
     offer.passenger_capacity = profile.passenger_capacity
+    offer.driver_license_plate = profile.license_plate
     offer.status = "PENDING"
     offer.created_at = utc_now_naive()
     db.add(offer)
@@ -160,7 +164,8 @@ def confirm(db: Session, request_id: UUID, offer_id: UUID, user_id: UUID) -> Rid
         raise HTTPException(409, "This driver offer is no longer eligible. Choose another offer.")
     booking = RideBooking(
         request_id=ride.id, offer_id=offer.id, rider_id=user_id, driver_id=offer.driver_id,
-        driver_phone=profile.phone, rider_phone=ride.rider_phone, vehicle=offer.vehicle,
+        driver_phone=profile.phone, driver_license_plate=offer.driver_license_plate,
+        rider_phone=ride.rider_phone, vehicle=offer.vehicle, vehicle_color=offer.vehicle_color,
         pickup_time=offer.pickup_time, amount=offer.amount, currency=ride.currency,
     )
     db.add(booking)
@@ -258,6 +263,7 @@ def offer_response(db: Session, offer: RideOffer, ride: RideRequest) -> RideOffe
 def booking_response(db: Session, booking: RideBooking) -> RideBookingResponse:
     return RideBookingResponse.model_validate({
         **{column.name: getattr(booking, column.name) for column in RideBooking.__table__.columns},
+        "driver_license_plate": booking.driver_license_plate if booking.status != "CANCELLED" else None,
         "rider": author(db, booking.rider_id), "driver": author(db, booking.driver_id),
     })
 

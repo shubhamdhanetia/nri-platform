@@ -8,7 +8,7 @@ from pydantic import AwareDatetime, BaseModel, Field, StringConstraints, field_v
 
 from app.schemas.post import PostAuthorResponse, PostLocationFields, PostSearchBounds
 from app.schemas.common import UTCResponse
-from app.schemas.ride import Currency, DriverProfileInput, Phone, RideRequestInput, validate_pickup_window
+from app.schemas.ride import Currency, DriverProfileInput, Phone, RideRequestInput, VehicleColor, validate_pickup_window
 
 Notes = Annotated[str, StringConstraints(strip_whitespace=True, max_length=500)]
 LocationID = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
@@ -81,6 +81,7 @@ class CarpoolTripResponse(UTCResponse):
     amount: Decimal
     currency: Currency
     vehicle: str
+    vehicle_color: VehicleColor | None = None
     notes: str
     status: TripResponseStatus
     can_cancel: bool
@@ -99,6 +100,7 @@ class SeatRequestResponse(UTCResponse):
     status: SeatResponseStatus
     rider_phone: str | None
     driver_phone: str | None
+    driver_license_plate: str | None = None
     cancellation_reason: str | None
     created_at: datetime
 

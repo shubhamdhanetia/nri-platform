@@ -2,6 +2,8 @@ import type { PostAuthor } from "./api";
 
 export type RideStatus = "OPEN" | "CONFIRMED" | "EXPIRED" | "CANCELLED";
 export const RIDE_CURRENCIES = ["USD", "CAD", "INR", "GBP", "EUR", "AUD"] as const;
+export const VEHICLE_COLORS = ["Black", "Blue", "Brown", "Gold", "Gray", "Green", "Orange", "Purple", "Red", "Silver", "White", "Yellow", "Other"] as const;
+export type VehicleColor = typeof VEHICLE_COLORS[number];
 export interface RideLocation {
   location_id: string;
   location: string;
@@ -13,8 +15,10 @@ export interface RideLocation {
 export interface DriverProfile {
   user_id: string;
   vehicle: string;
+  vehicle_color: VehicleColor | null;
   passenger_capacity: number;
   phone: string;
+  license_plate: string | null;
 }
 export interface RideRequest {
   id: string;
@@ -44,6 +48,7 @@ export interface RideOffer {
   amount: string;
   message: string;
   vehicle: string;
+  vehicle_color: VehicleColor | null;
   passenger_capacity: number;
   status: "PENDING" | "ACCEPTED" | "WITHDRAWN" | "NOT_SELECTED" | "EXPIRED";
 }
@@ -55,8 +60,10 @@ export interface RideBooking {
   rider: PostAuthor;
   driver: PostAuthor;
   driver_phone: string;
+  driver_license_plate: string | null;
   rider_phone: string;
   vehicle: string;
+  vehicle_color: VehicleColor | null;
   pickup_time: string;
   amount: string;
   currency: string;

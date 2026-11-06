@@ -68,7 +68,8 @@ def create_trip(db: Session, user_id: UUID, data: CarpoolCreateInput) -> Carpool
             dropoff=dropoff.model_dump(), pickup_start=utc_naive(value.pickup_start),
             pickup_end=utc_naive(value.pickup_end), timezone=value.timezone, seats=value.seats,
             bags_per_person=value.bags_per_person, amount=value.amount, currency=value.currency,
-            vehicle=profile.vehicle, notes=value.notes,
+            vehicle=profile.vehicle, vehicle_color=profile.vehicle_color,
+            driver_license_plate=profile.license_plate, notes=value.notes,
         )
 
     outbound = leg(data.outbound)
@@ -93,7 +94,7 @@ def trip_response(db: Session, trip: CarpoolTrip, user_id: UUID) -> CarpoolTripR
     return CarpoolTripResponse(
         **{key: getattr(trip, key) for key in (
             "id", "driver_id", "pickup", "dropoff", "pickup_start", "pickup_end", "timezone",
-            "seats", "bags_per_person", "amount", "currency", "vehicle", "notes",
+            "seats", "bags_per_person", "amount", "currency", "vehicle", "vehicle_color", "notes",
             "cancellation_reason", "created_at",
         )},
         driver=PostAuthorResponse.model_validate(db.get(User, trip.driver_id)),
@@ -125,6 +126,7 @@ def detail(db: Session, trip_id: UUID, user_id: UUID) -> CarpoolDetailResponse:
             status=request_status(request, trip),
             rider_phone=request.rider_phone if contacts_visible else None,
             driver_phone=request.driver_phone if contacts_visible else None,
+            driver_license_plate=request.driver_license_plate if contacts_visible else None,
         ))
     return CarpoolDetailResponse(
         trip=trip_response(db, trip, user_id),
@@ -186,6 +188,7 @@ def change_request(
         if request.passengers > repo.available_seats(db, trip):
             raise HTTPException(409, "Not enough seats remain. Refresh the trip.")
         request.driver_phone = require_driver(db, trip.driver_id).phone
+        request.driver_license_plate = trip.driver_license_plate
     request.status = target
     recipient = request.rider_id if owner else trip.driver_id
     messages = {
